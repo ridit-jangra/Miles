@@ -21,10 +21,19 @@ stt_model = WhisperModel("base", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
 
-tts = Kokoro("../../../models/kokoro-v1.0.onnx", "../../../models/voices-v1.0.bin")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
+
+tts = Kokoro(
+    os.path.join(BASE_DIR, f"{MODELS_DIR}/kokoro-v1.0.onnx"),
+    os.path.join(BASE_DIR, f"{MODELS_DIR}/voices-v1.0.bin"),
+)
 print("TTS: Kokoro loaded")
 
-oww_model = Model(wakeword_models=["hey_jarvis"], inference_framework="onnx")
+oww_model = Model(
+    wakeword_models=[os.path.join(MODELS_DIR, "echo.onnx")], inference_framework="onnx"
+)
 print("Wake word: OpenWakeWord loaded")
 
 CHUNK = 1280
