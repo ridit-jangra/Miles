@@ -18,12 +18,16 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "download-models:linux": "bash scripts/download-models.sh",
+    "download-models:win": "powershell -ExecutionPolicy Bypass -File scripts/download-models.ps1"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "electron-updater": "^6.3.9"
+    "@tailwindcss/vite": "^4.3.0",
+    "electron-updater": "^6.3.9",
+    "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
