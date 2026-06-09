@@ -1,6 +1,6 @@
 faster-whisper
 fastapi
-uvicorn
+uvicorn[default]
 python-multipart
 kokoro-onnx
 soundfile
