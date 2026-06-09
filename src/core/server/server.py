@@ -7,7 +7,7 @@ from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
 from kokoro_onnx import Kokoro
-import tempfile, os, io, soundfile as sf
+import tempfile, io, soundfile as sf
 import numpy as np
 import asyncio
 import pyaudio
@@ -21,7 +21,7 @@ stt_model = WhisperModel("base", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
 
-tts = Kokoro("../../models/kokoro-v1.0.onnx", "../../models/voices-v1.0.bin")
+tts = Kokoro("../../../models/kokoro-v1.0.onnx", "../../../models/voices-v1.0.bin")
 print("TTS: Kokoro loaded")
 
 oww_model = Model(wakeword_models=["hey_jarvis"], inference_framework="onnx")
