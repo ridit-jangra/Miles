@@ -7,7 +7,7 @@ ipcMain.handle(SPEAK, async (_, text: string) => {
     const res = await fetch(`${SERVER_URL}:${SERVER_PORT}/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice: 'af_heart' })
+      body: JSON.stringify({ text })
     })
 
     if (!res.ok) throw new Error(`TTS server error: ${res.status}`)
