@@ -1,5 +1,6 @@
 import './ipc/stt'
 import './ipc/tts'
+import './ipc/server'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
