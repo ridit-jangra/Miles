@@ -9,6 +9,7 @@ type server_api = {
     success: boolean
     audio: BlobPart
   }>
+  start: () => Promise<void>
 }
 
 declare global {
