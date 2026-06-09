@@ -1,5 +1,6 @@
 appId: com.electron.app
 productName: '@ridit/echo'
+asar: false
 directories:
   buildResources: build
 files:

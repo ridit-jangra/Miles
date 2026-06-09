@@ -9,3 +9,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>
 )
+
+const start = async (): Promise<void> => {
+  await window.server.start()
+}
+start()

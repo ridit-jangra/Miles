@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useState, useRef } from 'react'
-import { SERVER_PORT, SERVER_URL } from '../../shared/constants'
+import { SERVER_PORT } from '../../shared/constants'
 
 function App(): React.JSX.Element {
   const [transcript, setTranscript] = useState('')
@@ -41,7 +41,7 @@ function App(): React.JSX.Element {
   }
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${SERVER_URL.replace('http://', '')}:${SERVER_PORT}/wake`)
+    const ws = new WebSocket(`ws://127.0.0.1:${SERVER_PORT}/wake`)
     ws.onmessage = (e) => {
       if (e.data === 'wake') startListening()
     }
