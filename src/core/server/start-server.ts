@@ -4,7 +4,14 @@ import { join } from 'path'
 
 const isWindows = process.platform === 'win32'
 
+let serverProcess: ChildProcessWithoutNullStreams | null = null
+
 export function startServer(echoDir: string): ChildProcessWithoutNullStreams {
+  if (serverProcess) {
+    console.log('[Echo] Server already running')
+    return serverProcess
+  }
+
   const venvDir = join(echoDir, '.venv')
   const coreDir = join(echoDir, 'src', 'core')
   const serverDir = join(coreDir, 'server')
@@ -20,7 +27,7 @@ export function startServer(echoDir: string): ChildProcessWithoutNullStreams {
   console.log(`[Echo] Starting server...`)
   console.log(`[Echo] Wake word: ${wakeWordModel}`)
 
-  const server = spawn(
+  serverProcess = spawn(
     uvicorn,
     ['server:app', '--host', '127.0.0.1', '--port', '8000', '--log-level', 'info'],
     {
@@ -35,9 +42,12 @@ export function startServer(echoDir: string): ChildProcessWithoutNullStreams {
     }
   )
 
-  server.stdout.on('data', (d) => process.stdout.write(`[server] ${d}`))
-  server.stderr.on('data', (d) => process.stderr.write(`[server] ${d}`))
-  server.on('exit', (code) => console.log(`[Echo] Server exited: ${code}`))
+  serverProcess.stdout.on('data', (d) => process.stdout.write(`[server] ${d}`))
+  serverProcess.stderr.on('data', (d) => process.stderr.write(`[server] ${d}`))
+  serverProcess.on('exit', (code) => {
+    console.log(`[Echo] Server exited: ${code}`)
+    serverProcess = null
+  })
 
-  return server
+  return serverProcess
 }

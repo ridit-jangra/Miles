@@ -16,21 +16,21 @@ from openwakeword.model import Model
 
 app = FastAPI()
 
-
+# ── STT ───────────────────────────────────────────────────────────────────────
 stt_model = WhisperModel("base", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
-
+# ── TTS ───────────────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
 
 tts = Kokoro(
-    os.path.join(BASE_DIR, f"{MODELS_DIR}/kokoro-v1.0.onnx"),
-    os.path.join(BASE_DIR, f"{MODELS_DIR}/voices-v1.0.bin"),
+    os.path.join(MODELS_DIR, "kokoro-v1.0.onnx"),
+    os.path.join(MODELS_DIR, "voices-v1.0.bin"),
 )
 print("TTS: Kokoro loaded")
 
+# ── Wake word ─────────────────────────────────────────────────────────────────
 oww_model = Model(
     wakeword_models=[os.path.join(MODELS_DIR, "echo.onnx")], inference_framework="onnx"
 )
@@ -38,8 +38,6 @@ print("Wake word: OpenWakeWord loaded")
 
 CHUNK = 1280
 RATE = 16000
-
-
 wake_clients: list[WebSocket] = []
 
 
@@ -94,10 +92,9 @@ async def wake_endpoint(websocket: WebSocket):
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
-
     segments, _ = stt_model.transcribe(tmp_path)
     text = " ".join([s.text.strip() for s in segments])
     os.unlink(tmp_path)
@@ -108,13 +105,10 @@ async def transcribe(file: UploadFile):
 async def speak(body: dict):
     text = body.get("text", "")
     voice = body.get("voice", "am_michael")
-
     samples, sample_rate = tts.create(text, voice=voice, speed=1.0, lang="en-us")
-
     buf = io.BytesIO()
     sf.write(buf, samples, sample_rate, format="WAV")
     buf.seek(0)
-
     return StreamingResponse(buf, media_type="audio/wav")
 
 
