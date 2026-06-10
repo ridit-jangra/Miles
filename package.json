@@ -31,7 +31,9 @@
     "ai": "^6.0.198",
     "dotenv": "^17.4.2",
     "electron-updater": "^6.3.9",
+    "postprocessing": "^6.39.1",
     "tailwindcss": "^4.3.0",
+    "three": "^0.184.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -41,6 +43,7 @@
     "@types/node": "^22.19.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^5.1.1",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
