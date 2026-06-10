@@ -12,9 +12,14 @@ type server_api = {
   start: () => Promise<void>
 }
 
+type ai_api = {
+  chat: (text: string) => Promise<string>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
     server: server_api
+    ai: ai_api
   }
 }

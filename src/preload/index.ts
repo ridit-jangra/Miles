@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { SPEAK, START_SERVER, TRANSCRIBE } from '../shared/channels'
+import { CHAT, SPEAK, START_SERVER, TRANSCRIBE } from '../shared/channels'
 
 const server = {
   transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
@@ -12,9 +12,14 @@ const server = {
   start: (): Promise<void> => ipcRenderer.invoke(START_SERVER)
 }
 
+const ai = {
+  chat: (text: string) => ipcRenderer.invoke(CHAT, text)
+}
+
 try {
   contextBridge.exposeInMainWorld('electron', electronAPI)
   contextBridge.exposeInMainWorld('server', server)
+  contextBridge.exposeInMainWorld('ai', ai)
 } catch (error) {
   console.error(error)
 }

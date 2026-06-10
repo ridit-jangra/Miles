@@ -1,23 +1,25 @@
-import { useCallback, useEffect } from 'react'
-import { useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { SERVER_PORT } from '../../shared/constants'
+import { speak } from './utils/speak'
 
 function App(): React.JSX.Element {
   const [transcript, setTranscript] = useState('')
   const [listening, setListening] = useState(false)
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<BlobPart[]>([])
+  const isProcessing = useRef(false)
 
   useEffect(() => {
     window.server.start()
   }, [])
 
   const startListening = useCallback(async (): Promise<void> => {
+    if (isProcessing.current || listening) return
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     mediaRecorder.current = new MediaRecorder(stream)
     chunks.current = []
 
-    // silence detection
     const audioCtx = new AudioContext()
     const source = audioCtx.createMediaStreamSource(stream)
     const analyser = audioCtx.createAnalyser()
@@ -31,7 +33,6 @@ function App(): React.JSX.Element {
     const checkSilence = (): void => {
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
-
       if (volume > 10) {
         speaking = true
         silenceStart = Date.now()
@@ -48,25 +49,26 @@ function App(): React.JSX.Element {
 
     mediaRecorder.current.ondataavailable = (e) => chunks.current.push(e.data)
     mediaRecorder.current.onstop = async () => {
-      const blob = new Blob(chunks.current, { type: 'audio/wav' })
-      const arrayBuffer = await blob.arrayBuffer()
-      const result = await window.server.transcribe(arrayBuffer)
-      if (result.success && result.text) {
-        setTranscript(result.text)
-        const tts = await window.server.speak(result.text)
-        if (tts.success && tts.audio) {
-          const audioBlob = new Blob([tts.audio], { type: 'audio/wav' })
-          const url = URL.createObjectURL(audioBlob)
-          const audio = new Audio(url)
-          audio.play()
+      isProcessing.current = true
+      try {
+        const blob = new Blob(chunks.current, { type: 'audio/wav' })
+        const arrayBuffer = await blob.arrayBuffer()
+        const result = await window.server.transcribe(arrayBuffer)
+        if (result.success && result.text) {
+          setTranscript(result.text)
+          const response = await window.ai.chat(result.text)
+          console.log('ai response:', response)
+          await speak(response)
         }
+      } finally {
+        isProcessing.current = false
+        setListening(false)
       }
-      setListening(false)
     }
 
     mediaRecorder.current.start()
     setListening(true)
-  }, [])
+  }, [listening])
 
   const stopListening = (): void => {
     mediaRecorder.current?.stop()
@@ -79,12 +81,12 @@ function App(): React.JSX.Element {
     const connect = (): void => {
       ws = new WebSocket(`ws://127.0.0.1:${SERVER_PORT}/wake`)
       ws.onopen = () => console.log('[Echo] Wake word connected')
-      ws.onmessage = (e) => {
-        if (e.data === 'wake') startListening()
+      ws.onmessage = async (e) => {
+        if (e.data === 'wake' && !isProcessing.current) {
+          await speak('Yes sir', startListening)
+        }
       }
-      ws.onerror = () => {
-        ws.close()
-      }
+      ws.onerror = () => ws.close()
       ws.onclose = () => {
         retryTimeout = setTimeout(connect, 2000)
       }

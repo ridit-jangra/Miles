@@ -23,11 +23,16 @@
     "download-models:win": "powershell -ExecutionPolicy Bypass -File scripts/download-models.ps1"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.39",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@ridit/ai": "0.1.85",
     "@tailwindcss/vite": "^4.3.0",
+    "ai": "^6.0.198",
+    "dotenv": "^17.4.2",
     "electron-updater": "^6.3.9",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
