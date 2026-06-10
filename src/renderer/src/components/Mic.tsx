@@ -18,11 +18,15 @@ export function Mic(): React.JSX.Element {
     if (isPlaying.current || queue.current.length === 0) return
     isPlaying.current = true
     const { text, onDone } = queue.current.shift()!
-    await speakAudio(text, () => {
-      isPlaying.current = false
-      onDone?.()
-      // eslint-disable-next-line react-hooks/immutability
-      playNext()
+    await speakAudio(text, {
+      onLevel: (level) => setAudioLevel(level),
+      onEnded: () => {
+        setAudioLevel(0)
+        isPlaying.current = false
+        onDone?.()
+        // eslint-disable-next-line react-hooks/immutability
+        playNext()
+      }
     })
   }, [])
 
@@ -53,6 +57,7 @@ export function Mic(): React.JSX.Element {
       if (e.data.size > 0) chunks.current.push(e.data)
     }
 
+    // ── Silence detection (NOT updating audioLevel anymore) ──────────────
     const audioCtx = new AudioContext()
     const source = audioCtx.createMediaStreamSource(stream)
     const analyser = audioCtx.createAnalyser()
@@ -65,7 +70,6 @@ export function Mic(): React.JSX.Element {
     const checkSilence = (): void => {
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
-      setAudioLevel(Math.min(volume / 80, 1))
 
       if (volume > 10) {
         spokenOnce = true
@@ -102,7 +106,6 @@ export function Mic(): React.JSX.Element {
       } finally {
         isProcessing.current = false
         setListening(false)
-        setAudioLevel(0)
       }
     }
 
@@ -140,12 +143,20 @@ export function Mic(): React.JSX.Element {
   }, [startListening, speak])
 
   return (
-    <div className="relative w-full h-full">
-      <PixelBlast audioLevel={audioLevel} className="absolute inset-0" />
-      <div className="relative z-10 flex flex-col items-center justify-center h-full gap-4">
+    <div className="relative h-screen w-screen overflow-hidden ">
+      <div className="absolute inset-0 w-[40%] translate-x-[-50%] left-[50%]">
+        <PixelBlast
+          audioLevel={audioLevel}
+          pixelSize={5}
+          patternDensity={1.2}
+          edgeFade={0}
+          enableRipples={false}
+        />
+      </div>
+      <div className="absolute pt-50 inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none">
         <button
           onClick={listening ? stopListening : startListening}
-          className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur"
+          className="pointer-events-auto px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur"
         >
           {listening ? 'Stop' : 'Start'}
         </button>

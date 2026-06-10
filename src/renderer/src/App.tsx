@@ -4,8 +4,7 @@ function App(): React.JSX.Element {
   // const [transcript, setTranscript] = useState('')
 
   return (
-    <div style={{ padding: 40, fontFamily: 'sans-serif' }}>
-      <h1>Echo</h1>
+    <div className="min-h-screen min-w-screen">
       <Mic />
     </div>
   )

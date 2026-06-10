@@ -1,4 +1,14 @@
-export async function speak(text: string, onEnded?: () => void): Promise<HTMLAudioElement | void> {
+export interface SpeakOptions {
+  onEnded?: () => void
+  onLevel?: (level: number) => void
+}
+
+export async function speak(
+  text: string,
+  opts: SpeakOptions = {}
+): Promise<HTMLAudioElement | void> {
+  const { onEnded, onLevel } = opts
+
   try {
     const tts = await window.server.speak(text)
     if (!tts.success || !tts.audio) {
@@ -11,14 +21,42 @@ export async function speak(text: string, onEnded?: () => void): Promise<HTMLAud
     const url = URL.createObjectURL(audioBlob)
     const audio = new Audio(url)
 
-    audio.onended = () => {
+    // ── Set up audio level analysis ────────────────────────────────────────
+    let audioCtx: AudioContext | null = null
+    let raf = 0
+    if (onLevel) {
+      audioCtx = new AudioContext()
+      const source = audioCtx.createMediaElementSource(audio)
+      const analyser = audioCtx.createAnalyser()
+      analyser.fftSize = 512
+      source.connect(analyser)
+      source.connect(audioCtx.destination) // keep audio audible
+      const data = new Uint8Array(analyser.frequencyBinCount)
+
+      const tick = (): void => {
+        analyser.getByteFrequencyData(data)
+        const volume = data.reduce((a, b) => a + b, 0) / data.length
+        onLevel(Math.min(volume / 80, 1))
+        raf = requestAnimationFrame(tick)
+      }
+      tick()
+    }
+
+    const cleanup = (): void => {
+      if (raf) cancelAnimationFrame(raf)
+      onLevel?.(0)
+      audioCtx?.close()
       URL.revokeObjectURL(url)
+    }
+
+    audio.onended = () => {
+      cleanup()
       onEnded?.()
     }
 
     audio.onerror = (e) => {
       console.error('[speak] audio error:', e)
-      URL.revokeObjectURL(url)
+      cleanup()
       onEnded?.()
     }
 
@@ -26,7 +64,7 @@ export async function speak(text: string, onEnded?: () => void): Promise<HTMLAud
       await audio.play()
     } catch (e) {
       console.error('[speak] play failed:', e)
-      URL.revokeObjectURL(url)
+      cleanup()
       onEnded?.()
     }
 

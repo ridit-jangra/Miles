@@ -52,7 +52,7 @@ type PixelBlastProps = {
   transparent?: boolean
   edgeFade?: number
   noiseAmount?: number
-  audioLevel?: number // 0 to 1
+  audioLevel?: number
 }
 
 const createTouchTexture = (): TouchTexture => {
@@ -295,24 +295,16 @@ void main(){
   vec2 uv = cellCoord / uResolution * vec2(aspectRatio, 1.0);
 
   float base = fbm2(uv, uTime * 0.05);
-  base = base * 0.5 - 0.65;
+  base = base * 0.5 - 0.35;
 
-  // Audio: boost density + radial pulse from center
-  float audioPulse = uAudioLevel * 0.5;
-  float feed = base + (uDensity - 0.5) * 0.3 + audioPulse;
+  float feed = base + (uDensity - 0.5) * 0.3;
 
-  if (uAudioLevel > 0.01) {
-    float dist = length(uv);
-    float audioSpeed = 1.0 + uAudioLevel * 3.0;
-    float pulse = uAudioLevel * 0.3 * exp(-dist * 2.0) * sin(uTime * audioSpeed * 8.0 + dist * 10.0);
-    feed += pulse;
-  }
-
-  float speed     = uRippleSpeed;
-  float thickness = uRippleThickness;
+  float rippleSpeed = uRippleSpeed;
+  float thickness   = uRippleThickness;
   const float dampT = 1.0;
   const float dampR = 10.0;
 
+  // Click ripples
   if (uEnableRipples == 1) {
     for (int i = 0; i < MAX_CLICKS; ++i){
       vec2 pos = uClickPos[i];
@@ -321,10 +313,28 @@ void main(){
       vec2 cuv = (((pos - uResolution * .5 - cellPixelSize2 * .5) / (uResolution))) * vec2(aspectRatio, 1.0);
       float t = max(uTime - uClickTimes[i], 0.0);
       float r = distance(uv, cuv);
-      float waveR = speed * t;
+      float waveR = rippleSpeed * t;
       float ring  = exp(-pow((r - waveR) / thickness, 2.0));
       float atten = exp(-dampT * t) * exp(-dampR * r);
       feed = max(feed, ring * atten * uRippleIntensity);
+    }
+  }
+
+  // ── Audio ripples from random positions ────────────────────────────────
+  if (uAudioLevel > 0.01) {
+    for (int i = 0; i < 4; i++) {
+      float fi = float(i);
+      // pseudo-random origin per ring, shifting slowly over time
+      float rx = sin(fi * 1.7 + uTime * 0.3) * 0.3;
+      float ry = cos(fi * 2.3 + uTime * 0.2) * 0.2;
+      vec2 origin = vec2(rx, ry);
+
+      float r = distance(uv, origin);
+      float phase = mod(uTime + fi * 0.5, 2.0);
+      float waveR = phase * 0.4;
+      float ring = exp(-pow((r - waveR) / 0.06, 2.0));
+      float atten = exp(-r * 2.5) * (1.0 - phase / 2.0);
+      feed = max(feed, ring * atten * uAudioLevel * 1.2);
     }
   }
 
@@ -347,8 +357,57 @@ void main(){
     M *= fade;
   }
 
+  // ── Animated waveform mask — thin line that traces the wave ──────────────
+  // ── Pixelated waveform mask ───────────────────────────────────────────────
+vec2 centerNorm =
+    (gl_FragCoord.xy - uResolution * 0.5) /
+    min(uResolution.x, uResolution.y);
+
+float nx = centerNorm.x;
+float ny = centerNorm.y;
+
+float halfWidth = 0.28;
+float xt = clamp(abs(nx) / halfWidth, 0.0, 1.0);
+
+// taper ends
+float envelope =
+    pow(max(cos(xt * 1.57079632679), 0.0), 0.7);
+
+// pixel size in normalized coordinates
+float pixelGrid =
+    (uPixelSize * 2.0) /
+    min(uResolution.x, uResolution.y);
+
+// snap x to pixel columns
+float snappedX =
+    floor(nx / pixelGrid) * pixelGrid;
+
+// cleaner waveform
+float wave =
+    sin(snappedX * 20.0 + uTime * 1.2);
+
+// smaller amplitude
+float amp =
+    (0.003 + uAudioLevel * 0.03) * envelope;
+
+// snap wave vertically
+float waveY =
+    floor((wave * amp) / pixelGrid) * pixelGrid;
+
+// snap fragment position too
+float snappedY =
+    floor(ny / pixelGrid) * pixelGrid;
+
+// chunky pixel line
+float line =
+    step(abs(snappedY - waveY), pixelGrid * 0.5);
+
+float maskX =
+    step(abs(nx), halfWidth);
+
+M *= maskX * line;
+
   vec3 color = uColor;
-  // Brighten slightly on audio
   color = mix(color, color * 1.5, uAudioLevel * 0.4);
 
   vec3 srgbColor = mix(
@@ -393,7 +452,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   const speedRef = useRef(speed)
   const audioLevelRef = useRef(audioLevel)
 
-  // Keep audioLevelRef in sync without triggering reinit
   useEffect(() => {
     audioLevelRef.current = audioLevel
   }, [audioLevel])
@@ -604,7 +662,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
           return
         }
         uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current
-        // Update audio level every frame from ref — no re-render needed
         uniforms.uAudioLevel.value = audioLevelRef.current
         if (liquidEffect) {
           const liqEffect = liquidEffect as Effect & { uniforms: Map<string, THREE.Uniform> }
@@ -704,7 +761,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     variant,
     color,
     speed
-    // audioLevel intentionally NOT here — updated via ref every frame
   ])
 
   return (
