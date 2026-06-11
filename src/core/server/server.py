@@ -1,53 +1,65 @@
 import os
+import time
+import io
+import wave
+import tempfile
+import asyncio
+import threading
 
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_DATASETS_OFFLINE"] = "1"
-
+import numpy as np
+import pyaudio
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
 from piper.voice import PiperVoice
-import tempfile, io, wave
-import numpy as np
-import asyncio
-import pyaudio
 from openwakeword.model import Model
 from sanitize import sanitize_for_tts
 
-app = FastAPI()
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
 
+app = FastAPI()
 
 stt_model = WhisperModel("small", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
-
 DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
+
 tts = PiperVoice.load(DANNY_MODEL)
 print("TTS: Piper danny loaded")
 
-
 oww_model = Model(
-    wakeword_models=[os.path.join(MODELS_DIR, "echo.onnx")], inference_framework="onnx"
+    wakeword_models=[os.path.join(MODELS_DIR, "wakeup.onnx")],
+    inference_framework="onnx",
 )
 print("Wake word: OpenWakeWord loaded")
 
 CHUNK = 1280
 RATE = 16000
+WAKE_COOLDOWN = 3.0
+WAKE_SCORE_THRESHOLD = 0.5
+
+last_wake_time: float = 0.0
 wake_clients: list[WebSocket] = []
 
 
-async def notify_wake():
+async def notify_wake() -> None:
+    dead: list[WebSocket] = []
     for client in wake_clients:
         try:
             await client.send_text("wake")
-        except:
-            pass
+        except Exception:
+            dead.append(client)
+    for client in dead:
+        if client in wake_clients:
+            wake_clients.remove(client)
 
 
-def mic_loop(loop: asyncio.AbstractEventLoop):
+def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
+    global last_wake_time
+
     pa = pyaudio.PyAudio()
     stream = pa.open(
         rate=RATE,
@@ -57,35 +69,44 @@ def mic_loop(loop: asyncio.AbstractEventLoop):
         frames_per_buffer=CHUNK,
     )
     print("Wake word: listening...")
+
     while True:
         pcm = np.frombuffer(
             stream.read(CHUNK, exception_on_overflow=False), dtype=np.int16
         )
         prediction = oww_model.predict(pcm)
+
         for model_name, score in prediction.items():
-            if score > 0.5:
+            if score > WAKE_SCORE_THRESHOLD:
+                now = time.time()
+
+                if now - last_wake_time < WAKE_COOLDOWN:
+                    continue
+                last_wake_time = now
                 print(f"Wake word detected! ({model_name}: {score:.2f})")
                 asyncio.run_coroutine_threadsafe(notify_wake(), loop)
 
 
 @app.on_event("startup")
-async def startup():
+async def startup() -> None:
     loop = asyncio.get_event_loop()
-    import threading
-
     t = threading.Thread(target=mic_loop, args=(loop,), daemon=True)
     t.start()
 
 
 @app.websocket("/wake")
-async def wake_endpoint(websocket: WebSocket):
+async def wake_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
+
     wake_clients.append(websocket)
     try:
         while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        wake_clients.remove(websocket)
+            await asyncio.sleep(15)
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        if websocket in wake_clients:
+            wake_clients.remove(websocket)
 
 
 @app.post("/transcribe")
@@ -93,7 +114,8 @@ async def transcribe(file: UploadFile):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
-    segments, _ = stt_model.transcribe(tmp_path)
+
+    segments, _ = stt_model.transcribe(tmp_path, language="en")
     text = " ".join([s.text.strip() for s in segments])
     os.unlink(tmp_path)
     return {"text": text}
@@ -102,19 +124,16 @@ async def transcribe(file: UploadFile):
 @app.post("/speak")
 async def speak(body: dict):
     text = sanitize_for_tts(body.get("text", ""))
-    if not text:
-
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as wav_file:
-            wav_file.setnchannels(1)
-            wav_file.setsampwidth(2)
-            wav_file.setframerate(tts.config.sample_rate)
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="audio/wav")
 
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wav_file:
-        tts.synthesize_wav(text, wav_file)
+        if not text:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(tts.config.sample_rate)
+        else:
+            tts.synthesize_wav(text, wav_file)
+
     buf.seek(0)
     return StreamingResponse(buf, media_type="audio/wav")
 

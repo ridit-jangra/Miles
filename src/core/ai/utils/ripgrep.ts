@@ -19,7 +19,11 @@ const IGNORED_DIRS = new Set([
   '.turbo',
   '.cache',
   '.venv',
-  'venv'
+  'venv',
+  'package-lock.json',
+  'bun.lock',
+  'yarn.lock',
+  'pnpm.lock'
 ])
 
 let _rgAvailable: boolean | null = null
