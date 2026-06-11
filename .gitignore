@@ -13,4 +13,5 @@ __pycache__
 *.onnx
 *.bin
 !echo.onnx
+!wakeup.onnx
 en_US-danny-low.onnx.json
