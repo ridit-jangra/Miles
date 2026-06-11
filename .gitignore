@@ -15,3 +15,5 @@ __pycache__
 !echo.onnx
 !wakeup.onnx
 en_US-danny-low.onnx.json
+electron.vite.config.*.mjs
+*.tsbuildinfo

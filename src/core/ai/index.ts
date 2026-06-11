@@ -1,15 +1,16 @@
 import { runLLM, streamLLM } from './utils/llm'
 import { createSession, Session } from './utils/session'
-import { getChatSystemPrompt } from './utils/systemPrompt'
+import { getAgentSystemPrompt } from './utils/systemPrompt'
 import { agentTools } from './utils/tools'
+import { mcpManager } from '../mcp/manager'
 
 const session = createSession()
 
 export async function chat(prompt: string): Promise<{ text: string; session: Session }> {
   return await runLLM({
     prompt,
-    system: await getChatSystemPrompt(),
-    tools: agentTools,
+    system: await getAgentSystemPrompt(),
+    tools: { ...agentTools, ...mcpManager.getTools() },
     session,
     onToolCall: (e) => {
       console.log(`[Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
@@ -26,8 +27,8 @@ export async function chatStream(
 ): Promise<{ text: string; session: Session }> {
   return await streamLLM({
     prompt,
-    system: await getChatSystemPrompt(),
-    tools: agentTools,
+    system: await getAgentSystemPrompt(),
+    tools: { ...agentTools, ...mcpManager.getTools() },
     session,
     onChunk,
     onToolCall: (e) => {

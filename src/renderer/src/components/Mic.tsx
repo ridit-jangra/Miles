@@ -34,6 +34,8 @@ export function Mic(): React.JSX.Element {
   const [spokenText, setSpokenText] = useState('')
   const [spokenProgress, setSpokenProgress] = useState(0)
 
+  const [, setThinking] = useState(false)
+
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<BlobPart[]>([])
   const isProcessing = useRef(false)
@@ -73,6 +75,8 @@ export function Mic(): React.JSX.Element {
   const playNext = useCallback((): void => {
     if (isPlaying.current || queue.current.length === 0) return
     isPlaying.current = true
+
+    setThinking(false)
     const { text, onDone } = queue.current.shift()!
 
     setSpokenText(text)
@@ -114,6 +118,14 @@ export function Mic(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
+    const off = window.speak?.onSay((text: string) => {
+      const trimmed = text?.trim()
+      if (trimmed) speak(trimmed)
+    })
+    return off
+  }, [speak])
+
+  useEffect(() => {
     return () => {
       if (transcriptFadeTimer.current) clearTimeout(transcriptFadeTimer.current)
     }
@@ -144,6 +156,8 @@ export function Mic(): React.JSX.Element {
         handleStreamComplete(fullText, buffer)
       } catch (e) {
         removeListener()
+
+        setThinking(false)
         console.error('[Echo] streaming failed:', e)
       }
     },
@@ -230,9 +244,12 @@ export function Mic(): React.JSX.Element {
         }
 
         showTranscript(text)
+
+        setThinking(true)
         chatStreaming(text)
       } catch (e) {
         console.error('[Echo] transcription failed:', e)
+        setThinking(false)
 
         if (continuousMode.current) {
           setTimeout(() => startListeningRef.current?.(), 1000)
@@ -253,6 +270,7 @@ export function Mic(): React.JSX.Element {
 
   const stopListening = (): void => {
     continuousMode.current = false
+    setThinking(false)
     mediaRecorder.current?.stop()
   }
 
@@ -311,7 +329,7 @@ export function Mic(): React.JSX.Element {
                 transition: 'opacity 0.5s ease-out'
               }}
             >
-              <div className="max-w-[80vw] wrap-break-word whitespace-pre-wrap text-center font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
+              <div className="max-w-[80vw] break-words whitespace-pre-wrap text-center font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
                 {transcript}
               </div>
             </div>
@@ -330,6 +348,7 @@ export function Mic(): React.JSX.Element {
           <button
             onClick={() => {
               continuousMode.current = false
+              setThinking(false)
               mediaRecorder.current?.stop()
             }}
             className="pointer-events-auto hover:text-white text-white/70 backdrop-blur transition-colors cursor-pointer"

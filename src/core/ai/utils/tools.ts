@@ -10,6 +10,7 @@ import { MemoryReadTool } from '../tools/MemoryReadTool/tool'
 import { MemoryWriteTool } from '../tools/MemoryWriteTool/tool'
 import { RecallTool } from '../tools/RecallTool/tool'
 import { ThinkTool } from '../tools/ThinkTool/tool'
+import { SpeakTool } from '../tools/SpeakTool/tool'
 import { WebFetchTool } from '../tools/WebFetchTool/tool'
 import { WebSearchTool } from '../tools/WebSearchTool/tool'
 import { DownloadTool } from '../tools/DownloadTool/tool'
@@ -33,7 +34,8 @@ export const agentTools = {
   WebSearchTool,
   DownloadTool,
   HumanEditTool,
-  SkillTool
+  SkillTool,
+  SpeakTool
 }
 
 export const subagentTools = {
@@ -45,7 +47,8 @@ export const subagentTools = {
   GlobTool,
   ThinkTool,
   DownloadTool,
-  SkillTool
+  SkillTool,
+  SpeakTool
 }
 
 export const chatTools = {
@@ -56,5 +59,6 @@ export const chatTools = {
   WebFetchTool,
   WebSearchTool,
   HumanEditTool,
-  SkillTool
+  SkillTool,
+  SpeakTool
 }

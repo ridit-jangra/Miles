@@ -5,6 +5,9 @@ import './ipc/stt'
 import './ipc/tts'
 import './ipc/server'
 import './ipc/ai'
+import './ipc/mcp'
+import './ipc/oauth'
+import { mcpManager } from '../core/mcp/manager'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -49,6 +52,8 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
+  mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
+
   createWindow()
 
   app.on('activate', function () {
@@ -60,4 +65,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))
 })
