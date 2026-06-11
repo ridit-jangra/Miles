@@ -9,6 +9,23 @@ import { extractSpeakable } from '../utils/extractSpeakables'
 import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
 
+const MIN_SPEECH_MS = 400
+
+const HALLUCINATION_PATTERNS = [
+  /^(uh+|um+|hm+|hmm+|ah+|eh+)\.?$/i,
+  /^thank you\.?$/i,
+  /^thanks for watching\.?$/i,
+  /^\s*[.,!?]+\s*$/,
+  /^[^a-zA-Z0-9]*$/
+]
+
+function isGarbage(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed) return true
+
+  return HALLUCINATION_PATTERNS.some((re) => re.test(trimmed))
+}
+
 export function Mic(): React.JSX.Element {
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -24,6 +41,8 @@ export function Mic(): React.JSX.Element {
 
   const listeningRef = useRef(false)
 
+  const continuousMode = useRef(false)
+
   const queue = useRef<{ text: string; onDone?: () => void }[]>([])
   const isPlaying = useRef(false)
 
@@ -37,7 +56,6 @@ export function Mic(): React.JSX.Element {
       transcriptFadeTimer.current = null
     }
     setTranscript(text)
-
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setTranscriptVisible(true))
     })
@@ -49,6 +67,8 @@ export function Mic(): React.JSX.Element {
       setTranscript('')
     }, 500)
   }, [])
+
+  const startListeningRef = useRef<(() => Promise<void>) | null>(null)
 
   const playNext = useCallback((): void => {
     if (isPlaying.current || queue.current.length === 0) return
@@ -68,6 +88,12 @@ export function Mic(): React.JSX.Element {
         if (queue.current.length === 0) {
           setTimeout(() => setSpokenText(''), 800)
           fadeOutTranscript()
+
+          if (continuousMode.current) {
+            setTimeout(() => {
+              startListeningRef.current?.()
+            }, 300)
+          }
         } else {
           playNext()
         }
@@ -107,11 +133,8 @@ export function Mic(): React.JSX.Element {
 
       const removeListener = window.ai.onChunk((delta: string) => {
         buffer += delta
-
         const [sentences, remaining] = extractSpeakable(buffer)
-        if (sentences) {
-          speak(sentences)
-        }
+        if (sentences) speak(sentences)
         buffer = remaining
       })
 
@@ -128,11 +151,19 @@ export function Mic(): React.JSX.Element {
   )
 
   const startListening = useCallback(async (): Promise<void> => {
-    if (isProcessing.current || listeningRef.current) return
+    if (isProcessing.current || listeningRef.current || isPlaying.current) return
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      console.error('[Echo] mic access denied')
+      return
+    }
+
     setTranscript('')
     setTranscriptVisible(false)
+
     mediaRecorder.current = new MediaRecorder(stream, {
       mimeType: 'audio/webm;codecs=opus'
     })
@@ -148,16 +179,24 @@ export function Mic(): React.JSX.Element {
     analyser.fftSize = 512
     source.connect(analyser)
     const data = new Uint8Array(analyser.frequencyBinCount)
+
     let silenceStart = Date.now()
     let spokenOnce = false
+    let firstSoundAt = 0
+    let lastSoundAt = 0
+
+    const SILENCE_THRESHOLD_MS = 1200
 
     const checkSilence = (): void => {
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
-      if (volume > 10) {
+
+      if (volume > 12) {
+        if (!spokenOnce) firstSoundAt = Date.now()
         spokenOnce = true
+        lastSoundAt = Date.now()
         silenceStart = Date.now()
-      } else if (spokenOnce && Date.now() - silenceStart > 800) {
+      } else if (spokenOnce && Date.now() - silenceStart > SILENCE_THRESHOLD_MS) {
         mediaRecorder.current?.stop()
         stream.getTracks().forEach((t) => t.stop())
         audioCtx.close()
@@ -169,18 +208,35 @@ export function Mic(): React.JSX.Element {
 
     mediaRecorder.current.onstop = async () => {
       isProcessing.current = true
+
+      const speechMs = spokenOnce ? lastSoundAt - firstSoundAt : 0
       try {
         const blob = new Blob(chunks.current, { type: 'audio/webm' })
         const arrayBuffer = await blob.arrayBuffer()
         const result = await window.server.transcribe(arrayBuffer)
         const text = result.success ? (result.text?.trim() ?? '') : ''
-        showTranscript(text)
 
-        if (text) {
-          chatStreaming(text)
+        const tooShort = speechMs < MIN_SPEECH_MS
+        if (!text || tooShort || isGarbage(text)) {
+          console.log(
+            '[Echo] ignored:',
+            JSON.stringify(text),
+            `(speech ${speechMs}ms${tooShort ? ', too short' : ''})`
+          )
+          if (continuousMode.current) {
+            setTimeout(() => startListeningRef.current?.(), 200)
+          }
+          return
         }
+
+        showTranscript(text)
+        chatStreaming(text)
       } catch (e) {
         console.error('[Echo] transcription failed:', e)
+
+        if (continuousMode.current) {
+          setTimeout(() => startListeningRef.current?.(), 1000)
+        }
       } finally {
         isProcessing.current = false
         setListening(false)
@@ -191,7 +247,12 @@ export function Mic(): React.JSX.Element {
     setListening(true)
   }, [chatStreaming, showTranscript])
 
+  useEffect(() => {
+    startListeningRef.current = startListening
+  }, [startListening])
+
   const stopListening = (): void => {
+    continuousMode.current = false
     mediaRecorder.current?.stop()
   }
 
@@ -207,11 +268,11 @@ export function Mic(): React.JSX.Element {
       ws.onmessage = (e) => {
         if (e.data !== 'wake') return
         if (isProcessing.current || listeningRef.current) return
+        continuousMode.current = true
         speak('Yes sir', startListening)
       }
 
       ws.onerror = () => ws.close()
-
       ws.onclose = () => {
         retryTimeout = setTimeout(connect, 2000)
       }
@@ -250,7 +311,7 @@ export function Mic(): React.JSX.Element {
                 transition: 'opacity 0.5s ease-out'
               }}
             >
-              <div className="max-w-[80vw] overflow-hidden whitespace-nowrap font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
+              <div className="max-w-[80vw] wrap-break-word whitespace-pre-wrap text-center font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
                 {transcript}
               </div>
             </div>
@@ -258,19 +319,32 @@ export function Mic(): React.JSX.Element {
         )}
         <div className="flex items-center px-10 py-3 rounded-md gap-10 bg-white/10 absolute bottom-10">
           <button
-            onClick={startListening}
+            onClick={() => {
+              continuousMode.current = true
+              startListening()
+            }}
             className="pointer-events-auto hover:text-white text-white/70 backdrop-blur transition-colors cursor-pointer"
           >
             <MicIcon />
           </button>
           <button
-            onClick={startListening}
+            onClick={() => {
+              continuousMode.current = false
+              mediaRecorder.current?.stop()
+            }}
             className="pointer-events-auto hover:text-white text-white/70 backdrop-blur transition-colors cursor-pointer"
           >
             <Bed />
           </button>
           <button
-            onClick={listening ? stopListening : startListening}
+            onClick={
+              listening
+                ? stopListening
+                : () => {
+                    continuousMode.current = true
+                    startListening()
+                  }
+            }
             className="pointer-events-auto hover:text-white text-white/70 backdrop-blur transition-colors cursor-pointer"
           >
             {listening ? <Square /> : <PlayIcon />}
