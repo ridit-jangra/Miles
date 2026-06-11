@@ -11,17 +11,16 @@ import tempfile, io, wave
 import numpy as np
 import asyncio
 import pyaudio
-import openwakeword
 from openwakeword.model import Model
 from sanitize import sanitize_for_tts
 
 app = FastAPI()
 
-# ── STT ───────────────────────────────────────────────────────────────────────
+
 stt_model = WhisperModel("small", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
-# ── TTS ───────────────────────────────────────────────────────────────────────
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
 
@@ -29,7 +28,7 @@ DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
 tts = PiperVoice.load(DANNY_MODEL)
 print("TTS: Piper danny loaded")
 
-# ── Wake word ─────────────────────────────────────────────────────────────────
+
 oww_model = Model(
     wakeword_models=[os.path.join(MODELS_DIR, "echo.onnx")], inference_framework="onnx"
 )
@@ -104,7 +103,7 @@ async def transcribe(file: UploadFile):
 async def speak(body: dict):
     text = sanitize_for_tts(body.get("text", ""))
     if not text:
-        # nothing speakable left after sanitizing
+
         buf = io.BytesIO()
         with wave.open(buf, "wb") as wav_file:
             wav_file.setnchannels(1)
