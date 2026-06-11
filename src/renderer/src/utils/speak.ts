@@ -11,6 +11,12 @@ export async function speak(
 
   try {
     const tts = await window.server.speak(text)
+    console.log(
+      '[speak] success:',
+      tts.success,
+      'audio byteLength:',
+      (tts.audio as ArrayBuffer)?.byteLength
+    )
     if (!tts.success || !tts.audio) {
       console.warn('[speak] no audio returned')
       onEnded?.()
