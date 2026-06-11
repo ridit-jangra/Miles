@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { CHAT, SPEAK, START_SERVER, TRANSCRIBE } from '../shared/channels'
+import { CHAT, CHAT_CHUNK, CHAT_STREAM, SPEAK, START_SERVER, TRANSCRIBE } from '../shared/channels'
 
 const server = {
   transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
@@ -13,7 +13,14 @@ const server = {
 }
 
 const ai = {
-  chat: (text: string) => ipcRenderer.invoke(CHAT, text)
+  chat: (text: string) => ipcRenderer.invoke(CHAT, text),
+  chatStream: (text: string): Promise<string> => ipcRenderer.invoke(CHAT_STREAM, text),
+
+  onChunk: (cb: (delta: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, delta: string): void => cb(delta)
+    ipcRenderer.on(CHAT_CHUNK, handler)
+    return () => ipcRenderer.removeListener(CHAT_CHUNK, handler)
+  }
 }
 
 try {

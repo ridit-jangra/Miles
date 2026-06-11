@@ -14,6 +14,8 @@ type server_api = {
 
 type ai_api = {
   chat: (text: string) => Promise<string>
+  chatStream: (text: string) => Promise<string>
+  onChunk: (cb: (delta: string) => void) => () => void
 }
 
 declare global {
