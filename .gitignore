@@ -13,3 +13,4 @@ __pycache__
 *.onnx
 *.bin
 !echo.onnx
+en_US-danny-low.onnx.json

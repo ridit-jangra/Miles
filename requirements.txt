@@ -2,7 +2,7 @@ faster-whisper
 fastapi
 uvicorn[default]
 python-multipart
-kokoro-onnx
+piper-tts
 soundfile
 numpy
 openwakeword
