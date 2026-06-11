@@ -13,11 +13,12 @@ import asyncio
 import pyaudio
 import openwakeword
 from openwakeword.model import Model
+from sanitize import sanitize_for_tts
 
 app = FastAPI()
 
 # ── STT ───────────────────────────────────────────────────────────────────────
-stt_model = WhisperModel("base", device="cpu", compute_type="int8")
+stt_model = WhisperModel("small", device="cpu", compute_type="int8")
 print("STT: Running on CPU")
 
 # ── TTS ───────────────────────────────────────────────────────────────────────
@@ -101,12 +102,20 @@ async def transcribe(file: UploadFile):
 
 @app.post("/speak")
 async def speak(body: dict):
-    text = body.get("text", "")
-    buf = io.BytesIO()
+    text = sanitize_for_tts(body.get("text", ""))
+    if not text:
+        # nothing speakable left after sanitizing
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(tts.config.sample_rate)
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="audio/wav")
 
+    buf = io.BytesIO()
     with wave.open(buf, "wb") as wav_file:
         tts.synthesize_wav(text, wav_file)
-
     buf.seek(0)
     return StreamingResponse(buf, media_type="audio/wav")
 
