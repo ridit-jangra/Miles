@@ -6,8 +6,8 @@ os.environ["HF_DATASETS_OFFLINE"] = "1"
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
-from kokoro_onnx import Kokoro
-import tempfile, io, soundfile as sf
+from piper.voice import PiperVoice
+import tempfile, io, wave
 import numpy as np
 import asyncio
 import pyaudio
@@ -24,11 +24,9 @@ print("STT: Running on CPU")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
 
-tts = Kokoro(
-    os.path.join(MODELS_DIR, "kokoro-v1.0.onnx"),
-    os.path.join(MODELS_DIR, "voices-v1.0.bin"),
-)
-print("TTS: Kokoro loaded")
+DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
+tts = PiperVoice.load(DANNY_MODEL)
+print("TTS: Piper danny loaded")
 
 # ── Wake word ─────────────────────────────────────────────────────────────────
 oww_model = Model(
@@ -104,12 +102,27 @@ async def transcribe(file: UploadFile):
 @app.post("/speak")
 async def speak(body: dict):
     text = body.get("text", "")
-    voice = body.get("voice", "am_michael")
-    samples, sample_rate = tts.create(text, voice=voice, speed=1.0, lang="en-us")
     buf = io.BytesIO()
-    sf.write(buf, samples, sample_rate, format="WAV")
+
+    with wave.open(buf, "wb") as wav_file:
+        tts.synthesize_wav(text, wav_file)
+
     buf.seek(0)
     return StreamingResponse(buf, media_type="audio/wav")
+
+
+@app.get("/voices")
+async def voices():
+    return {
+        "voices": [
+            {
+                "id": "en_US-danny-low",
+                "name": "Danny",
+                "language": "en-US",
+                "gender": "male",
+            }
+        ]
+    }
 
 
 @app.get("/health")
