@@ -15,7 +15,6 @@ export function shouldCompact(session: Session): boolean {
 
 export function compactSession(session: Session, summary: string): Session {
   const memoryMessages = session.memoryLoaded ? session.messages.slice(0, 2) : []
-  const recent = session.messages.slice(-20)
 
   return {
     ...session,
@@ -28,8 +27,7 @@ export function compactSession(session: Session, summary: string): Session {
       {
         role: 'assistant',
         content: 'Context loaded from compacted history. Continuing from where we left off.'
-      },
-      ...recent
+      }
     ],
     compacted: true,
     updatedAt: Date.now()

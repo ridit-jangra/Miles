@@ -8,10 +8,10 @@ export async function getModel(): Promise<{
   config: ProviderConfig
 }> {
   const config: ProviderConfig = {
-    model: 'openai/gpt-oss-20b',
-    name: 'gpt-oss-20b',
-    provider: 'groq',
-    apiKey: process.env.GROQ_API_KEY
+    model: 'openrouter/free',
+    name: 'openrouter-ig-idk-idc',
+    provider: 'openrouter',
+    apiKey: process.env.OPENROUTER_API_KEY
   }
   if (!config) {
     throw new Error('no provider configured — run /provider add to get started 🐱')

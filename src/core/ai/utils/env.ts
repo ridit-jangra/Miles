@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { cwd } from 'process'
 import { mkdirSync } from 'fs'
 
-export const ECHO_BASE_DIR = join(homedir(), 'echo')
+export const ECHO_BASE_DIR = join(homedir(), '.echo')
 export const MEMORY_DIR = join(ECHO_BASE_DIR, 'memory')
 
 mkdirSync(ECHO_BASE_DIR, { recursive: true })
