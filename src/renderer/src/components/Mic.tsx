@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { SERVER_PORT } from '../../../shared/constants'
+
 import { speak as speakAudio } from '../utils/speak'
 import PixelBlast from './PixlBlast'
+import { extractSpeakable } from '../utils/extractSpeakables'
 
 export function Mic(): React.JSX.Element {
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [audioLevel, setAudioLevel] = useState(0)
+
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<BlobPart[]>([])
   const isProcessing = useRef(false)
@@ -24,6 +27,7 @@ export function Mic(): React.JSX.Element {
         setAudioLevel(0)
         isPlaying.current = false
         onDone?.()
+
         // eslint-disable-next-line react-hooks/immutability
         playNext()
       }
@@ -42,12 +46,48 @@ export function Mic(): React.JSX.Element {
     window.server.start()
   }, [])
 
+  const handleStreamComplete = useCallback(
+    (fullText: string, remainder: string) => {
+      const leftover = remainder.trim()
+      if (leftover) speak(leftover)
+      console.log('[Echo] Stream complete. Full text:', fullText)
+    },
+    [speak]
+  )
+
+  const chatStreaming = useCallback(
+    async (userText: string): Promise<void> => {
+      let buffer = ''
+
+      const removeListener = window.ai.onChunk((delta: string) => {
+        console.log('[Echo] chunk:', JSON.stringify(delta)) // ← add this
+        buffer += delta
+
+        const [sentences, remaining] = extractSpeakable(buffer)
+        if (sentences) {
+          console.log('[Echo] Queuing TTS sentence:', sentences)
+          speak(sentences)
+        }
+        buffer = remaining
+      })
+
+      try {
+        const fullText: string = await window.ai.chatStream(userText)
+        removeListener()
+        handleStreamComplete(fullText, buffer)
+      } catch (e) {
+        removeListener()
+        console.error('[Echo] streaming failed:', e)
+      }
+    },
+    [speak, handleStreamComplete]
+  )
+
   const startListening = useCallback(async (): Promise<void> => {
     if (isProcessing.current || listening) return
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     setTranscript('')
-
     mediaRecorder.current = new MediaRecorder(stream, {
       mimeType: 'audio/webm;codecs=opus'
     })
@@ -57,7 +97,6 @@ export function Mic(): React.JSX.Element {
       if (e.data.size > 0) chunks.current.push(e.data)
     }
 
-    // ── Silence detection (NOT updating audioLevel anymore) ──────────────
     const audioCtx = new AudioContext()
     const source = audioCtx.createMediaStreamSource(stream)
     const analyser = audioCtx.createAnalyser()
@@ -70,7 +109,6 @@ export function Mic(): React.JSX.Element {
     const checkSilence = (): void => {
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
-
       if (volume > 10) {
         spokenOnce = true
         silenceStart = Date.now()
@@ -86,20 +124,16 @@ export function Mic(): React.JSX.Element {
 
     mediaRecorder.current.onstop = async () => {
       isProcessing.current = true
-
       try {
         const blob = new Blob(chunks.current, { type: 'audio/webm' })
         const arrayBuffer = await blob.arrayBuffer()
         const result = await window.server.transcribe(arrayBuffer)
         const text = result.success ? (result.text?.trim() ?? '') : ''
-
         console.log('[Echo] Transcript:', text)
         setTranscript(text)
 
         if (text) {
-          const response = await window.ai.chat(text)
-          console.log('[Echo] AI response:', response)
-          speak(response)
+          chatStreaming(text)
         }
       } catch (e) {
         console.error('[Echo] transcription failed:', e)
@@ -111,7 +145,7 @@ export function Mic(): React.JSX.Element {
 
     mediaRecorder.current.start()
     setListening(true)
-  }, [listening, speak])
+  }, [listening, chatStreaming])
 
   const stopListening = (): void => {
     mediaRecorder.current?.stop()
@@ -143,7 +177,7 @@ export function Mic(): React.JSX.Element {
   }, [startListening, speak])
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden ">
+    <div className="relative h-screen w-screen overflow-hidden">
       <div className="absolute inset-0 w-[40%] translate-x-[-50%] left-[50%]">
         <PixelBlast
           audioLevel={audioLevel}

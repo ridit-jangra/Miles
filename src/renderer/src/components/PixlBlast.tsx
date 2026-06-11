@@ -320,11 +320,10 @@ void main(){
     }
   }
 
-  // ── Audio ripples from random positions ────────────────────────────────
+  // Audio ripples from random positions
   if (uAudioLevel > 0.01) {
     for (int i = 0; i < 4; i++) {
       float fi = float(i);
-      // pseudo-random origin per ring, shifting slowly over time
       float rx = sin(fi * 1.7 + uTime * 0.3) * 0.3;
       float ry = cos(fi * 2.3 + uTime * 0.2) * 0.2;
       vec2 origin = vec2(rx, ry);
@@ -357,55 +356,55 @@ void main(){
     M *= fade;
   }
 
-  // ── Animated waveform mask — thin line that traces the wave ──────────────
-  // ── Pixelated waveform mask ───────────────────────────────────────────────
-vec2 centerNorm =
+  // Pixelated waveform mask — strictly 1 pixel tall
+  vec2 centerNorm =
     (gl_FragCoord.xy - uResolution * 0.5) /
     min(uResolution.x, uResolution.y);
 
-float nx = centerNorm.x;
-float ny = centerNorm.y;
+  float nx = centerNorm.x;
+  float ny = centerNorm.y;
 
-float halfWidth = 0.28;
-float xt = clamp(abs(nx) / halfWidth, 0.0, 1.0);
+  float halfWidth = 0.28;
+  float xt = clamp(abs(nx) / halfWidth, 0.0, 1.0);
 
-// taper ends
-float envelope =
+  // taper ends
+  float envelope =
     pow(max(cos(xt * 1.57079632679), 0.0), 0.7);
 
-// pixel size in normalized coordinates
-float pixelGrid =
+  // pixel size in normalized coordinates
+  float pixelGrid =
     (uPixelSize * 2.0) /
     min(uResolution.x, uResolution.y);
 
-// snap x to pixel columns
-float snappedX =
+  // snap x to pixel columns
+  float snappedX =
     floor(nx / pixelGrid) * pixelGrid;
 
-// cleaner waveform
-float wave =
+  // waveform shape
+  float wave =
     sin(snappedX * 20.0 + uTime * 1.2);
 
-// smaller amplitude
-float amp =
+  // amplitude
+  float amp =
     (0.003 + uAudioLevel * 0.03) * envelope;
 
-// snap wave vertically
-float waveY =
+  // snap wave to pixel grid
+  float waveY =
     floor((wave * amp) / pixelGrid) * pixelGrid;
 
-// snap fragment position too
-float snappedY =
+  // snap fragment Y to same pixel grid
+  float snappedY =
     floor(ny / pixelGrid) * pixelGrid;
 
-// chunky pixel line
-float line =
-    step(abs(snappedY - waveY), pixelGrid * 0.5);
+  // double-snap waveY to guarantee it lands on the same grid as snappedY,
+  // then use a near-zero tolerance so only the exact matching row passes
+  waveY = floor(waveY / pixelGrid) * pixelGrid;
+  float line = step(abs(snappedY - waveY), pixelGrid * 0.01);
 
-float maskX =
+  float maskX =
     step(abs(nx), halfWidth);
 
-M *= maskX * line;
+  M *= maskX * line;
 
   vec3 color = uColor;
   color = mix(color, color * 1.5, uAudioLevel * 0.4);
