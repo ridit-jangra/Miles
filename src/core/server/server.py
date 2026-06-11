@@ -39,7 +39,8 @@ print("Wake word: OpenWakeWord loaded")
 CHUNK = 1280
 RATE = 16000
 WAKE_COOLDOWN = 3.0
-WAKE_SCORE_THRESHOLD = 0.5
+WAKE_SCORE_THRESHOLD = float(os.environ.get("WAKE_SCORE_THRESHOLD", "0.15"))
+WAKE_DEBUG = os.environ.get("WAKE_DEBUG", "") not in ("", "0", "false")
 
 last_wake_time: float = 0.0
 wake_clients: list[WebSocket] = []
@@ -77,6 +78,8 @@ def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
         prediction = oww_model.predict(pcm)
 
         for model_name, score in prediction.items():
+            if WAKE_DEBUG and score > 0.05:
+                print(f"[wake debug] {model_name}: {score:.3f}")
             if score > WAKE_SCORE_THRESHOLD:
                 now = time.time()
 
