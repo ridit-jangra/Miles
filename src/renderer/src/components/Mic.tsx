@@ -330,7 +330,7 @@ export function Mic(): React.JSX.Element {
                 transition: 'opacity 0.5s ease-out'
               }}
             >
-              <div className="max-w-[80vw] break-words whitespace-pre-wrap text-center font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
+              <div className="max-w-[80vw] wrap-break-word whitespace-pre-wrap text-center font-mono text-2xl px-10 py-5 rounded-md bg-black/50 flex items-center gap-2">
                 {transcript}
               </div>
             </div>

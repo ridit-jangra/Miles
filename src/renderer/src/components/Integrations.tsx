@@ -62,7 +62,7 @@ function AppCard({
         </p>
       )}
       {status === 'error' && server?.error && (
-        <p className="text-sm text-red-300 break-words line-clamp-3">{server.error}</p>
+        <p className="text-sm text-red-300 wrap-break-word line-clamp-3">{server.error}</p>
       )}
 
       <span className="h-px w-full bg-white/15" />
@@ -165,7 +165,7 @@ function ConnectModal({ app, onClose, onSubmit }: ConnectModalProps): React.JSX.
           </a>
         )}
 
-        {error && <p className="text-sm text-red-300 break-words">{error}</p>}
+        {error && <p className="text-sm text-red-300 wrap-break-word">{error}</p>}
 
         <button
           className="bg-white/10 hover:bg-white/15 px-6 py-2 rounded-md cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
@@ -251,7 +251,7 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
         </span>
 
         {error ? (
-          <p className="text-sm text-red-300 break-words">{error}</p>
+          <p className="text-sm text-red-300 wrap-break-word">{error}</p>
         ) : phase === 'starting' ? (
           <span className="flex items-center gap-2 text-white/70 py-4">
             <Loader2 size={16} className="animate-spin" />
@@ -333,7 +333,7 @@ function SlackOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX
         </span>
 
         {error ? (
-          <p className="text-sm text-red-300 break-words">{error}</p>
+          <p className="text-sm text-red-300 wrap-break-word">{error}</p>
         ) : (
           <>
             <span className="flex items-center gap-2 text-white/70 py-2">
