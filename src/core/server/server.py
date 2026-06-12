@@ -8,6 +8,7 @@ import threading
 
 import numpy as np
 import pyaudio
+from scipy.signal import resample_poly
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
@@ -38,9 +39,14 @@ print("Wake word: OpenWakeWord loaded")
 
 CHUNK = 1280
 RATE = 16000
+
+IN_RATE = 48000
+IN_CHUNK = CHUNK * IN_RATE // RATE  # 3840 frames -> 1280 after resample
 WAKE_COOLDOWN = 3.0
 WAKE_SCORE_THRESHOLD = float(os.environ.get("WAKE_SCORE_THRESHOLD", "0.15"))
 WAKE_DEBUG = os.environ.get("WAKE_DEBUG", "") not in ("", "0", "false")
+
+WAKE_INPUT_DEVICE = os.environ.get("WAKE_INPUT_DEVICE", "pulse")
 
 last_wake_time: float = 0.0
 wake_clients: list[WebSocket] = []
@@ -62,19 +68,37 @@ def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
     global last_wake_time
 
     pa = pyaudio.PyAudio()
+
+    device_index = None
+    if WAKE_INPUT_DEVICE:
+        for i in range(pa.get_device_count()):
+            info = pa.get_device_info_by_index(i)
+            if (
+                info.get("maxInputChannels", 0) > 0
+                and info["name"] == WAKE_INPUT_DEVICE
+            ):
+                device_index = i
+                break
+        if device_index is None:
+            print(
+                f"Wake word: input device '{WAKE_INPUT_DEVICE}' not found, using system default"
+            )
+
     stream = pa.open(
-        rate=RATE,
+        rate=IN_RATE,
         channels=1,
         format=pyaudio.paInt16,
         input=True,
-        frames_per_buffer=CHUNK,
+        input_device_index=device_index,
+        frames_per_buffer=IN_CHUNK,
     )
-    print("Wake word: listening...")
+    print(f"Wake word: listening... (device={WAKE_INPUT_DEVICE or 'default'})")
 
     while True:
-        pcm = np.frombuffer(
-            stream.read(CHUNK, exception_on_overflow=False), dtype=np.int16
+        raw = np.frombuffer(
+            stream.read(IN_CHUNK, exception_on_overflow=False), dtype=np.int16
         )
+        pcm = resample_poly(raw.astype(np.float32), RATE, IN_RATE).astype(np.int16)
         prediction = oww_model.predict(pcm)
 
         for model_name, score in prediction.items():
