@@ -43,6 +43,10 @@ declare global {
     mcp: mcp_api
     oauth: oauth_api
     speak: { onSay: (cb: (text: string) => void) => () => void }
+    env: {
+      WEATHER_API_KEY: string
+      NEWS_API_KEY: string
+    }
   }
 }
 

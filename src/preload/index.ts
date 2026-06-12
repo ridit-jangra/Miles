@@ -74,6 +74,11 @@ const speak = {
   }
 }
 
+contextBridge.exposeInMainWorld('env', {
+  WEATHER_API_KEY: process.env.WEATHER_API_KEY ?? '',
+  NEWS_API_KEY: process.env.NEWS_API_KEY ?? ''
+})
+
 try {
   contextBridge.exposeInMainWorld('electron', electronAPI)
   contextBridge.exposeInMainWorld('server', server)
