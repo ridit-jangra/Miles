@@ -8,6 +8,7 @@ import PixelBlast from './PixlBlast'
 import { extractSpeakable } from '../utils/extractSpeakables'
 import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
+import { buildWakeGreeting } from '../lib/wakeGreeting'
 
 const MIN_SPEECH_MS = 400
 
@@ -283,11 +284,11 @@ export function Mic(): React.JSX.Element {
 
       ws.onopen = () => console.log('[Echo] Wake word connected')
 
-      ws.onmessage = (e) => {
+      ws.onmessage = async (e) => {
         if (e.data !== 'wake') return
         if (isProcessing.current || listeningRef.current) return
         continuousMode.current = true
-        speak('Yes sir', startListening)
+        speak(await buildWakeGreeting(), startListening)
       }
 
       ws.onerror = () => ws.close()
