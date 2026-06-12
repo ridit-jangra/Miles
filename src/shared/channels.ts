@@ -14,3 +14,4 @@ export const MCP_DISCONNECT = 'mcp:disconnect'
 
 export const GITHUB_OAUTH_START = 'oauth:github:start'
 export const GITHUB_OAUTH_POLL = 'oauth:github:poll'
+export const SLACK_OAUTH = 'oauth:slack'

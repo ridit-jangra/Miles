@@ -7,6 +7,7 @@ import {
   CHAT_STREAM,
   GITHUB_OAUTH_POLL,
   GITHUB_OAUTH_START,
+  SLACK_OAUTH,
   MCP_ADD,
   MCP_CONNECT,
   MCP_DISCONNECT,
@@ -18,7 +19,7 @@ import {
   TRANSCRIBE
 } from '../shared/channels'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
-import type { GithubDeviceStart } from '../shared/oauth'
+import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 
 const server = {
   transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
@@ -60,7 +61,9 @@ const oauth = {
   githubStart: (): Promise<GithubDeviceStart> => ipcRenderer.invoke(GITHUB_OAUTH_START),
 
   githubPoll: (deviceCode: string, interval: number): Promise<string> =>
-    ipcRenderer.invoke(GITHUB_OAUTH_POLL, deviceCode, interval)
+    ipcRenderer.invoke(GITHUB_OAUTH_POLL, deviceCode, interval),
+
+  slack: (): Promise<SlackOAuthResult> => ipcRenderer.invoke(SLACK_OAUTH)
 }
 
 const speak = {

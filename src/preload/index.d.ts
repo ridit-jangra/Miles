@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
-import type { GithubDeviceStart } from '../shared/oauth'
+import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 
 type server_api = {
   transcribe: (buffer: ArrayBuffer) => Promise<{
@@ -32,6 +32,7 @@ type mcp_api = {
 type oauth_api = {
   githubStart: () => Promise<GithubDeviceStart>
   githubPoll: (deviceCode: string, interval: number) => Promise<string>
+  slack: () => Promise<SlackOAuthResult>
 }
 
 declare global {
@@ -45,4 +46,4 @@ declare global {
   }
 }
 
-export type { MCPServerInput, MCPServerState, MCPServerUpdate, GithubDeviceStart }
+export type { MCPServerInput, MCPServerState, MCPServerUpdate, GithubDeviceStart, SlackOAuthResult }

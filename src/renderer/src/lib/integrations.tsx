@@ -2,36 +2,34 @@
 import React from 'react'
 import type { MCPServerInput } from '../../../shared/mcp'
 
-/** A secret/value the user must supply before an app can connect. */
 export type CredentialField = {
-  /** Where the value goes — used by the app's `build`. */
   key: string
   label: string
   placeholder?: string
-  /** Mask the input (tokens, keys). */
+
   secret?: boolean
 }
 
-/** Apps that authenticate via an OAuth provider instead of a pasted secret. */
-export type OAuthSpec = {
-  provider: 'github'
-  /** Field key the resulting access token is passed to `build` under. */
-  tokenKey: string
-}
+export type OAuthSpec =
+  | {
+      provider: 'github'
 
-/** A prebuilt integration backed by a known MCP server. */
+      tokenKey: string
+    }
+  | { provider: 'slack' }
+
 export type CatalogApp = {
   id: string
   name: string
   description: string
   icon: React.ReactNode
-  /** Docs / where to get the credential. */
+
   helpUrl?: string
-  /** Manual secrets the user pastes. Empty when the app uses OAuth. */
+
   fields: CredentialField[]
-  /** When set, Connect runs an OAuth flow instead of showing the field form. */
+
   oauth?: OAuthSpec
-  /** Turn the collected field values (or OAuth token) into an MCP server config. */
+
   build: (values: Record<string, string>) => MCPServerInput
 }
 
@@ -87,8 +85,13 @@ export const CATALOG: CatalogApp[] = [
     icon: <SlackIcon />,
     helpUrl: 'https://api.slack.com/apps',
     fields: [
-      { key: 'SLACK_BOT_TOKEN', label: 'Bot token', placeholder: 'xoxb-...', secret: true },
-      { key: 'SLACK_TEAM_ID', label: 'Team ID', placeholder: 'T01234567' }
+      {
+        key: 'SLACK_BOT_TOKEN',
+        label: 'Bot User OAuth Token',
+        placeholder: 'xoxb-...',
+        secret: true
+      },
+      { key: 'SLACK_TEAM_ID', label: 'Team / Workspace ID', placeholder: 'T01234567' }
     ],
     build: (v) => ({
       name: 'Slack',

@@ -207,7 +207,9 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
       })
       .then(async (token) => {
         if (cancelled || !token) return
-        await onSubmit({ [app.oauth!.tokenKey]: token })
+        const tokenKey =
+          app.oauth?.provider === 'github' ? app.oauth.tokenKey : 'GITHUB_PERSONAL_ACCESS_TOKEN'
+        await onSubmit({ [tokenKey]: token })
         if (!cancelled) {
           setPhase('done')
           onClose()
@@ -289,6 +291,66 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
   )
 }
 
+/** Slack OAuth v2: open the browser, wait for the HTTPS loopback callback. */
+function SlackOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX.Element {
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    let cancelled = false
+    window.oauth
+      .slack()
+      .then(async (result) => {
+        if (cancelled) return
+        await onSubmit({ SLACK_BOT_TOKEN: result.botToken, SLACK_TEAM_ID: result.teamId })
+        if (!cancelled) onClose()
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div
+      className="fixed inset-0 z-200 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-neutral-900 border border-white/10 rounded-md w-full max-w-md p-6 flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="flex items-center justify-between">
+          <span className="flex items-center gap-3">
+            {app.icon}
+            <h2 className="text-xl">Connect {app.name}</h2>
+          </span>
+          <button className="text-white/60 hover:text-white cursor-pointer" onClick={onClose}>
+            <X />
+          </button>
+        </span>
+
+        {error ? (
+          <p className="text-sm text-red-300 break-words">{error}</p>
+        ) : (
+          <>
+            <span className="flex items-center gap-2 text-white/70 py-2">
+              <Loader2 size={16} className="animate-spin" />
+              Continue in your browser to authorize Echo…
+            </span>
+            <p className="text-white/40 text-sm">
+              Your browser may warn that the localhost page isn&apos;t secure — that&apos;s the
+              local callback. Choose &quot;proceed&quot; to finish connecting.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function Integrations(): React.JSX.Element {
   const [servers, setServers] = React.useState<MCPServerState[]>([])
   const [busy, setBusy] = React.useState<Set<string>>(new Set())
@@ -304,7 +366,6 @@ export function Integrations(): React.JSX.Element {
     }
   }, [])
 
-  /** Match a catalog app to its configured server by name. */
   const serverFor = (app: CatalogApp): MCPServerState | undefined =>
     servers.find((s) => s.name === app.name)
 
@@ -397,6 +458,12 @@ export function Integrations(): React.JSX.Element {
       {connecting &&
         (connecting.oauth?.provider === 'github' ? (
           <GithubOAuthModal
+            app={connecting}
+            onClose={() => setConnecting(null)}
+            onSubmit={(values) => connect(connecting, values)}
+          />
+        ) : connecting.oauth?.provider === 'slack' ? (
+          <SlackOAuthModal
             app={connecting}
             onClose={() => setConnecting(null)}
             onSubmit={(values) => connect(connecting, values)}
