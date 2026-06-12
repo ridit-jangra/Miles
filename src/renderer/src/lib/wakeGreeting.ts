@@ -1,16 +1,4 @@
-const USE_LIVE_CONTEXT = false
-const WEATHER_API_KEY = window.env.WEATHER_API_KEY ?? ''
-const NEWS_API_KEY = window.env.NEWS_API_KEY ?? ''
-const WEATHER_LAT = 28.67
-const WEATHER_LON = 77.41
-
-const CONTEXT_SNIPPETS = [
-  "It's looking like a productive day ahead.",
-  'Markets opened slightly up this morning.',
-  'No major alerts in your area.',
-  'Your schedule looks clear for now.',
-  'A good time to get things done.'
-]
+import type { Briefing } from '../../../shared/briefing'
 
 type Period = 'morning' | 'afternoon' | 'evening' | 'night'
 
@@ -33,6 +21,13 @@ const GREETINGS: Record<Period, string[]> = {
   ]
 }
 
+const QUIET_SNIPPETS = [
+  'Nothing pressing — your inbox is quiet.',
+  'All clear on Slack and GitHub.',
+  'No reviews or mentions waiting. A good time to get things done.',
+  'Your queue is empty for now.'
+]
+
 function getPeriod(): Period {
   const h = new Date().getHours()
   if (h >= 5 && h < 12) return 'morning'
@@ -45,51 +40,93 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-async function fetchWeatherLine(): Promise<string | null> {
-  if (!WEATHER_API_KEY) return null
-  try {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${WEATHER_LAT}&lon=${WEATHER_LON}&appid=${WEATHER_API_KEY}&units=metric`
-    const res = await fetch(url)
-    const json = (await res.json()) as {
-      main: { temp: number }
-      weather: { description: string }[]
+function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+function shortRepo(repo: string): string {
+  return repo || 'a repo'
+}
+
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)]
+}
+
+function listJoin(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+function clausesFor(briefing: Briefing): string[] {
+  const clauses: string[] = []
+  const gh = briefing.github
+  const slack = briefing.slack
+
+  if (gh?.reviewRequests) {
+    const prs = gh.reviewPrs ?? []
+    if (prs.length === 1) {
+      const pr = prs[0]
+      const title = pr.title ? ` — “${pr.title}”` : ''
+      clauses.push(`a PR on ${shortRepo(pr.repo)} needs your review${title}`)
+    } else if (prs.length > 1) {
+      const repos = uniq(prs.map((p) => shortRepo(p.repo))).slice(0, 3)
+      clauses.push(`${plural(prs.length, 'PR')} need your review, on ${listJoin(repos)}`)
+    } else {
+      clauses.push(`${plural(gh.reviewRequests, 'PR')} waiting on your review`)
     }
-    const temp = Math.round(json.main.temp)
-    const desc = json.weather[0]?.description ?? 'clear'
-    return `It's ${temp}°C and ${desc} outside.`
-  } catch {
-    return null
   }
+  if (slack?.mentions) {
+    clauses.push(`${plural(slack.mentions, 'mention')} on Slack today`)
+  }
+  if (slack?.unreadDms) {
+    const who = slack.topDmFrom ? `, the latest from ${slack.topDmFrom}` : ''
+    clauses.push(`${plural(slack.unreadDms, 'unread DM')}${who}`)
+  }
+  if (gh?.newStars) {
+    const where = gh.starRepo ? ` on ${gh.starRepo.split('/').pop()}` : ''
+    clauses.push(`${plural(gh.newStars, 'new star')}${where}`)
+  }
+  if (gh?.openPrs && !gh.reviewRequests) {
+    const prs = gh.openPrList ?? []
+    if (prs.length === 1) {
+      const pr = prs[0]
+      const title = pr.title ? ` — “${pr.title}”` : ''
+      clauses.push(`your PR on ${shortRepo(pr.repo)} is still in flight${title}`)
+    } else if (prs.length > 1) {
+      const repos = uniq(prs.map((p) => shortRepo(p.repo))).slice(0, 3)
+      clauses.push(
+        `${plural(prs.length, 'open PR')} of yours still in flight, on ${listJoin(repos)}`
+      )
+    } else {
+      clauses.push(`${plural(gh.openPrs, 'open PR')} of yours still in flight`)
+    }
+  }
+
+  return clauses
 }
 
-async function fetchHeadline(): Promise<string | null> {
-  if (!NEWS_API_KEY) return null
-  try {
-    const url = `https://newsapi.org/v2/top-headlines?country=in&pageSize=1&apiKey=${NEWS_API_KEY}`
-    const res = await fetch(url)
-    const json = (await res.json()) as { articles: { title: string }[] }
-    const title = json.articles?.[0]?.title
-    return title ? `Top headline: ${title.split(' - ')[0]}.` : null
-  } catch {
-    return null
-  }
+function summarize(clauses: string[]): string {
+  const top = clauses.slice(0, 3)
+  if (top.length === 1) return capitalize(`${top[0]}.`)
+  const head = top.slice(0, -1).join(', ')
+  return capitalize(`${head} and ${top[top.length - 1]}.`)
 }
 
-async function fetchLiveContext(): Promise<string> {
-  const [weather, headline] = await Promise.all([fetchWeatherLine(), fetchHeadline()])
-
-  const parts: string[] = []
-  if (weather) parts.push(weather)
-  if (headline) parts.push(headline)
-  if (!parts.length) parts.push(pick(CONTEXT_SNIPPETS))
-
-  return parts.join(' ')
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 export async function buildWakeGreeting(): Promise<string> {
-  const period = getPeriod()
-  const salute = pick(GREETINGS[period])
-  const context = USE_LIVE_CONTEXT ? await fetchLiveContext() : pick(CONTEXT_SNIPPETS)
+  const salute = pick(GREETINGS[getPeriod()])
+
+  let context = pick(QUIET_SNIPPETS)
+  try {
+    const briefing = await window.briefing.get()
+    const clauses = clausesFor(briefing)
+    if (clauses.length) context = summarize(clauses)
+  } catch (err) {
+    void err
+  }
 
   return `${salute} ${context}`
 }

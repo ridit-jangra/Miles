@@ -5,15 +5,13 @@ const TOKEN_URL = 'https://github.com/login/oauth/access_token'
 
 const SCOPE = 'repo read:org read:user'
 
-const DEFAULT_CLIENT_ID = 'Ov23liayXkqJQGHBUXd0'
-
 const JSON_HEADERS = {
   Accept: 'application/json',
   'Content-Type': 'application/json'
 }
 
 function clientId(): string {
-  const id = process.env.GITHUB_CLIENT_ID || DEFAULT_CLIENT_ID
+  const id = process.env.GITHUB_CLIENT_ID
   if (!id || id === 'REPLACE_WITH_YOUR_CLIENT_ID') {
     throw new Error(
       'No GitHub client ID configured. Set DEFAULT_CLIENT_ID in src/core/oauth/github.ts (or the GITHUB_CLIENT_ID env var) to a GitHub OAuth app with Device Flow enabled.'
@@ -22,7 +20,6 @@ function clientId(): string {
   return id
 }
 
-/** Step 1: ask GitHub for a device + user code. */
 export async function startGithubDeviceFlow(): Promise<GithubDeviceStart> {
   const res = await fetch(DEVICE_CODE_URL, {
     method: 'POST',
@@ -45,10 +42,6 @@ export async function startGithubDeviceFlow(): Promise<GithubDeviceStart> {
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
-/**
- * Step 2: poll until the user authorizes (or the code expires). Resolves with
- * the access token. Honors GitHub's `interval` and `slow_down` backoff.
- */
 export async function pollGithubDeviceToken(deviceCode: string, interval: number): Promise<string> {
   let waitMs = Math.max(interval, 1) * 1000
   const deadline = Date.now() + 15 * 60 * 1000

@@ -10,7 +10,7 @@ import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
 import { buildWakeGreeting } from '../lib/wakeGreeting'
 
-const MIN_SPEECH_MS = 400
+const MIN_SPEECH_MS = 150
 
 const HALLUCINATION_PATTERNS = [
   /^(uh+|um+|hm+|hmm+|ah+|eh+)\.?$/i,

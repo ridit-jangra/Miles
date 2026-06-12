@@ -11,6 +11,7 @@ export type GithubDeviceStart = {
 
 export type SlackOAuthResult = {
   botToken: string
+  userToken: string
   teamId: string
 }
 

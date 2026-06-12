@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components -- catalog/data module, not a fast-refresh component file */
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react'
 import type { MCPServerInput } from '../../../shared/mcp'
 
@@ -33,10 +33,6 @@ export type CatalogApp = {
   build: (values: Record<string, string>) => MCPServerInput
 }
 
-// ---- brand / app icons -----------------------------------------------------
-
-// Logos render monochrome white on a translucent tile to match the app's
-// flat white-on-dark surfaces.
 const iconWrap = (children: React.ReactNode): React.ReactNode => (
   <span className="flex items-center justify-center w-11 h-11 rounded-md bg-white/10 text-white">
     {children}
@@ -100,7 +96,11 @@ export const CATALOG: CatalogApp[] = [
       transport: 'stdio',
       command: 'npx',
       args: ['-y', '@modelcontextprotocol/server-slack'],
-      env: { SLACK_BOT_TOKEN: v.SLACK_BOT_TOKEN, SLACK_TEAM_ID: v.SLACK_TEAM_ID }
+      env: {
+        SLACK_BOT_TOKEN: v.SLACK_BOT_TOKEN,
+        SLACK_USER_TOKEN: v.SLACK_USER_TOKEN,
+        SLACK_TEAM_ID: v.SLACK_TEAM_ID
+      }
     })
   },
   {

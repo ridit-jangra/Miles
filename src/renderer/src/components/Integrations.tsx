@@ -301,7 +301,11 @@ function SlackOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX
       .slack()
       .then(async (result) => {
         if (cancelled) return
-        await onSubmit({ SLACK_BOT_TOKEN: result.botToken, SLACK_TEAM_ID: result.teamId })
+        await onSubmit({
+          SLACK_BOT_TOKEN: result.botToken,
+          SLACK_USER_TOKEN: result.userToken,
+          SLACK_TEAM_ID: result.teamId
+        })
         if (!cancelled) onClose()
       })
       .catch((err) => {

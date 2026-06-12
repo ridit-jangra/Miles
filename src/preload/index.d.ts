@@ -1,6 +1,7 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
+import type { Briefing } from '../shared/briefing'
 
 type server_api = {
   transcribe: (buffer: ArrayBuffer) => Promise<{
@@ -35,6 +36,10 @@ type oauth_api = {
   slack: () => Promise<SlackOAuthResult>
 }
 
+type briefing_api = {
+  get: () => Promise<Briefing>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -42,6 +47,7 @@ declare global {
     ai: ai_api
     mcp: mcp_api
     oauth: oauth_api
+    briefing: briefing_api
     speak: { onSay: (cb: (text: string) => void) => () => void }
     env: {
       WEATHER_API_KEY: string
@@ -50,4 +56,11 @@ declare global {
   }
 }
 
-export type { MCPServerInput, MCPServerState, MCPServerUpdate, GithubDeviceStart, SlackOAuthResult }
+export type {
+  MCPServerInput,
+  MCPServerState,
+  MCPServerUpdate,
+  GithubDeviceStart,
+  SlackOAuthResult,
+  Briefing
+}

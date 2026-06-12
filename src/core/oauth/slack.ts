@@ -16,6 +16,8 @@ const SCOPES = [
   'groups:read'
 ].join(',')
 
+const USER_SCOPES = ['search:read', 'im:read', 'im:history', 'users:read'].join(',')
+
 function credentials(): { clientId: string; clientSecret: string } {
   const clientId = process.env.SLACK_CLIENT_ID
   const clientSecret = process.env.SLACK_CLIENT_SECRET
@@ -120,7 +122,13 @@ export async function runSlackOAuth(openUrl: (url: string) => void): Promise<Sla
         if (!data.ok) throw new Error(data.error || 'Slack token exchange failed')
 
         respond('Connected to Slack. You can close this window and return to Echo.')
-        finish(() => resolve({ botToken: data.access_token, teamId: data.team?.id ?? '' }))
+        finish(() =>
+          resolve({
+            botToken: data.access_token,
+            userToken: data.authed_user?.access_token ?? '',
+            teamId: data.team?.id ?? ''
+          })
+        )
       } catch (err) {
         respond('Token exchange failed. You can close this window.')
         finish(() => reject(err instanceof Error ? err : new Error(String(err))))
@@ -131,6 +139,7 @@ export async function runSlackOAuth(openUrl: (url: string) => void): Promise<Sla
       const authorizeUrl =
         `${AUTHORIZE_URL}?client_id=${encodeURIComponent(clientId)}` +
         `&scope=${encodeURIComponent(SCOPES)}` +
+        `&user_scope=${encodeURIComponent(USER_SCOPES)}` +
         `&redirect_uri=${encodeURIComponent(SLACK_REDIRECT_URI)}` +
         `&state=${state}`
       openUrl(authorizeUrl)

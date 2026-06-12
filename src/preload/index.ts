@@ -2,6 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import {
+  BRIEFING_GET,
   CHAT,
   CHAT_CHUNK,
   CHAT_STREAM,
@@ -20,6 +21,7 @@ import {
 } from '../shared/channels'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
+import type { Briefing } from '../shared/briefing'
 
 const server = {
   transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
@@ -66,6 +68,10 @@ const oauth = {
   slack: (): Promise<SlackOAuthResult> => ipcRenderer.invoke(SLACK_OAUTH)
 }
 
+const briefing = {
+  get: (): Promise<Briefing> => ipcRenderer.invoke(BRIEFING_GET)
+}
+
 const speak = {
   onSay: (cb: (text: string) => void) => {
     const handler = (_e: Electron.IpcRendererEvent, text: string) => cb(text)
@@ -85,6 +91,7 @@ try {
   contextBridge.exposeInMainWorld('ai', ai)
   contextBridge.exposeInMainWorld('mcp', mcp)
   contextBridge.exposeInMainWorld('oauth', oauth)
+  contextBridge.exposeInMainWorld('briefing', briefing)
   contextBridge.exposeInMainWorld('speak', speak)
 } catch (error) {
   console.error(error)
