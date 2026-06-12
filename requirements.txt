@@ -5,5 +5,6 @@ python-multipart
 piper-tts
 soundfile
 numpy
+scipy
 openwakeword
 pyaudio
