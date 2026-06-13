@@ -16,6 +16,7 @@ import { WebSearchTool } from '../tools/WebSearchTool/tool'
 import { DownloadTool } from '../tools/DownloadTool/tool'
 import { HumanEditTool } from '../tools/HumanEditTool/tool'
 import { SkillTool } from '../tools/SkillTool/tool'
+import { OpenAppTool } from '../tools/OpenAppTool/tool'
 
 export const agentTools = {
   FileReadTool,
@@ -35,7 +36,8 @@ export const agentTools = {
   DownloadTool,
   HumanEditTool,
   SkillTool,
-  SpeakTool
+  SpeakTool,
+  OpenAppTool
 }
 
 export const subagentTools = {
@@ -48,7 +50,8 @@ export const subagentTools = {
   ThinkTool,
   DownloadTool,
   SkillTool,
-  SpeakTool
+  SpeakTool,
+  OpenAppTool
 }
 
 export const chatTools = {

@@ -9,6 +9,7 @@ import { extractSpeakable } from '../utils/extractSpeakables'
 import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
 import { buildWakeGreeting } from '../lib/wakeGreeting'
+import { WAKE_FOCUS_WINDOW } from '../../../shared/channels'
 
 const MIN_SPEECH_MS = 150
 
@@ -35,7 +36,7 @@ export function Mic(): React.JSX.Element {
   const [spokenText, setSpokenText] = useState('')
   const [spokenProgress, setSpokenProgress] = useState(0)
 
-  const [, setThinking] = useState(false)
+  const [thinking, setThinking] = useState(false)
 
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<BlobPart[]>([])
@@ -287,8 +288,15 @@ export function Mic(): React.JSX.Element {
       ws.onmessage = async (e) => {
         if (e.data !== 'wake') return
         if (isProcessing.current || listeningRef.current) return
+
+        window.electron.ipcRenderer.send(WAKE_FOCUS_WINDOW)
+
         continuousMode.current = true
-        speak(await buildWakeGreeting(), startListening)
+
+        const { salute } = buildWakeGreeting()
+        speak(salute, startListening)
+        // speak(loading)
+        // speak(await brief, startListening)
       }
 
       ws.onerror = () => ws.close()
@@ -310,6 +318,7 @@ export function Mic(): React.JSX.Element {
       <div className="absolute inset-0 w-[40%] translate-x-[-50%] left-[50%]">
         <PixelBlast
           audioLevel={audioLevel}
+          thinking={thinking}
           pixelSize={5}
           patternDensity={1.2}
           edgeFade={0}

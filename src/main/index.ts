@@ -9,10 +9,12 @@ import './ipc/mcp'
 import './ipc/oauth'
 import './ipc/briefing'
 import { mcpManager } from '../core/mcp/manager'
+import { stopServer } from '../core/server/start-server'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { WAKE_FOCUS_WINDOW } from '../shared/channels'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -27,6 +29,23 @@ function createWindow(): void {
       autoplayPolicy: 'no-user-gesture-required'
     }
   })
+
+  function focusMainWindow(): void {
+    const win = mainWindow
+    if (!win || win.isDestroyed()) return
+
+    if (win.isMinimized()) win.restore()
+    if (!win.isVisible()) win.show()
+
+    win.setAlwaysOnTop(true)
+    win.show()
+    win.focus()
+    win.setAlwaysOnTop(false)
+
+    if (process.platform === 'darwin') app.focus({ steal: true })
+  }
+
+  ipcMain.on(WAKE_FOCUS_WINDOW, () => focusMainWindow())
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -69,5 +88,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  stopServer()
   mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))
 })

@@ -3,30 +3,30 @@ import type { Briefing } from '../../../shared/briefing'
 type Period = 'morning' | 'afternoon' | 'evening' | 'night'
 
 const GREETINGS: Record<Period, string[]> = {
-  morning: ['Good morning.', 'Morning — hope you slept well.', 'Rise and shine.'],
-  afternoon: [
-    'Good afternoon.',
-    'Hey, afternoon already.',
-    'Good to hear from you this afternoon.'
-  ],
-  evening: [
-    'Good evening.',
-    `Evening — how's the day been?`,
-    'Good evening, what can I do for you?'
-  ],
-  night: [
-    'Hey, burning the midnight oil?',
-    'Still up? What do you need?',
-    `Late night session — I'm here.`
-  ]
+  morning: ['Good morning.', 'Morning. Ready when you are.', "Morning — let's get started."],
+  afternoon: ['Good afternoon.', 'Afternoon. Back at it.', 'Afternoon — what do you need?'],
+  evening: ['Good evening.', 'Evening. Still going strong.', 'Evening — how can I help?'],
+  night: ['Working late, I see.', "Still up? I'm here.", 'Late one tonight. What do you need?']
 }
 
 const QUIET_SNIPPETS = [
-  'Nothing pressing — your inbox is quiet.',
+  'Nothing pressing right now.',
   'All clear on Slack and GitHub.',
-  'No reviews or mentions waiting. A good time to get things done.',
-  'Your queue is empty for now.'
+  'Your queue is empty. Good time to focus.',
+  'No reviews or mentions waiting.'
 ]
+
+const LOADING_SNIPPETS = [
+  'One moment, checking things.',
+  'Let me pull that up.',
+  'Just a sec, looking now.',
+  'Give me a moment.',
+  'Checking your channels.'
+]
+
+const AWAKE_SNIPPETS = ["I'm here. What do you need?", 'Ready when you are.', 'I am awake sir.']
+
+const GREETED_KEY = 'wake:lastGreetedDate'
 
 function getPeriod(): Period {
   const h = new Date().getHours()
@@ -55,6 +55,27 @@ function uniq<T>(arr: T[]): T[] {
 function listJoin(items: string[]): string {
   if (items.length <= 1) return items[0] ?? ''
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+function todayKey(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+function alreadyGreetedToday(): boolean {
+  try {
+    return localStorage.getItem(GREETED_KEY) === todayKey()
+  } catch {
+    return false
+  }
+}
+
+function markGreetedToday(): void {
+  try {
+    localStorage.setItem(GREETED_KEY, todayKey())
+  } catch {
+    // ignore (private mode / storage disabled)
+  }
 }
 
 function clausesFor(briefing: Briefing): string[] {
@@ -116,17 +137,29 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-export async function buildWakeGreeting(): Promise<string> {
-  const salute = pick(GREETINGS[getPeriod()])
+export type WakeGreeting = {
+  salute: string
+  loading: string
+  brief: Promise<string>
+}
 
-  let context = pick(QUIET_SNIPPETS)
-  try {
-    const briefing = await window.briefing.get()
-    const clauses = clausesFor(briefing)
-    if (clauses.length) context = summarize(clauses)
-  } catch (err) {
-    void err
-  }
+export function buildWakeGreeting(): WakeGreeting {
+  const greetedToday = alreadyGreetedToday()
+  const salute = greetedToday ? pick(AWAKE_SNIPPETS) : pick(GREETINGS[getPeriod()])
+  if (!greetedToday) markGreetedToday()
 
-  return `${salute} ${context}`
+  const loading = pick(LOADING_SNIPPETS)
+
+  const brief = (async () => {
+    try {
+      const briefing = await window.briefing.get()
+      const clauses = clausesFor(briefing)
+      if (clauses.length) return summarize(clauses)
+    } catch (err) {
+      void err
+    }
+    return pick(QUIET_SNIPPETS)
+  })()
+
+  return { salute, loading, brief }
 }

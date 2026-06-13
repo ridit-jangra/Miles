@@ -38,7 +38,8 @@ export function startServer(echoDir: string): ChildProcessWithoutNullStreams {
         HF_DATASETS_OFFLINE: '1',
         WAKE_WORD_MODEL: wakeWordModel
       },
-      stdio: 'pipe'
+      stdio: 'pipe',
+      detached: !isWindows
     }
   )
 
@@ -50,4 +51,21 @@ export function startServer(echoDir: string): ChildProcessWithoutNullStreams {
   })
 
   return serverProcess
+}
+
+export function stopServer(): void {
+  const proc = serverProcess
+  if (!proc || proc.pid === undefined) return
+  serverProcess = null
+
+  try {
+    if (isWindows) {
+      spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'])
+    } else {
+      process.kill(-proc.pid, 'SIGTERM')
+    }
+  } catch (err) {
+    console.error('[Echo] Failed to stop server:', err)
+    proc.kill('SIGKILL')
+  }
 }

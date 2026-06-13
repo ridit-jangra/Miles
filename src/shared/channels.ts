@@ -17,3 +17,5 @@ export const BRIEFING_GET = 'briefing:get'
 export const GITHUB_OAUTH_START = 'oauth:github:start'
 export const GITHUB_OAUTH_POLL = 'oauth:github:poll'
 export const SLACK_OAUTH = 'oauth:slack'
+
+export const WAKE_FOCUS_WINDOW = 'wake:focus-window'

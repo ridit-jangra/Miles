@@ -11,7 +11,7 @@ mkdirSync(MEMORY_DIR, { recursive: true })
 
 export const PROJECT_MEMORY_FILE = join(cwd(), 'MILO.md')
 export const SESSIONS_DIR = join(ECHO_BASE_DIR, 'sessions')
-export const HUMAN_FILE = join(ECHO_BASE_DIR, 'user.json')
+export const USER_FILE = join(ECHO_BASE_DIR, 'user.md')
 export const EXECUTION_STATE_FILE = join(ECHO_BASE_DIR, 'execution-state.json')
 export const PORT_FILE = join(ECHO_BASE_DIR, 'milo.port')
 export const CONFIG_FILE = join(ECHO_BASE_DIR, 'config.json')

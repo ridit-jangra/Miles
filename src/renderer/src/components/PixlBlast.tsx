@@ -53,6 +53,7 @@ type PixelBlastProps = {
   edgeFade?: number
   noiseAmount?: number
   audioLevel?: number
+  thinking?: boolean
 }
 
 const createTouchTexture = (): TouchTexture => {
@@ -200,6 +201,7 @@ uniform float uRippleThickness;
 uniform float uRippleIntensity;
 uniform float uEdgeFade;
 uniform float uAudioLevel;
+uniform float uThinking;
 
 uniform int   uShapeType;
 const int SHAPE_SQUARE   = 0;
@@ -384,9 +386,14 @@ void main(){
   float wave =
     sin(snappedX * 20.0 + uTime * 1.2);
 
+  // thinking: self-driven motion on the same waveform line — a slow breathing
+  // swell plus a secondary traveling ripple, so it animates with no audio input
+  float breathe = 0.5 + 0.5 * sin(uTime * 2.2);
+  wave += uThinking * 0.7 * sin(snappedX * 9.0 - uTime * 2.6);
+
   // amplitude
   float amp =
-    (0.003 + uAudioLevel * 0.03) * envelope;
+    (0.003 + uAudioLevel * 0.03 + uThinking * (0.010 + 0.018 * breathe)) * envelope;
 
   // snap wave to pixel grid
   float waveY =
@@ -444,16 +451,23 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   transparent = true,
   edgeFade = 0.5,
   noiseAmount = 0,
-  audioLevel = 0
+  audioLevel = 0,
+  thinking = false
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const visibilityRef = useRef({ visible: true })
   const speedRef = useRef(speed)
   const audioLevelRef = useRef(audioLevel)
+  const thinkingRef = useRef(thinking)
+  const thinkingValRef = useRef(0)
 
   useEffect(() => {
     audioLevelRef.current = audioLevel
   }, [audioLevel])
+
+  useEffect(() => {
+    thinkingRef.current = thinking
+  }, [thinking])
 
   const threeRef = useRef<{
     renderer: THREE.WebGLRenderer
@@ -479,6 +493,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       uRippleIntensity: { value: number }
       uEdgeFade: { value: number }
       uAudioLevel: { value: number }
+      uThinking: { value: number }
     }
     resizeObserver?: ResizeObserver
     raf?: number
@@ -551,7 +566,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         uRippleThickness: { value: rippleThickness },
         uRippleIntensity: { value: rippleIntensityScale },
         uEdgeFade: { value: edgeFade },
-        uAudioLevel: { value: 0 }
+        uAudioLevel: { value: 0 },
+        uThinking: { value: 0 }
       }
       const scene = new THREE.Scene()
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
@@ -662,6 +678,9 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         }
         uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current
         uniforms.uAudioLevel.value = audioLevelRef.current
+        const targetThinking = thinkingRef.current ? 1 : 0
+        thinkingValRef.current += (targetThinking - thinkingValRef.current) * 0.08
+        uniforms.uThinking.value = thinkingValRef.current
         if (liquidEffect) {
           const liqEffect = liquidEffect as Effect & { uniforms: Map<string, THREE.Uniform> }
           const timeUniform = liqEffect.uniforms.get('uTime')

@@ -19,6 +19,32 @@ type LiveServer = {
   error?: string
 }
 
+const CONNECT_TIMEOUT_MS = 60_000
+
+function mergedEnv(extra?: Record<string, string>): Record<string, string> {
+  const base: Record<string, string> = {}
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) base[key] = value
+  }
+  return { ...base, ...(extra ?? {}) }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (err) => {
+        clearTimeout(timer)
+        reject(err)
+      }
+    )
+  })
+}
+
 /**
  * Owns every configured MCP server, its persisted config, and (when connected)
  * its live client and exposed tools. Runs in the Electron main process — stdio
@@ -73,20 +99,29 @@ class MCPManager {
     server.status = 'connecting'
     server.error = undefined
 
+    let client: MCPClient | undefined
     try {
       const { config } = server
-      const client = await createMCPClient({
-        transport:
-          config.transport === 'stdio'
-            ? new Experimental_StdioMCPTransport({
-                command: config.command,
-                args: config.args,
-                env: config.env
-              })
-            : { type: config.transport, url: config.url, headers: config.headers }
-      })
+      client = await withTimeout(
+        createMCPClient({
+          transport:
+            config.transport === 'stdio'
+              ? new Experimental_StdioMCPTransport({
+                  command: config.command,
+                  args: config.args,
+                  env: mergedEnv(config.env)
+                })
+              : { type: config.transport, url: config.url, headers: config.headers }
+        }),
+        CONNECT_TIMEOUT_MS,
+        `Timed out after ${CONNECT_TIMEOUT_MS / 1000}s starting "${config.name}". The command may be slow to download (npx) or failing to launch.`
+      )
 
-      const rawTools = await client.tools()
+      const rawTools = await withTimeout(
+        client.tools(),
+        CONNECT_TIMEOUT_MS,
+        `Timed out loading tools from "${config.name}".`
+      )
       const prefix = this.prefixFor(config)
       const tools: ToolSet = {}
       for (const [name, tool] of Object.entries(rawTools)) {
@@ -98,6 +133,7 @@ class MCPManager {
       server.toolNames = Object.keys(rawTools)
       server.status = 'connected'
     } catch (err) {
+      if (client) await client.close().catch(() => undefined)
       server.status = 'error'
       server.error = err instanceof Error ? err.message : String(err)
       server.tools = {}

@@ -370,6 +370,21 @@ export function Integrations(): React.JSX.Element {
     }
   }, [])
 
+  const hasConnecting = servers.some((s) => s.status === 'connecting')
+  React.useEffect(() => {
+    if (!hasConnecting) return
+    let active = true
+    const timer = setInterval(() => {
+      window.mcp.list().then((list) => {
+        if (active) setServers(list)
+      })
+    }, 1500)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [hasConnecting])
+
   const serverFor = (app: CatalogApp): MCPServerState | undefined =>
     servers.find((s) => s.name === app.name)
 
