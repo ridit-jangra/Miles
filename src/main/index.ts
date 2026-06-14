@@ -9,7 +9,6 @@ import './ipc/mcp'
 import './ipc/oauth'
 import './ipc/briefing'
 import { mcpManager } from '../core/mcp/manager'
-import { stopServer } from '../core/server/start-server'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -88,6 +87,5 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  stopServer()
   mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))
 })
