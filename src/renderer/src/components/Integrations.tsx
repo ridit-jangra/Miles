@@ -448,7 +448,7 @@ export function Integrations(): React.JSX.Element {
   }
 
   return (
-    <div className="flex flex-col gap-5 w-full h-screen pt-20 px-5 pl-25 overflow-y-auto">
+    <div className="flex flex-col gap-5 w-full min-h-screen pt-20 px-5 pl-25">
       <div>
         <h1 className="text-2xl">Integrations</h1>
         <p className="text-white/60">Connect your apps to give Echo more to work with.</p>

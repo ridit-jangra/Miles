@@ -28,7 +28,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
 DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
 
-tts = PiperVoice.load(DANNY_MODEL)
+DEFAULT_VOICE = "en_US-danny-low"
+VOICES = {DEFAULT_VOICE: PiperVoice.load(DANNY_MODEL)}
+tts = VOICES[DEFAULT_VOICE]
 print("TTS: Piper danny loaded")
 
 oww_model = Model(
@@ -151,15 +153,16 @@ async def transcribe(file: UploadFile):
 @app.post("/speak")
 async def speak(body: dict):
     text = sanitize_for_tts(body.get("text", ""))
+    voice = VOICES.get(body.get("voice", DEFAULT_VOICE), tts)
 
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wav_file:
         if not text:
             wav_file.setnchannels(1)
             wav_file.setsampwidth(2)
-            wav_file.setframerate(tts.config.sample_rate)
+            wav_file.setframerate(voice.config.sample_rate)
         else:
-            tts.synthesize_wav(text, wav_file)
+            voice.synthesize_wav(text, wav_file)
 
     buf.seek(0)
     return StreamingResponse(buf, media_type="audio/wav")

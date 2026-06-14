@@ -53,20 +53,6 @@ const GitHubIcon = (): React.ReactNode =>
     </svg>
   )
 
-const NotionIcon = (): React.ReactNode =>
-  iconWrap(
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-      <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.215-1.632z" />
-    </svg>
-  )
-
-const LinearIcon = (): React.ReactNode =>
-  iconWrap(
-    <svg viewBox="0 0 100 100" width="22" height="22" fill="currentColor">
-      <path d="M1.225 61.523c-.222-.949.908-1.55 1.597-.861l36.516 36.517c.689.689.088 1.819-.861 1.597C20.012 94.36 5.639 79.988 1.225 61.523zM.001 46.726a.99.99 0 0 0 .29.749l52.234 52.234a.99.99 0 0 0 .749.29 50.1 50.1 0 0 0 6.193-.766c.789-.143 1.067-1.117.499-1.685L2.453 40.034c-.568-.568-1.542-.29-1.685.499A50.1 50.1 0 0 0 .001 46.726zm3.585-17.439a.99.99 0 0 0 .203 1.114l65.81 65.81a.99.99 0 0 0 1.114.203 49.8 49.8 0 0 0 4.969-2.65c.631-.382.724-1.26.198-1.785L8.021 24.119c-.526-.526-1.404-.433-1.785.198a49.8 49.8 0 0 0-2.65 4.97zm8.564-13.243c-.376-.376-.394-.974-.037-1.37C21.764 5.522 35.224 0 49.999 0 77.613 0 100 22.386 100 50c0 14.775-5.522 28.235-14.604 38.469-.396.357-.994.339-1.37-.037L12.15 16.044z" />
-    </svg>
-  )
-
 const ChromeIcon = (): React.ReactNode =>
   iconWrap(
     <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
@@ -120,52 +106,6 @@ export const CATALOG: CatalogApp[] = [
     })
   },
   {
-    id: 'notion',
-    name: 'Notion',
-    description: 'Search pages and databases and create new content.',
-    icon: <NotionIcon />,
-    helpUrl: 'https://www.notion.so/my-integrations',
-    fields: [
-      {
-        key: 'NOTION_TOKEN',
-        label: 'Internal integration token',
-        placeholder: 'ntn_...',
-        secret: true
-      }
-    ],
-    build: (v) => ({
-      name: 'Notion',
-      description: 'Notion workspace',
-      enabled: true,
-      transport: 'stdio',
-      command: 'npx',
-      args: ['-y', '@notionhq/notion-mcp-server'],
-      env: {
-        OPENAPI_MCP_HEADERS: JSON.stringify({
-          Authorization: `Bearer ${v.NOTION_TOKEN}`,
-          'Notion-Version': '2022-06-28'
-        })
-      }
-    })
-  },
-  {
-    id: 'linear',
-    name: 'Linear',
-    description: 'Track issues, projects, and cycles from your team.',
-    icon: <LinearIcon />,
-    helpUrl: 'https://linear.app/settings/api',
-    fields: [{ key: 'LINEAR_API_KEY', label: 'API key', placeholder: 'lin_api_...', secret: true }],
-    build: (v) => ({
-      name: 'Linear',
-      description: 'Linear workspace',
-      enabled: true,
-      transport: 'stdio',
-      command: 'npx',
-      args: ['-y', 'mcp-remote', 'https://mcp.linear.app/sse'],
-      env: { LINEAR_API_KEY: v.LINEAR_API_KEY }
-    })
-  },
-  {
     id: 'chrome-devtools',
     name: 'Chrome DevTools',
     description: 'Let Echo drive a browser — navigate, click, type, scrape, and inspect pages.',
@@ -173,7 +113,7 @@ export const CATALOG: CatalogApp[] = [
     helpUrl: 'https://github.com/ChromeDevTools/chrome-devtools-mcp',
     fields: [],
     build: () => ({
-      name: 'chrome-devtools',
+      name: 'Chrome DevTools',
       description: 'Drive Chrome over the DevTools Protocol',
       enabled: true,
       transport: 'stdio',

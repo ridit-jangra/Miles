@@ -37,6 +37,7 @@ export function Mic(): React.JSX.Element {
   const [spokenProgress, setSpokenProgress] = useState(0)
 
   const [thinking, setThinking] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
 
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<BlobPart[]>([])
@@ -49,6 +50,8 @@ export function Mic(): React.JSX.Element {
 
   const queue = useRef<{ text: string; onDone?: () => void }[]>([])
   const isPlaying = useRef(false)
+
+  const speakAbort = useRef<AbortController | null>(null)
 
   useEffect(() => {
     listeningRef.current = listening
@@ -74,9 +77,20 @@ export function Mic(): React.JSX.Element {
 
   const startListeningRef = useRef<(() => Promise<void>) | null>(null)
 
+  const stopSpeaking = useCallback((): void => {
+    speakAbort.current?.abort()
+    speakAbort.current = null
+    queue.current = []
+    isPlaying.current = false
+    setSpeaking(false)
+    setAudioLevel(0)
+    setSpokenText('')
+  }, [])
+
   const playNext = useCallback((): void => {
     if (isPlaying.current || queue.current.length === 0) return
     isPlaying.current = true
+    setSpeaking(true)
 
     setThinking(false)
     const { text, onDone } = queue.current.shift()!
@@ -84,7 +98,11 @@ export function Mic(): React.JSX.Element {
     setSpokenText(text)
     setSpokenProgress(0)
 
+    const controller = new AbortController()
+    speakAbort.current = controller
+
     speakAudio(text, {
+      signal: controller.signal,
       onLevel: (level) => setAudioLevel(level),
       onProgress: (p) => setSpokenProgress(p),
       onEnded: () => {
@@ -92,6 +110,7 @@ export function Mic(): React.JSX.Element {
         isPlaying.current = false
         onDone?.()
         if (queue.current.length === 0) {
+          setSpeaking(false)
           setTimeout(() => setSpokenText(''), 800)
           fadeOutTranscript()
 
@@ -130,6 +149,7 @@ export function Mic(): React.JSX.Element {
   useEffect(() => {
     return () => {
       if (transcriptFadeTimer.current) clearTimeout(transcriptFadeTimer.current)
+      speakAbort.current?.abort()
     }
   }, [])
 
@@ -327,13 +347,13 @@ export function Mic(): React.JSX.Element {
       </div>
       <div className="relative inset-0 z-10 flex h-full flex-col items-center pb-10 gap-4 pointer-events-none">
         {spokenText ? (
-          <div className="absolute bottom-[30%] translate-y-[50%] pointer-events-none">
+          <div className="absolute bottom-[20%] translate-y-[50%] pointer-events-none">
             <SpokenCaption text={spokenText} progress={spokenProgress} active={isPlaying.current} />
           </div>
         ) : (
           transcript && (
             <div
-              className="absolute bottom-[30%] translate-y-[50%] pointer-events-none"
+              className="absolute bottom-[20%] translate-y-[50%] pointer-events-none"
               style={{
                 opacity: transcriptVisible ? 1 : 0,
                 transition: 'opacity 0.5s ease-out'
@@ -367,16 +387,18 @@ export function Mic(): React.JSX.Element {
           </button>
           <button
             onClick={
-              listening
-                ? stopListening
-                : () => {
-                    continuousMode.current = true
-                    startListening()
-                  }
+              speaking
+                ? stopSpeaking
+                : listening
+                  ? stopListening
+                  : () => {
+                      continuousMode.current = true
+                      startListening()
+                    }
             }
             className="pointer-events-auto hover:text-white text-white/70 backdrop-blur transition-colors cursor-pointer"
           >
-            {listening ? <Square /> : <PlayIcon />}
+            {speaking || listening ? <Square /> : <PlayIcon />}
           </button>
         </div>
       </div>

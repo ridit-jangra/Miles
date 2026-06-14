@@ -2,15 +2,18 @@ export interface SpeakOptions {
   onEnded?: () => void
   onLevel?: (level: number) => void
   onProgress?: (progress: number) => void
+  signal?: AbortSignal
 }
 
 export async function speak(
   text: string,
   opts: SpeakOptions = {}
 ): Promise<HTMLAudioElement | void> {
-  const { onEnded, onLevel, onProgress } = opts
+  const { onEnded, onLevel, onProgress, signal } = opts
   try {
+    if (signal?.aborted) return
     const tts = await window.server.speak(text)
+    if (signal?.aborted) return
     if (!tts.success || !tts.audio) {
       console.warn('[speak] no audio returned')
       onEnded?.()
@@ -53,6 +56,20 @@ export async function speak(
       onProgress?.(1)
       audioCtx?.close()
       URL.revokeObjectURL(url)
+      signal?.removeEventListener('abort', onAbort)
+    }
+
+    const onAbort = (): void => {
+      audio.pause()
+      cleanup()
+    }
+
+    if (signal) {
+      if (signal.aborted) {
+        onAbort()
+        return
+      }
+      signal.addEventListener('abort', onAbort)
     }
 
     audio.onended = () => {

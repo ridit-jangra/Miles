@@ -283,138 +283,54 @@ float maskDiamond(vec2 p, float cov){
   return step(abs(p.x - 0.49) + abs(p.y - 0.49), r);
 }
 
+float roundedBox(vec2 p, vec2 b, float r){
+  vec2 q = abs(p) - b + r;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
 void main(){
-  float pixelSize = uPixelSize;
-  vec2 fragCoord = gl_FragCoord.xy - uResolution * .5;
-  float aspectRatio = uResolution.x / uResolution.y;
+  vec2 fragCoord = gl_FragCoord.xy - uResolution * 0.5;
+  float minRes = min(uResolution.x, uResolution.y);
 
-  vec2 pixelId = floor(fragCoord / pixelSize);
-  vec2 pixelUV = fract(fragCoord / pixelSize);
+  float cell = uPixelSize * 3.8;
 
-  float cellPixelSize = 8.0 * pixelSize;
-  vec2 cellId = floor(fragCoord / cellPixelSize);
-  vec2 cellCoord = cellId * cellPixelSize;
-  vec2 uv = cellCoord / uResolution * vec2(aspectRatio, 1.0);
+  vec2 cellId = floor(fragCoord / cell + 0.5);
+  vec2 cellUV = fract(fragCoord / cell + 0.5);
 
-  float base = fbm2(uv, uTime * 0.05);
-  base = base * 0.5 - 0.35;
+  float bd = roundedBox(cellUV - 0.5, vec2(0.2), 0.07);
+  float aa = fwidth(bd);
+  float dotShape = 1.0 - smoothstep(0.0, aa + 0.01, bd);
 
-  float feed = base + (uDensity - 0.5) * 0.3;
+  float regionHalf = minRes * 0.40;
+  float regionSDF = roundedBox(fragCoord, vec2(regionHalf), regionHalf * 0.28);
+  float region = 1.0 - smoothstep(-cell, 0.0, regionSDF);
 
-  float rippleSpeed = uRippleSpeed;
-  float thickness   = uRippleThickness;
-  const float dampT = 1.0;
-  const float dampR = 10.0;
+  float maxCols = floor(regionHalf / cell);
 
-  // Click ripples
-  if (uEnableRipples == 1) {
-    for (int i = 0; i < MAX_CLICKS; ++i){
-      vec2 pos = uClickPos[i];
-      if (pos.x < 0.0) continue;
-      float cellPixelSize2 = 8.0 * pixelSize;
-      vec2 cuv = (((pos - uResolution * .5 - cellPixelSize2 * .5) / (uResolution))) * vec2(aspectRatio, 1.0);
-      float t = max(uTime - uClickTimes[i], 0.0);
-      float r = distance(uv, cuv);
-      float waveR = rippleSpeed * t;
-      float ring  = exp(-pow((r - waveR) / thickness, 2.0));
-      float atten = exp(-dampT * t) * exp(-dampR * r);
-      feed = max(feed, ring * atten * uRippleIntensity);
-    }
-  }
-
-  // Audio ripples from random positions
-  if (uAudioLevel > 0.01) {
-    for (int i = 0; i < 4; i++) {
-      float fi = float(i);
-      float rx = sin(fi * 1.7 + uTime * 0.3) * 0.3;
-      float ry = cos(fi * 2.3 + uTime * 0.2) * 0.2;
-      vec2 origin = vec2(rx, ry);
-
-      float r = distance(uv, origin);
-      float phase = mod(uTime + fi * 0.5, 2.0);
-      float waveR = phase * 0.4;
-      float ring = exp(-pow((r - waveR) / 0.06, 2.0));
-      float atten = exp(-r * 2.5) * (1.0 - phase / 2.0);
-      feed = max(feed, ring * atten * uAudioLevel * 1.2);
-    }
-  }
-
-  float bayer = Bayer8(fragCoord / uPixelSize) - 0.5;
-  float bw = step(0.5, feed + bayer);
-
-  float h = fract(sin(dot(floor(fragCoord / uPixelSize), vec2(127.1, 311.7))) * 43758.5453);
-  float jitterScale = 1.0 + (h - 0.5) * uPixelJitter;
-  float coverage = bw * jitterScale;
-  float M;
-  if      (uShapeType == SHAPE_CIRCLE)   M = maskCircle(pixelUV, coverage);
-  else if (uShapeType == SHAPE_TRIANGLE) M = maskTriangle(pixelUV, pixelId, coverage);
-  else if (uShapeType == SHAPE_DIAMOND)  M = maskDiamond(pixelUV, coverage);
-  else                                   M = coverage;
-
-  if (uEdgeFade > 0.0) {
-    vec2 norm = gl_FragCoord.xy / uResolution;
-    float edge = min(min(norm.x, norm.y), min(1.0 - norm.x, 1.0 - norm.y));
-    float fade = smoothstep(0.0, uEdgeFade, edge);
-    M *= fade;
-  }
-
-  // Pixelated waveform mask — strictly 1 pixel tall
-  vec2 centerNorm =
-    (gl_FragCoord.xy - uResolution * 0.5) /
-    min(uResolution.x, uResolution.y);
-
-  float nx = centerNorm.x;
-  float ny = centerNorm.y;
-
-  float halfWidth = 0.28;
-  float xt = clamp(abs(nx) / halfWidth, 0.0, 1.0);
-
-  // taper ends
-  float envelope =
-    pow(max(cos(xt * 1.57079632679), 0.0), 0.7);
-
-  // pixel size in normalized coordinates
-  float pixelGrid =
-    (uPixelSize * 2.0) /
-    min(uResolution.x, uResolution.y);
-
-  // snap x to pixel columns
-  float snappedX =
-    floor(nx / pixelGrid) * pixelGrid;
-
-  // waveform shape
-  float wave =
-    sin(snappedX * 20.0 + uTime * 1.2);
-
-  // thinking: self-driven motion on the same waveform line — a slow breathing
-  // swell plus a secondary traveling ripple, so it animates with no audio input
   float breathe = 0.5 + 0.5 * sin(uTime * 2.2);
-  wave += uThinking * 0.7 * sin(snappedX * 9.0 - uTime * 2.6);
+  float level = clamp(uAudioLevel * 1.7 + uThinking * (0.3 + 0.2 * breathe), 0.0, 1.0);
 
-  // amplitude
-  float amp =
-    (0.003 + uAudioLevel * 0.03 + uThinking * (0.010 + 0.018 * breathe)) * envelope;
+  float col = cellId.x;
+  float xN = clamp(col / (maxCols + 0.5), -1.0, 1.0);
+  float mouth = pow(max(1.0 - xN * xN, 0.0), 0.6);
 
-  // snap wave to pixel grid
-  float waveY =
-    floor((wave * amp) / pixelGrid) * pixelGrid;
+  float ripple = 0.5 + 0.25 * sin(col * 0.9 - uTime * 6.0) + 0.25 * sin(col * 1.7 + uTime * 3.5);
+  float idle = 0.15 * (0.5 + 0.5 * sin(col * 1.3 + uTime * 3.0));
 
-  // snap fragment Y to same pixel grid
-  float snappedY =
-    floor(ny / pixelGrid) * pixelGrid;
+  float open = level * maxCols * 0.95;
+  float height = mouth * (open * (0.6 + 0.4 * ripple) + idle);
 
-  // double-snap waveY to guarantee it lands on the same grid as snappedY,
-  // then use a near-zero tolerance so only the exact matching row passes
-  waveY = floor(waveY / pixelGrid) * pixelGrid;
-  float line = step(abs(snappedY - waveY), pixelGrid * 0.01);
+  float row = abs(cellId.y);
+  float lit = clamp(height - row, 0.0, 1.0);
+  float glow = lit * mix(0.4, 1.0, 1.0 - row / (height + 1.0));
 
-  float maskX =
-    step(abs(nx), halfWidth);
+  vec3 dimColor  = vec3(0.03, 0.03, 0.035);
+  vec3 glowColor = uColor;
 
-  M *= maskX * line;
+  vec3 color = mix(dimColor, glowColor, glow);
+  color += glowColor * max(glow - 0.6, 0.0) * 0.9;
 
-  vec3 color = uColor;
-  color = mix(color, color * 1.5, uAudioLevel * 0.4);
+  float alpha = dotShape * region * mix(0.5, 1.0, glow);
 
   vec3 srgbColor = mix(
     color * 12.92,
@@ -422,7 +338,7 @@ void main(){
     step(0.0031308, color)
   );
 
-  fragColor = vec4(srgbColor, M);
+  fragColor = vec4(srgbColor, alpha);
 }
 `
 
@@ -431,7 +347,7 @@ const MAX_CLICKS = 10
 const PixelBlast: React.FC<PixelBlastProps> = ({
   variant = 'square',
   pixelSize = 3,
-  color = '#B497CF',
+  color = '#a855f7',
   className,
   style,
   antialias = true,
