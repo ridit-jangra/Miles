@@ -16,7 +16,6 @@ import {
   MCP_REMOVE,
   MCP_UPDATE,
   SPEAK,
-  START_SERVER,
   TRANSCRIBE
 } from '../shared/channels'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
@@ -28,9 +27,7 @@ const server = {
     ipcRenderer.invoke(TRANSCRIBE, audioBuffer),
 
   speak: (text: string): Promise<{ success: boolean; audio: ArrayBuffer | null }> =>
-    ipcRenderer.invoke(SPEAK, text),
-
-  start: (): Promise<void> => ipcRenderer.invoke(START_SERVER)
+    ipcRenderer.invoke(SPEAK, text)
 }
 
 const ai = {
