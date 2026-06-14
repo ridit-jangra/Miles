@@ -25,6 +25,7 @@ export type ProviderConfig = {
   model: string
   apiKey?: string
   baseURL?: string
+  supportsTools?: boolean
 }
 
 export type ProvidersFile = {
@@ -140,7 +141,7 @@ export function buildProvider(config: ProviderConfig): LanguageModel {
     case 'ollama':
       try {
         return createOllama({
-          baseURL: config.baseURL ?? 'http://localhost:11434/api'
+          baseURL: config.baseURL ?? 'http://localhost:11434'
         })(config.model)
       } catch (error) {
         throw new Error(`Ollama connection failed: ${(error as any).message}`, {

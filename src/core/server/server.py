@@ -2,7 +2,6 @@ import os
 import time
 import io
 import wave
-import tempfile
 import asyncio
 import threading
 
@@ -21,8 +20,24 @@ os.environ["HF_DATASETS_OFFLINE"] = "1"
 
 app = FastAPI()
 
-stt_model = WhisperModel("small", device="cpu", compute_type="int8")
-print("STT: Running on CPU")
+
+def load_stt() -> WhisperModel:
+    candidates = [
+        ("small.en", "cuda", "float16"),
+        ("small", "cuda", "float16"),
+        ("small", "cpu", "int8"),
+    ]
+    for model, device, compute in candidates:
+        try:
+            m = WhisperModel(model, device=device, compute_type=compute)
+            print(f"STT: Running {model} on {device} ({compute})")
+            return m
+        except Exception as e:
+            print(f"STT: {model} on {device} unavailable ({e})")
+    raise RuntimeError("STT: no Whisper model could be loaded")
+
+
+stt_model = load_stt()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
@@ -140,13 +155,16 @@ async def wake_endpoint(websocket: WebSocket) -> None:
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-        tmp.write(await file.read())
-        tmp_path = tmp.name
+    audio = io.BytesIO(await file.read())
 
-    segments, _ = stt_model.transcribe(tmp_path, language="en")
+    segments, _ = stt_model.transcribe(
+        audio,
+        language="en",
+        beam_size=1,
+        vad_filter=True,
+        condition_on_previous_text=False,
+    )
     text = " ".join([s.text.strip() for s in segments])
-    os.unlink(tmp_path)
     return {"text": text}
 
 
