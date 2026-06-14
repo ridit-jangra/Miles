@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { SERVER_PORT } from '../../../shared/constants'
 
-import { speak as speakAudio } from '../utils/speak'
+import { synthesize, playClip } from '../utils/speak'
 import PixelBlast from './PixlBlast'
 import { extractSpeakable } from '../utils/extractSpeakables'
 import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
@@ -48,7 +48,9 @@ export function Mic(): React.JSX.Element {
 
   const continuousMode = useRef(false)
 
-  const queue = useRef<{ text: string; onDone?: () => void }[]>([])
+  const queue = useRef<{ text: string; onDone?: () => void; audio: Promise<ArrayBuffer | null> }[]>(
+    []
+  )
   const isPlaying = useRef(false)
 
   const speakAbort = useRef<AbortController | null>(null)
@@ -93,7 +95,7 @@ export function Mic(): React.JSX.Element {
     setSpeaking(true)
 
     setThinking(false)
-    const { text, onDone } = queue.current.shift()!
+    const { text, onDone, audio } = queue.current.shift()!
 
     setSpokenText(text)
     setSpokenProgress(0)
@@ -101,42 +103,47 @@ export function Mic(): React.JSX.Element {
     const controller = new AbortController()
     speakAbort.current = controller
 
-    speakAudio(text, {
-      signal: controller.signal,
-      onLevel: (level) => setAudioLevel(level),
-      onProgress: (p) => setSpokenProgress(p),
-      onEnded: () => {
-        setAudioLevel(0)
-        isPlaying.current = false
-        onDone?.()
-        if (queue.current.length === 0) {
-          setSpeaking(false)
-          setTimeout(() => setSpokenText(''), 800)
-          fadeOutTranscript()
+    const finish = (): void => {
+      setAudioLevel(0)
+      isPlaying.current = false
+      onDone?.()
+      if (queue.current.length === 0) {
+        setSpeaking(false)
+        setTimeout(() => setSpokenText(''), 800)
+        fadeOutTranscript()
 
-          if (continuousMode.current) {
-            setTimeout(() => {
-              startListeningRef.current?.()
-            }, 300)
-          }
-        } else {
-          playNext()
+        if (continuousMode.current) {
+          setTimeout(() => {
+            startListeningRef.current?.()
+          }, 300)
         }
+      } else {
+        playNext()
       }
+    }
+
+    audio.then((audioData) => {
+      if (controller.signal.aborted) return
+      if (!audioData) {
+        finish()
+        return
+      }
+      playClip(audioData, {
+        signal: controller.signal,
+        onLevel: (level) => setAudioLevel(level),
+        onProgress: (p) => setSpokenProgress(p),
+        onEnded: finish
+      })
     })
   }, [fadeOutTranscript])
 
   const speak = useCallback(
     (text: string, onDone?: () => void): void => {
-      queue.current.push({ text, onDone })
+      queue.current.push({ text, onDone, audio: synthesize(text) })
       if (!isPlaying.current) playNext()
     },
     [playNext]
   )
-
-  useEffect(() => {
-    window.server.start()
-  }, [])
 
   useEffect(() => {
     const off = window.speak?.onSay((text: string) => {
@@ -154,7 +161,7 @@ export function Mic(): React.JSX.Element {
   }, [])
 
   const handleStreamComplete = useCallback(
-    (fullText: string, remainder: string) => {
+    (_fullText: string, remainder: string) => {
       const leftover = remainder.trim()
       if (leftover) speak(leftover)
     },
@@ -164,11 +171,17 @@ export function Mic(): React.JSX.Element {
   const chatStreaming = useCallback(
     async (userText: string): Promise<void> => {
       let buffer = ''
+      let spokenYet = false
 
       const removeListener = window.ai.onChunk((delta: string) => {
         buffer += delta
-        const [sentences, remaining] = extractSpeakable(buffer)
-        if (sentences) speak(sentences)
+        const [sentences, remaining] = spokenYet
+          ? extractSpeakable(buffer)
+          : extractSpeakable(buffer, 3, 4)
+        if (sentences) {
+          speak(sentences)
+          spokenYet = true
+        }
         buffer = remaining
       })
 
@@ -221,7 +234,7 @@ export function Mic(): React.JSX.Element {
     let firstSoundAt = 0
     let lastSoundAt = 0
 
-    const SILENCE_THRESHOLD_MS = 1200
+    const SILENCE_THRESHOLD_MS = 650
 
     const checkSilence = (): void => {
       analyser.getByteFrequencyData(data)

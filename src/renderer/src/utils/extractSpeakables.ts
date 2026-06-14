@@ -5,11 +5,15 @@ function wordCount(s: string): number {
   return s.trim().split(/\s+/).filter(Boolean).length
 }
 
-export function extractSpeakable(buf: string): [string, string] {
+export function extractSpeakable(
+  buf: string,
+  minWords = MIN_WORDS,
+  clauseMin = CLAUSE_MIN
+): [string, string] {
   const sentenceMatch = buf.match(/^([\s\S]*?[.!?])(\s+|$)/)
   if (sentenceMatch) {
     const candidate = sentenceMatch[1].trim()
-    if (wordCount(candidate) >= MIN_WORDS) {
+    if (wordCount(candidate) >= minWords) {
       return [candidate, buf.slice(sentenceMatch[0].length)]
     }
 
@@ -26,7 +30,7 @@ export function extractSpeakable(buf: string): [string, string] {
   const clauseMatch = buf.match(/^([\s\S]*?[,;:])(\s+)/)
   if (clauseMatch) {
     const candidate = clauseMatch[1].trim()
-    if (wordCount(candidate) >= CLAUSE_MIN) {
+    if (wordCount(candidate) >= clauseMin) {
       return [candidate, buf.slice(clauseMatch[0].length)]
     }
   }

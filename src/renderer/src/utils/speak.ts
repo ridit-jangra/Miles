@@ -5,21 +5,28 @@ export interface SpeakOptions {
   signal?: AbortSignal
 }
 
-export async function speak(
-  text: string,
+export async function synthesize(text: string): Promise<ArrayBuffer | null> {
+  try {
+    const tts = await window.server.speak(text)
+    if (!tts.success || !tts.audio) {
+      console.warn('[speak] no audio returned')
+      return null
+    }
+    return tts.audio as ArrayBuffer
+  } catch (e) {
+    console.error('[speak] synth failed:', e)
+    return null
+  }
+}
+
+export async function playClip(
+  audioData: ArrayBuffer,
   opts: SpeakOptions = {}
 ): Promise<HTMLAudioElement | void> {
   const { onEnded, onLevel, onProgress, signal } = opts
   try {
     if (signal?.aborted) return
-    const tts = await window.server.speak(text)
-    if (signal?.aborted) return
-    if (!tts.success || !tts.audio) {
-      console.warn('[speak] no audio returned')
-      onEnded?.()
-      return
-    }
-    const audioBlob = new Blob([tts.audio], { type: 'audio/wav' })
+    const audioBlob = new Blob([audioData], { type: 'audio/wav' })
     const url = URL.createObjectURL(audioBlob)
     const audio = new Audio(url)
 
