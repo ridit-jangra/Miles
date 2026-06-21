@@ -88,7 +88,7 @@ npm run download-models:linux      # Linux / macOS
 npm run download-models:win        # Windows (PowerShell)
 ```
 
-> **Custom wake word:** a custom pretrained custom mdoel is already placed at `models/echo.onnx`. You can train yout custom wake words and use use [OpenWakeWord Colab notebook](https://github.com/dscripka/openWakeWord).
+> **Custom wake word:** a custom pretrained custom model is already placed at `models/echo.onnx`. You can train yout custom wake words and use [OpenWakeWord Colab notebook](https://github.com/dscripka/openWakeWord).
 
 ### 3. Configure environment
 
