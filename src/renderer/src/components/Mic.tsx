@@ -10,6 +10,13 @@ import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
 import { buildWakeGreeting } from '../lib/wakeGreeting'
 import { WAKE_FOCUS_WINDOW } from '../../../shared/channels'
+import { MCPConnectionStatus, MCPServerConfig } from '../../../shared/mcp'
+
+export type MCPServerState = MCPServerConfig & {
+  status: MCPConnectionStatus
+  tools: string[]
+  error?: string
+}
 
 const MIN_SPEECH_MS = 150
 
@@ -35,6 +42,7 @@ export function Mic(): React.JSX.Element {
   const [audioLevel, setAudioLevel] = useState(0)
   const [spokenText, setSpokenText] = useState('')
   const [spokenProgress, setSpokenProgress] = useState(0)
+  const [mcp, setMcp] = useState<MCPServerState[]>([])
 
   const [thinking, setThinking] = useState(false)
   const [speaking, setSpeaking] = useState(false)
@@ -152,6 +160,14 @@ export function Mic(): React.JSX.Element {
     })
     return off
   }, [speak])
+
+  useEffect(() => {
+    const getMcp = async (): Promise<void> => {
+      setMcp(await window.mcp.list())
+    }
+
+    getMcp()
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -348,7 +364,7 @@ export function Mic(): React.JSX.Element {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      <div className="absolute inset-0 w-[40%] translate-x-[-50%] left-[50%]">
+      <div className="absolute inset-0 w-[30%] translate-x-[-50%] left-[50%]">
         <PixelBlast
           audioLevel={audioLevel}
           thinking={thinking}
@@ -358,6 +374,16 @@ export function Mic(): React.JSX.Element {
           enableRipples={false}
         />
       </div>
+
+      {mcp && (
+        <div
+          className="absolute top-4 left-30 pointer-events-none
+                grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4
+                gap-2 sm:gap-3
+                w-[90vw] max-w-4xl"
+        ></div>
+      )}
+
       <div className="relative inset-0 z-10 flex h-full flex-col items-center pb-10 gap-4 pointer-events-none">
         {spokenText ? (
           <div className="absolute bottom-[20%] translate-y-[50%] pointer-events-none">
@@ -378,7 +404,7 @@ export function Mic(): React.JSX.Element {
             </div>
           )
         )}
-        <div className="flex items-center px-10 py-3 rounded-md gap-10 bg-white/10 absolute bottom-10">
+        <div className="flex items-center px-10 py-4 rounded-md gap-10 bg-[#171717] absolute bottom-10">
           <button
             onClick={() => {
               continuousMode.current = true

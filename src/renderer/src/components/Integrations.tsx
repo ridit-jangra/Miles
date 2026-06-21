@@ -40,7 +40,7 @@ function AppCard({
   const isLive = !!server && status !== 'disconnected'
 
   return (
-    <div className="bg-white/5 rounded-md p-6 flex flex-col gap-4">
+    <div className="bg-[#171717] rounded-md p-6 flex flex-col gap-4">
       <span className="flex items-start justify-between">
         {app.icon}
         {server && status && status !== 'disconnected' && (
@@ -70,7 +70,7 @@ function AppCard({
       <span className="flex justify-end gap-2 mt-2">
         {isLive && (
           <button
-            className="px-4 py-2 rounded-md cursor-pointer text-white/50 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-md cursor-pointer text-white/50 hover:text-white hover:bg-[#171717] transition-colors disabled:opacity-50"
             onClick={onRemove}
             disabled={busy}
           >
@@ -91,7 +91,7 @@ function AppCard({
 }
 
 const inputClass =
-  'bg-white/5 border border-white/10 rounded-md px-3 py-2 outline-none focus:border-white/30 transition-colors w-full'
+  'bg-[#171717] border border-white/10 rounded-md px-3 py-2 outline-none focus:border-white/30 transition-colors w-full'
 
 interface ConnectModalProps {
   app: CatalogApp
@@ -186,7 +186,6 @@ interface OAuthModalProps {
   onSubmit: (values: Record<string, string>) => Promise<void>
 }
 
-/** GitHub device-flow: show the user code, open the browser, poll for the token. */
 function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX.Element {
   const [userCode, setUserCode] = React.useState<string | null>(null)
   const [verificationUri, setVerificationUri] = React.useState('')
@@ -262,7 +261,7 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
             <p className="text-white/70 text-sm">Enter this code on GitHub to authorize Echo:</p>
             <button
               onClick={copy}
-              className="flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md py-3 font-mono text-2xl tracking-[0.3em] cursor-pointer transition-colors"
+              className="flex items-center justify-center gap-3 bg-[#171717] hover:bg-white/10 border border-white/10 rounded-md py-3 font-mono text-2xl tracking-[0.3em] cursor-pointer transition-colors"
             >
               {userCode}
               {copied ? (

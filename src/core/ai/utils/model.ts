@@ -8,7 +8,7 @@ export async function getModel(): Promise<{
   config: ProviderConfig
 }> {
   const config: ProviderConfig = {
-    model: 'openrouter/free',
+    model: 'google/gemini-3.1-flash-lite:nitro',
     name: 'openrouter-ig-idk-idc',
     provider: 'openrouter',
     apiKey: process.env.OPENROUTER_API_KEY

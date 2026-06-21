@@ -7,7 +7,7 @@ import threading
 
 import numpy as np
 import pyaudio
-from scipy.signal import resample_poly
+from scipy.signal import resample_poly, butter, sosfilt
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
@@ -65,11 +65,39 @@ WAKE_DEBUG = os.environ.get("WAKE_DEBUG", "") not in ("", "0", "false")
 
 WAKE_INPUT_DEVICE = os.environ.get("WAKE_INPUT_DEVICE", "pulse")
 
+CLAP_PEAK_THRESHOLD = float(os.environ.get("CLAP_PEAK_THRESHOLD", "4200"))
+CLAP_ENERGY_MAX = float(os.environ.get("CLAP_ENERGY_MAX", "1500"))
+CLAP_LOWCUT = float(os.environ.get("CLAP_LOWCUT", "2000"))
+CLAP_HIGHCUT = float(os.environ.get("CLAP_HIGHCUT", "5000"))
+CLAP_WINDOW = float(os.environ.get("CLAP_WINDOW", "0.4"))
+CLAP_MIN_GAP = float(os.environ.get("CLAP_MIN_GAP", "0.10"))
+CLAP_DEBUG = os.environ.get("CLAP_DEBUG", "") not in ("", "0", "false")
+
+_nyq = 0.5 * IN_RATE
+_clap_sos = butter(
+    4,
+    [CLAP_LOWCUT / _nyq, min(CLAP_HIGHCUT, _nyq - 1) / _nyq],
+    btype="band",
+    output="sos",
+)
+
 last_wake_time: float = 0.0
+clap_times: list[float] = []
+last_clap_time: float = 0.0
 wake_clients: list[WebSocket] = []
 
 
-async def notify_wake() -> None:
+def is_clap(audio: np.ndarray) -> bool:
+    """Return True if this audio chunk looks like a single clap transient."""
+    filtered = sosfilt(_clap_sos, audio.astype(np.float32))
+    peak = np.abs(filtered).max()
+    energy = np.abs(filtered).mean()
+    if CLAP_DEBUG and peak > CLAP_PEAK_THRESHOLD * 0.5:
+        print(f"[clap debug] peak={peak:.0f} energy={energy:.0f}")
+    return peak > CLAP_PEAK_THRESHOLD and energy < CLAP_ENERGY_MAX
+
+
+async def notify_wake(source: str = "wakeword") -> None:
     dead: list[WebSocket] = []
     for client in wake_clients:
         try:
@@ -82,7 +110,7 @@ async def notify_wake() -> None:
 
 
 def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
-    global last_wake_time
+    global last_wake_time, last_clap_time
 
     pa = pyaudio.PyAudio()
 
@@ -110,25 +138,41 @@ def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
         frames_per_buffer=IN_CHUNK,
     )
     print(f"Wake word: listening... (device={WAKE_INPUT_DEVICE or 'default'})")
+    print("Clap detection: active (double clap to wake)")
 
     while True:
         raw = np.frombuffer(
             stream.read(IN_CHUNK, exception_on_overflow=False), dtype=np.int16
         )
+
+        if is_clap(raw):
+            now = time.time()
+            if now - last_clap_time > CLAP_MIN_GAP:
+                last_clap_time = now
+                clap_times.append(now)
+
+                clap_times[:] = [t for t in clap_times if now - t < CLAP_WINDOW]
+                if CLAP_DEBUG:
+                    print(f"[clap debug] clap registered ({len(clap_times)} in window)")
+                if len(clap_times) >= 2:
+                    clap_times.clear()
+                    if now - last_wake_time >= WAKE_COOLDOWN:
+                        last_wake_time = now
+                        print("Double clap detected!")
+                        asyncio.run_coroutine_threadsafe(notify_wake("clap"), loop)
+
         pcm = resample_poly(raw.astype(np.float32), RATE, IN_RATE).astype(np.int16)
         prediction = oww_model.predict(pcm)
-
         for model_name, score in prediction.items():
             if WAKE_DEBUG and score > 0.05:
                 print(f"[wake debug] {model_name}: {score:.3f}")
             if score > WAKE_SCORE_THRESHOLD:
                 now = time.time()
-
                 if now - last_wake_time < WAKE_COOLDOWN:
                     continue
                 last_wake_time = now
                 print(f"Wake word detected! ({model_name}: {score:.2f})")
-                asyncio.run_coroutine_threadsafe(notify_wake(), loop)
+                asyncio.run_coroutine_threadsafe(notify_wake("wakeword"), loop)
 
 
 @app.on_event("startup")
@@ -141,7 +185,6 @@ async def startup() -> None:
 @app.websocket("/wake")
 async def wake_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
-
     wake_clients.append(websocket)
     try:
         while True:
@@ -156,7 +199,6 @@ async def wake_endpoint(websocket: WebSocket) -> None:
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
     audio = io.BytesIO(await file.read())
-
     segments, _ = stt_model.transcribe(
         audio,
         language="en",
