@@ -60,7 +60,29 @@ const ChromeIcon = (): React.ReactNode =>
     </svg>
   )
 
+const MiloIcon = (): React.ReactNode =>
+  iconWrap(
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+      <path d="M12 1.5l2.598 4.302L19.5 6.75l-2.25 4.5 2.25 4.5-4.902.948L12 21l-2.598-4.302L4.5 15.75l2.25-4.5-2.25-4.5 4.902-.948L12 1.5z" />
+    </svg>
+  )
+
 export const CATALOG: CatalogApp[] = [
+  {
+    id: 'milo',
+    name: 'Milo',
+    description: "Connect Milo's own MCP server to extend Echo with its built-in tools.",
+    icon: <MiloIcon />,
+    fields: [],
+    build: () => ({
+      name: 'Milo',
+      description: 'Milo MCP server',
+      enabled: true,
+      transport: 'stdio',
+      command: 'milo',
+      args: ['mcp']
+    })
+  },
   {
     id: 'slack',
     name: 'Slack',

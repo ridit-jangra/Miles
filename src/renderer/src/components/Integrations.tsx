@@ -290,7 +290,6 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
   )
 }
 
-/** Slack OAuth v2: open the browser, wait for the HTTPS loopback callback. */
 function SlackOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX.Element {
   const [error, setError] = React.useState<string | null>(null)
 

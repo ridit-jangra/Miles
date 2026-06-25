@@ -45,11 +45,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   })
 }
 
-/**
- * Owns every configured MCP server, its persisted config, and (when connected)
- * its live client and exposed tools. Runs in the Electron main process — stdio
- * servers spawn child processes, so this must not run in the renderer.
- */
 class MCPManager {
   private servers = new Map<string, LiveServer>()
   private loaded = false
@@ -67,7 +62,6 @@ class MCPManager {
     this.loaded = true
   }
 
-  /** Connect every enabled server. Called once on app startup. */
   async init(): Promise<void> {
     this.ensureLoaded()
     await Promise.all(
@@ -81,7 +75,6 @@ class MCPManager {
     saveConfigs([...this.servers.values()].map((s) => s.config))
   }
 
-  /** Prefix MCP tool names so they never collide with built-in or sibling tools. */
   private prefixFor(config: MCPServerConfig): string {
     const slug = config.name
       .toLowerCase()
@@ -199,7 +192,6 @@ class MCPManager {
     this.persist()
   }
 
-  /** Merged ToolSet across all connected servers, for the LLM. */
   getTools(): ToolSet {
     this.ensureLoaded()
     const all: ToolSet = {}

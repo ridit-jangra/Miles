@@ -14,9 +14,7 @@ ipcMain.handle(MCP_LIST, () => mcpManager.list())
 
 ipcMain.handle(MCP_ADD, (_e, config: MCPServerInput) => mcpManager.add(config))
 
-ipcMain.handle(MCP_UPDATE, (_e, id: string, patch: MCPServerUpdate) =>
-  mcpManager.update(id, patch)
-)
+ipcMain.handle(MCP_UPDATE, (_e, id: string, patch: MCPServerUpdate) => mcpManager.update(id, patch))
 
 ipcMain.handle(MCP_REMOVE, (_e, id: string) => mcpManager.remove(id))
 
