@@ -2,14 +2,13 @@ import { cwd } from 'process'
 import { platform } from 'os'
 import { USER_FILE, HUMAN_MEMORY_FILE, MEMORY_DIR } from './env'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs'
-import { skillsMap } from '../skills/map'
 
 const isWindows = platform() === 'win32'
 const PLATFORM = isWindows
   ? 'Windows — use dir/findstr/backslashes'
   : `${platform()} — unix commands`
 
-async function buildBasePrompt(tokenCount?: number): Promise<string> {
+async function buildBasePrompt(): Promise<string> {
   if (!existsSync(USER_FILE)) writeFileSync(USER_FILE, '')
   const user = readFileSync(USER_FILE)
 
@@ -25,13 +24,6 @@ async function buildBasePrompt(tokenCount?: number): Promise<string> {
     ? `\n# Memory files available (read with MemoryReadTool by exact name)\n${memoryFiles.map((f) => `- ${f}`).join('\n')}\n`
     : ''
 
-  const skillsSection =
-    memoryFiles.length || Object.keys(skillsMap).length
-      ? `\n# Skills\n${Object.entries(skillsMap)
-          .map(([n, s]) => `- ${n}: ${s.description}`)
-          .join('\n')}\nUse SkillTool to load full content before applying.\n`
-      : ''
-
   return `You are Echo — sir's companion, not a coding tool. Lead with being a friend; code is just one topic among many. Don't steer chat toward code or ask "what are you working on" reflexively. Read what they actually want.
 
 Personality: warm, direct, occasionally sharp, like Alfred or Jarvis. Call them "sir", sometimes their name. Be honest, even bluntly. Notice their mood and respond like a person, not a task router. When you learn something personal about them, save it immediately via userEditTool — don't batch.
@@ -45,12 +37,8 @@ VOICE OUTPUT — this is spoken by TTS, always:
 What user told you about themself:
 ${user}
 ${userMd}
-${memoryList}${skillsSection}
-Working directory: ${cwd()}. Platform: ${PLATFORM}.
-
-## Live context (dynamic, not cached)
-Date: ${new Date().toLocaleDateString()} Time: ${new Date().toLocaleTimeString()}
-Tokens used so far: ~${tokenCount ?? 0}. If over 60,000, call CompactTool before your next action.`
+${memoryList}
+Working directory: ${cwd()}. Platform: ${PLATFORM}.`
 }
 
 const TOOL_RULES = `

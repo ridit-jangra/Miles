@@ -1,31 +1,31 @@
-import { FileReadTool } from "../FileReadTool/tool.js";
-import { platform } from "os";
+import { FileReadTool } from '../FileReadTool/tool.js'
+import { platform } from 'os'
 
-export const MAX_OUTPUT_LENGTH = 3000;
-export const MAX_RENDERED_LINES = 50;
+export const MAX_OUTPUT_LENGTH = 3000
+export const MAX_RENDERED_LINES = 50
 
 export const BANNED_COMMANDS = [
-  "alias",
-  "curl",
-  "curlie",
-  "wget",
-  "axel",
-  "aria2c",
-  "nc",
-  "telnet",
-  "lynx",
-  "w3m",
-  "links",
-  "httpie",
-  "xh",
-  "http-prompt",
-  "chrome",
-  "firefox",
-  "safari",
-];
+  'alias',
+  'curl',
+  'curlie',
+  'wget',
+  'axel',
+  'aria2c',
+  'nc',
+  'telnet',
+  'lynx',
+  'w3m',
+  'links',
+  'httpie',
+  'xh',
+  'http-prompt',
+  'chrome',
+  'firefox',
+  'safari'
+]
 
-const isWindows = platform() === "win32";
-const CHAIN = isWindows ? ";" : "&&";
+const isWindows = platform() === 'win32'
+const CHAIN = isWindows ? ';' : '&&'
 
 const PLATFORM_NOTES = isWindows
   ? `- This is Windows running PowerShell — use PowerShell cmdlets and syntax
@@ -44,10 +44,9 @@ const PLATFORM_NOTES = isWindows
 - Use Copy-Item instead of copy/xcopy
 - Use Move-Item instead of move`
   : `- This is ${platform()} — use standard unix commands (ls, grep, find, cat etc.)
-- For background processes use: <command> &`;
+- For background processes use: <command> &`
 
-export const DESCRIPTION =
-  "Execute a bash command in a persistent shell session.";
+export const DESCRIPTION = 'Execute a bash command in a persistent shell session.'
 
 export const PROMPT = `Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
 
@@ -58,7 +57,7 @@ Before executing the command, please follow these steps:
 
 2. Security Check:
    - Some commands are banned. If you use one, you will receive an error. Explain it to the user.
-   - Banned commands: ${BANNED_COMMANDS.join(", ")}
+   - Banned commands: ${BANNED_COMMANDS.join(', ')}
 
 3. Command Execution:
    - After ensuring proper quoting, execute the command.
@@ -118,4 +117,4 @@ Rules:
 - Never call GitTool — it does not exist, it has never existed
 - Always run git status && git diff HEAD before generating a commit message
 - Use conventional commits: feat, fix, chore, refactor, docs, test, style
-- Prefer git add -A over git add . for staging all changes`;
+- Prefer git add -A over git add . for staging all changes`
