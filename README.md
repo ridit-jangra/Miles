@@ -110,8 +110,8 @@ SLACK_CLIENT_SECRET=for_integrations
 Run the speech server and the desktop client in two terminals:
 
 ```bash
-npm run dev:server     # Python FastAPI on 127.0.0.1:8000 (dev:server:win on Windows)
-npm run dev:client     # Electron + React with HMR
+npm run start:server     # Python FastAPI on 127.0.0.1:8000 (start:server:win on Windows)
+npm run start:client     # Electron + React with HMR
 ```
 
 ## Usage
@@ -126,8 +126,8 @@ Runtime state lives in `~/.echo/` — user profile, memory, sessions, MCP config
 
 | Command                                  | Description                                   |
 | ---------------------------------------- | --------------------------------------------- |
-| `npm run dev:client`                     | Electron app with hot reload                  |
-| `npm run dev:server`                     | Python speech server (with `--reload`)        |
+| `npm run start:client`                   | Electron app with hot reload                  |
+| `npm run start:server`                   | Python speech server (with `--reload`)        |
 | `npm run build`                          | Type-check + build the app                    |
 | `npm run build:linux` / `:win` / `:mac`  | Package a distributable with electron-builder |
 | `npm run typecheck`                      | Type-check node + web configs                 |
