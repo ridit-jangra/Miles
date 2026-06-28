@@ -18,3 +18,6 @@ export const GITHUB_OAUTH_POLL = 'oauth:github:poll'
 export const SLACK_OAUTH = 'oauth:slack'
 
 export const WAKE_FOCUS_WINDOW = 'wake:focus-window'
+
+export const SPEAK_SAY = 'speak:say'
+export const EVENT_ALERT = 'events:alert'

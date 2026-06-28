@@ -2,6 +2,11 @@ import { streamLLM } from '../../../utils/llm'
 import { createSession, Session } from '../../../utils/session'
 import { getMerlinSystemPrompt } from '../../../utils/systemPrompt'
 import { agentTools } from '../../../utils/tools'
+import { WebSearchTool } from './tools/WebSearchTool/tool'
+import { WebFetchTool } from './tools/WebFetchTool/tool'
+import { MemoryEditTool } from './tools/MemoryEditTool/tool'
+import { MemoryReadTool } from './tools/MemoryReadTool/tool'
+import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 
 const session = createSession()
 
@@ -12,14 +17,21 @@ export async function chatStream(
   return await streamLLM({
     prompt,
     system: await getMerlinSystemPrompt(),
-    tools: { ...agentTools },
+    tools: {
+      ...agentTools,
+      WebSearchTool,
+      WebFetchTool,
+      MemoryEditTool,
+      MemoryReadTool,
+      MemoryWriteTool
+    },
     session,
     onChunk,
     onToolCall: (e) => {
-      console.log(`Joker: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
+      console.log(`Merlin: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
     },
     onToolResult: (e) => {
-      console.log(`Joker: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.output)}`)
+      console.log(`Merlin: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.output)}`)
     }
   })
 }

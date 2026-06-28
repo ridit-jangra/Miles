@@ -19,7 +19,7 @@ type LiveServer = {
   error?: string
 }
 
-const CONNECT_TIMEOUT_MS = 60_000
+const CONNECT_TIMEOUT_MS = 300_000
 
 function mergedEnv(extra?: Record<string, string>): Record<string, string> {
   const base: Record<string, string> = {}
@@ -93,6 +93,8 @@ class MCPManager {
     server.error = undefined
 
     let client: MCPClient | undefined
+    const startedAt = Date.now()
+    console.log(`[MCP] connecting "${server.config.name}"...`)
     try {
       const { config } = server
       client = await withTimeout(
@@ -102,7 +104,8 @@ class MCPManager {
               ? new Experimental_StdioMCPTransport({
                   command: config.command,
                   args: config.args,
-                  env: mergedEnv(config.env)
+                  env: mergedEnv(config.env),
+                  stderr: 'inherit'
                 })
               : { type: config.transport, url: config.url, headers: config.headers }
         }),
@@ -110,6 +113,7 @@ class MCPManager {
         `Timed out after ${CONNECT_TIMEOUT_MS / 1000}s starting "${config.name}". The command may be slow to download (npx) or failing to launch.`
       )
 
+      console.log(`[MCP] "${config.name}" process up, loading tools...`)
       const rawTools = await withTimeout(
         client.tools(),
         CONNECT_TIMEOUT_MS,
@@ -125,12 +129,18 @@ class MCPManager {
       server.tools = tools
       server.toolNames = Object.keys(rawTools)
       server.status = 'connected'
+      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
+      console.log(
+        `[MCP] "${config.name}" connected in ${elapsed}s with ${server.toolNames.length} tools`
+      )
     } catch (err) {
       if (client) await client.close().catch(() => undefined)
       server.status = 'error'
       server.error = err instanceof Error ? err.message : String(err)
       server.tools = {}
       server.toolNames = []
+      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
+      console.error(`[MCP] "${server.config.name}" failed after ${elapsed}s: ${server.error}`)
     }
 
     return this.toState(server)
@@ -213,6 +223,18 @@ class MCPManager {
       tools: server.toolNames,
       error: server.error
     }
+  }
+
+  getToolsByServerNames(names: string[]): ToolSet {
+    this.ensureLoaded()
+    const wanted = new Set(names.map((n) => n.toLowerCase()))
+    const all: ToolSet = {}
+    for (const server of this.servers.values()) {
+      if (server.status === 'connected' && wanted.has(server.config.name.toLowerCase())) {
+        Object.assign(all, server.tools)
+      }
+    }
+    return all
   }
 
   async shutdown(): Promise<void> {

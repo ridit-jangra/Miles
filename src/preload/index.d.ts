@@ -2,6 +2,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 import type { Briefing } from '../shared/briefing'
+import type { EventAlert } from '../shared/events'
 
 type server_api = {
   transcribe: (buffer: ArrayBuffer) => Promise<{
@@ -48,6 +49,7 @@ declare global {
     oauth: oauth_api
     briefing: briefing_api
     speak: { onSay: (cb: (text: string) => void) => () => void }
+    events: { onAlert: (cb: (alert: EventAlert) => void) => () => void }
     env: {
       WEATHER_API_KEY: string
       NEWS_API_KEY: string

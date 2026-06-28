@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ModelMessage } from 'ai'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { join } from 'path'
-import { PROJECT_MEMORY_FILE, SESSIONS_DIR } from './env'
+import { PROJECT_MEMORY_FILE, SESSIONS_DIR, MEMORY_DIR } from './env'
 
 export type Session = {
   id: string
@@ -68,13 +68,28 @@ export function listSessions(): {
 export function loadMemoryIntoSession(session: Session): Session {
   if (session.memoryLoaded) return session
 
-  const projectMem = existsSync(PROJECT_MEMORY_FILE)
-    ? readFileSync(PROJECT_MEMORY_FILE, 'utf-8')
-    : ''
+  const parts: string[] = []
 
-  const memoryContext = [projectMem ? `# Project Memory\n${projectMem}` : '']
-    .filter(Boolean)
-    .join('\n\n')
+  const projectMem = existsSync(PROJECT_MEMORY_FILE)
+    ? readFileSync(PROJECT_MEMORY_FILE, 'utf-8').trim()
+    : ''
+  if (projectMem) parts.push(`# Project Memory\n${projectMem}`)
+
+  if (existsSync(MEMORY_DIR)) {
+    const files = readdirSync(MEMORY_DIR)
+      .filter((f) => f.endsWith('.md') || f.endsWith('.mdc'))
+      .sort()
+    for (const file of files) {
+      try {
+        const content = readFileSync(join(MEMORY_DIR, file), 'utf-8').trim()
+        if (content) parts.push(`## ${file}\n${content}`)
+      } catch {
+        // skip unreadable memory file
+      }
+    }
+  }
+
+  const memoryContext = parts.join('\n\n')
 
   if (memoryContext) {
     session.messages.push({
@@ -83,7 +98,7 @@ export function loadMemoryIntoSession(session: Session): Session {
     })
     session.messages.push({
       role: 'assistant',
-      content: "Memory loaded. I'll apply these preferences throughout our session."
+      content: "Memory loaded. I'll apply these throughout our session."
     })
   }
 

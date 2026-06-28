@@ -29,6 +29,7 @@ export async function chatStream(
     system: await getAgentSystemPrompt(),
     tools: { ...agentTools },
     session,
+    mode: 'agent',
     onChunk,
     onToolCall: (e) => {
       console.log(`[Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)

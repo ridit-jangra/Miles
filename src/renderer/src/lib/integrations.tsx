@@ -103,10 +103,12 @@ export const CATALOG: CatalogApp[] = [
       enabled: true,
       transport: 'stdio',
       command: 'npx',
-      args: ['-y', 'slack-mcp-server'],
+      args: ['-y', 'slack-mcp-server@latest'],
       env: {
         SLACK_MCP_XOXP_TOKEN: v.SLACK_USER_TOKEN,
-        SLACK_USER_TOKEN: v.SLACK_USER_TOKEN
+        SLACK_MCP_ADD_MESSAGE_TOOL: 'true',
+        SLACK_MCP_ENABLED_TOOLS:
+          'channels_list,channels_me,conversations_add_message,conversations_history,conversations_join,conversations_leave,conversations_mark,conversations_replies,conversations_search_messages,usergroups_create,usergroups_list,usergroups_me,usergroups_update,usergroups_users_update,users_search'
       }
     })
   },

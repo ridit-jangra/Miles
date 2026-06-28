@@ -6,7 +6,7 @@ Echo is a voice assistant that chats with you like a partner and helps ou achiev
 
 ## Features
 
-- **Hands-free wake** — custom on-device wake word (OpenWakeWord) plus a double-clap trigger, with cooldown and tunable sensitivity.
+- **Hands-free wake** — custom on-device wake word (OpenWakeWord), with cooldown and tunable sensitivity.
 - **Local speech pipeline** — speech-to-text with [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (GPU when available, CPU fallback) and text-to-speech with [Piper](https://github.com/rhasspy/piper). No audio leaves your machine for transcription or synthesis.
 - **Agentic AI core** — a agent (via the [Vercel AI SDK](https://sdk.vercel.ai)) with file read/write/edit, shell, ripgrep/glob search, web search & fetch, sub-agent delegation, and session compaction.
 - **Skills & persistent memory** — loadable skills plus per-user and per-project memory stored under `~/.echo`, so Echo remembers what matters across sessions.
@@ -29,7 +29,7 @@ Echo runs as two cooperating processes:
                                      │ HTTP + WebSocket (127.0.0.1:8000)
                        ┌─────────────▼──────────────┐
                        │   Python FastAPI server     │
-                       │   • /wake  (wake word + clap)│
+                       │   • /wake  (wake word)       │
                        │   • /transcribe (Whisper)    │
                        │   • /speak (Piper TTS)       │
                        └──────────────────────────────┘
@@ -99,10 +99,9 @@ OPENROUTER_API_KEY=your_openrouter_key_here
 GITHUB_CLIENT_ID=for_integrations...fallback_id_is_already_placed
 SLACK_CLIENT_ID=for_integrations
 SLACK_CLIENT_SECRET=for_integrations
-# Optional wake / clap tuning:
+# Optional wake tuning:
 # WAKE_SCORE_THRESHOLD=0.15
 # WAKE_INPUT_DEVICE=pulse
-# CLAP_PEAK_THRESHOLD=4200
 ```
 
 ### 4. Run in development
@@ -116,7 +115,7 @@ npm run start:client     # Electron + React with HMR
 
 ## Usage
 
-1. Say the wake word (or double-clap) to start a turn.
+1. Say the wake word to start a turn.
 2. Speak naturally. Echo transcribes, the agent reasons and acts, and the reply is spoken back.
 3. Open **Integrations** in the sidebar to connect Slack, GitHub, or Chrome DevTools.
 
@@ -143,9 +142,7 @@ Common environment variables read by the speech server (`src/core/server/server.
 | `WAKE_SCORE_THRESHOLD`      | `0.15`  | Wake-word confidence threshold |
 | `WAKE_INPUT_DEVICE`         | `pulse` | Input device name for capture  |
 | `WAKE_COOLDOWN`             | `3.0`   | Seconds between wake triggers  |
-| `CLAP_PEAK_THRESHOLD`       | `4200`  | Clap transient peak threshold  |
-| `CLAP_WINDOW`               | `0.4`   | Window (s) for a double clap   |
-| `WAKE_DEBUG` / `CLAP_DEBUG` | off     | Verbose detection logging      |
+| `WAKE_DEBUG`                | off     | Verbose detection logging      |
 
 ## License
 

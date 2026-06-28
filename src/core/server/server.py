@@ -7,7 +7,7 @@ import threading
 
 import numpy as np
 import pyaudio
-from scipy.signal import resample_poly, butter, sosfilt
+from scipy.signal import resample_poly
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
@@ -23,8 +23,8 @@ app = FastAPI()
 
 def load_stt() -> WhisperModel:
     candidates = [
+        ("medium.en", "cuda", "float16"),
         ("small.en", "cuda", "float16"),
-        ("small", "cuda", "float16"),
         ("small", "cpu", "int8"),
     ]
     for model, device, compute in candidates:
@@ -65,36 +65,8 @@ WAKE_DEBUG = os.environ.get("WAKE_DEBUG", "") not in ("", "0", "false")
 
 WAKE_INPUT_DEVICE = os.environ.get("WAKE_INPUT_DEVICE", "pulse")
 
-CLAP_PEAK_THRESHOLD = float(os.environ.get("CLAP_PEAK_THRESHOLD", "4200"))
-CLAP_ENERGY_MAX = float(os.environ.get("CLAP_ENERGY_MAX", "1500"))
-CLAP_LOWCUT = float(os.environ.get("CLAP_LOWCUT", "2000"))
-CLAP_HIGHCUT = float(os.environ.get("CLAP_HIGHCUT", "5000"))
-CLAP_WINDOW = float(os.environ.get("CLAP_WINDOW", "0.4"))
-CLAP_MIN_GAP = float(os.environ.get("CLAP_MIN_GAP", "0.10"))
-CLAP_DEBUG = os.environ.get("CLAP_DEBUG", "") not in ("", "0", "false")
-
-_nyq = 0.5 * IN_RATE
-_clap_sos = butter(
-    4,
-    [CLAP_LOWCUT / _nyq, min(CLAP_HIGHCUT, _nyq - 1) / _nyq],
-    btype="band",
-    output="sos",
-)
-
 last_wake_time: float = 0.0
-clap_times: list[float] = []
-last_clap_time: float = 0.0
 wake_clients: list[WebSocket] = []
-
-
-def is_clap(audio: np.ndarray) -> bool:
-    """Return True if this audio chunk looks like a single clap transient."""
-    filtered = sosfilt(_clap_sos, audio.astype(np.float32))
-    peak = np.abs(filtered).max()
-    energy = np.abs(filtered).mean()
-    if CLAP_DEBUG and peak > CLAP_PEAK_THRESHOLD * 0.5:
-        print(f"[clap debug] peak={peak:.0f} energy={energy:.0f}")
-    return peak > CLAP_PEAK_THRESHOLD and energy < CLAP_ENERGY_MAX
 
 
 async def notify_wake(source: str = "wakeword") -> None:
@@ -110,7 +82,7 @@ async def notify_wake(source: str = "wakeword") -> None:
 
 
 def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
-    global last_wake_time, last_clap_time
+    global last_wake_time
 
     pa = pyaudio.PyAudio()
 
@@ -138,28 +110,11 @@ def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
         frames_per_buffer=IN_CHUNK,
     )
     print(f"Wake word: listening... (device={WAKE_INPUT_DEVICE or 'default'})")
-    print("Clap detection: active (double clap to wake)")
 
     while True:
         raw = np.frombuffer(
             stream.read(IN_CHUNK, exception_on_overflow=False), dtype=np.int16
         )
-
-        if is_clap(raw):
-            now = time.time()
-            if now - last_clap_time > CLAP_MIN_GAP:
-                last_clap_time = now
-                clap_times.append(now)
-
-                clap_times[:] = [t for t in clap_times if now - t < CLAP_WINDOW]
-                if CLAP_DEBUG:
-                    print(f"[clap debug] clap registered ({len(clap_times)} in window)")
-                if len(clap_times) >= 2:
-                    clap_times.clear()
-                    if now - last_wake_time >= WAKE_COOLDOWN:
-                        last_wake_time = now
-                        print("Double clap detected!")
-                        asyncio.run_coroutine_threadsafe(notify_wake("clap"), loop)
 
         pcm = resample_poly(raw.astype(np.float32), RATE, IN_RATE).astype(np.int16)
         prediction = oww_model.predict(pcm)

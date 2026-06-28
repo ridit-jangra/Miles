@@ -13,7 +13,9 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { WAKE_FOCUS_WINDOW } from '../shared/channels'
+import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
+import { startSlackPoller } from '../core/events/slack-poller'
+import { narrateAlert } from '../core/events/narrate'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -60,6 +62,14 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  const stopPoller = startSlackPoller(async (alert) => {
+    if (mainWindow.isDestroyed()) return
+    mainWindow.webContents.send(EVENT_ALERT, alert)
+    const speech = await narrateAlert(alert)
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, speech)
+  })
+  mainWindow.on('closed', () => stopPoller())
 }
 
 app.whenReady().then(() => {

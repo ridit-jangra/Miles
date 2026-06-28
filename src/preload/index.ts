@@ -16,11 +16,13 @@ import {
   MCP_REMOVE,
   MCP_UPDATE,
   SPEAK,
-  TRANSCRIBE
+  TRANSCRIBE,
+  EVENT_ALERT
 } from '../shared/channels'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 import type { Briefing } from '../shared/briefing'
+import type { EventAlert } from '../shared/events'
 
 const server = {
   transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
@@ -69,6 +71,14 @@ const briefing = {
   get: (): Promise<Briefing> => ipcRenderer.invoke(BRIEFING_GET)
 }
 
+const events = {
+  onAlert: (cb: (alert: EventAlert) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, alert: EventAlert): void => cb(alert)
+    ipcRenderer.on(EVENT_ALERT, handler)
+    return () => ipcRenderer.removeListener(EVENT_ALERT, handler)
+  }
+}
+
 const speak = {
   onSay: (cb: (text: string) => void) => {
     const handler = (_e: Electron.IpcRendererEvent, text: string) => cb(text)
@@ -90,6 +100,7 @@ try {
   contextBridge.exposeInMainWorld('oauth', oauth)
   contextBridge.exposeInMainWorld('briefing', briefing)
   contextBridge.exposeInMainWorld('speak', speak)
+  contextBridge.exposeInMainWorld('events', events)
 } catch (error) {
   console.error(error)
 }
