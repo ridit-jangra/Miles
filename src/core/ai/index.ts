@@ -1,3 +1,4 @@
+import { mcpManager } from '../mcp/manager'
 import { runLLM, streamLLM } from './utils/llm'
 import { createSession, Session } from './utils/session'
 import { getAgentSystemPrompt } from './utils/systemPrompt'
@@ -9,7 +10,7 @@ export async function chat(prompt: string): Promise<{ text: string; session: Ses
   return await runLLM({
     prompt,
     system: await getAgentSystemPrompt(),
-    tools: { ...agentTools },
+    tools: { ...agentTools, ...mcpManager.getToolsByServerNames(['chrome-devtools']) },
     session,
     onToolCall: (e) => {
       console.log(`[Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
@@ -27,7 +28,7 @@ export async function chatStream(
   return await streamLLM({
     prompt,
     system: await getAgentSystemPrompt(),
-    tools: { ...agentTools },
+    tools: { ...agentTools, ...mcpManager.getToolsByServerNames(['chrome-devtools']) },
     session,
     mode: 'agent',
     onChunk,

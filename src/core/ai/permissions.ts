@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export type PermissionDecision = 'allow' | 'allow_session' | 'deny'
 
 const sessionAllowed = new Set<string>()

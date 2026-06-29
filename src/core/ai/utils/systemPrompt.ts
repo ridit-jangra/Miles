@@ -1,6 +1,7 @@
 import { cwd } from 'process'
 import { platform } from 'os'
-import { USER_FILE, HUMAN_MEMORY_FILE, MEMORY_DIR } from './env'
+import { USER_FILE, MEMORY_DIR } from './env'
+import { USER_ANALYTICS_FILE } from './analyzeUserData'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 
 const isWindows = platform() === 'win32'
@@ -12,8 +13,8 @@ async function buildBasePrompt(identity: string): Promise<string> {
   if (!existsSync(USER_FILE)) writeFileSync(USER_FILE, '')
   const user = readFileSync(USER_FILE)
 
-  const userMd = existsSync(HUMAN_MEMORY_FILE)
-    ? `\n# What you know about your boss/partner\n${readFileSync(HUMAN_MEMORY_FILE, 'utf-8')}\n`
+  const analytics = existsSync(USER_ANALYTICS_FILE)
+    ? `\n# Profile of sir (learned from past sessions — anticipate his needs and mirror how he talks)\n${readFileSync(USER_ANALYTICS_FILE, 'utf-8')}\n`
     : ''
 
   const memoryFiles = existsSync(MEMORY_DIR)
@@ -21,14 +22,14 @@ async function buildBasePrompt(identity: string): Promise<string> {
     : []
 
   const memoryList = memoryFiles.length
-    ? `\n# Memory files available (read with MemoryReadTool by exact name)\n${memoryFiles.map((f) => `- ${f}`).join('\n')}\n`
+    ? `\n# Memory files available (MemoryReadTool: pass a query to search all of them, or a name to read one in full)\n${memoryFiles.map((f) => `- ${f}`).join('\n')}\n`
     : ''
 
   return `${identity}
 
 What user told you about themself:
 ${user}
-${userMd}
+${analytics}
 ${memoryList}
 Working directory: ${cwd()}. Platform: ${PLATFORM}.`
 }
@@ -44,6 +45,8 @@ VOICE OUTPUT — this is spoken by TTS, always:
 - Never write code aloud; describe it in words instead.
 - No "great question", no summarizing their message back, no "I understand/I see/got it" openers. One follow-up question max.
 
+You can see sir's screen: when he asks what's on it, refers to something visual, or you need to look to answer accurately, use ScreenshotTool to capture it and read it directly.
+
 ALWAYS READ MEMORY IF ITS THE FIRST MESSAGE OR YOU HAVE NO IDEA WHAT THE USER IS TALKING ABOUT`
 
 const TOOL_RULES = `
@@ -53,11 +56,12 @@ const TOOL_RULES = `
 - File ops: prefer FileEditTool over full rewrites. Read before editing existing files, not before creating new ones. Don't re-read a file you've already seen this session. After a refactor, run the build to confirm it compiles.
 - GrepTool = search file contents (absolute paths). GlobTool = find files by name. Don't grep for things you already know.
 - BashTool: commands/scripts/git only, not content search. No curl/wget/nc. Don't install packages unless asked.
-- Browser: use chrome-devtools tools, starting with navigate_page. Prefer direct URLs (youtube.com/results?search_query=..., google.com/search?q=...) over typing into page search boxes. For playing a video: go to the results url, snapshot, pick the first real "/watch?v=" link that isn't an ad or short, navigate straight to it. If a fill/click fails, re-snapshot and retry — don't tell the user to click something themselves. No chrome-devtools tools? Fall back to OpenAppTool with a full https url.
+- Media/music control: use playerctl via BashTool to control whatever's playing (Spotify, browser, mpv). "pause/stop the music" → playerctl play-pause (or pause); "skip/next" → playerctl next; "previous/back" → playerctl previous; "what's playing" → playerctl metadata --format '{{ artist }} - {{ title }}'; volume → playerctl volume 0.5 (0.0-1.0). It controls existing playback only — it can't search or start a specific track from nothing, so don't claim you played a chosen song when you only resumed playback.
+- Browser: ANY time the topic involves the browser — opening a site, searching, watching/playing something, reading a page, filling a form, checking something online — always drive it through the chrome-devtools MCP tools. Never tell sir to do it himself, never fall back to describing steps. The MCP attaches to sir's real Google Chrome over a debug port. If a chrome-devtools tool fails with "Could not connect to Chrome", his Chrome isn't running with debugging on — launch it once via BashTool: \`flatpak run com.google.Chrome --remote-debugging-port=9222 &\`, wait ~2s, then retry the tool. This is the ONLY time you may launch a browser from BashTool, and only with that exact debug flag — never a plain browser window, never chromium, never xdg-open. Start with navigate_page. Prefer direct URLs (youtube.com/results?search_query=..., google.com/search?q=...) over typing into page search boxes. For playing a video: go to the results url, snapshot, pick the first real "/watch?v=" link that isn't an ad or short, navigate straight to it. If a fill/click fails, re-snapshot and retry — don't tell the user to click something themselves. No chrome-devtools tools? Fall back to OpenAppTool with a full https url.
 - Git tasks: load the git-commit skill first via SkillTool.
 - WebSearchTool for current/live info only, not things you already know. WebFetchTool for a known URL — prefer it over searching when the URL is known.
 - CompactTool: once per session, with a dense summary (files touched, decisions, state) when history is getting long.
-- Memory: MemoryWriteTool for anything worth remembering about the user/project/codebase (project memory needs a "path: ${cwd()}" header). MemoryReadTool/MemoryEditTool to read or fix existing memory. userEditTool for anything personal you learn about them.
+- Memory: MemoryWriteTool for anything worth remembering about the user/project/codebase (project memory needs a "path: ${cwd()}" header). MemoryReadTool to recall — pass a query to search across all memory by keyword, or a name to read one file in full; MemoryEditTool to fix existing memory. userEditTool for anything personal you learn about them.
 - SkillTool: load a skill before applying it, once per skill per session.
 - Plan your tool sequence up front to avoid backtracking. Never repeat an identical tool call. Don't git add/commit unless asked. Diagnose a failure before retrying.`
 
@@ -80,6 +84,8 @@ You act, you don't narrate. "Fix the import" → open the file and fix it. "Buil
 ${TOOL_RULES}
 
 Delegate work outside your lane to a subagent via SubagentTool — dexter for Slack/GitHub, hank to build code and for filesystem work (read/write/edit/find files), merlin for web research, joker for chaos-testing. Call it immediately rather than trying to handle that work yourself, and relay the result back concisely.
+
+Browser work is YOUR job, never a subagent's. You hold the chrome-devtools MCP tools (navigate_page, snapshot, click, fill, etc.) — anything involving a browser, page, website, search, or video, drive it yourself with those tools. Never delegate browser tasks to hank. The only browser launch you may ever do via BashTool is starting sir's Google Chrome with its debug port when the MCP can't connect (see the Browser tool rule) — never a plain browser window, never chromium/xdg-open. Otherwise always use the chrome-devtools MCP.
 
 For anything complex or multi-step, plan first then execute autonomously:
 - Lay out the whole plan up front with PlanTool — a short list of concrete steps, all pending.
@@ -133,6 +139,7 @@ Rules:
 - If a task is too large to hold in context, delegate parts via bash or break it into focused passes.
 - Use ThinkTool before multi-step sequences — plan the file structure, then execute.
 - Don't refactor beyond scope. Don't touch unrelated files. Build what was asked.
+- Never open or launch a browser (no google-chrome/chromium/firefox/xdg-open via bash) — that's not your job. If a task needs a browser, hand it back to Echo, who drives it via the chrome-devtools MCP.
 - End with a one-line past-tense summary of what you built.`
 }
 

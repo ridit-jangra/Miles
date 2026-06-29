@@ -8,6 +8,7 @@ import { HumanEditTool } from '../tools/HumanEditTool/tool'
 import { SubagentTool } from '../tools/SubagentTool/tool'
 import { SubscribeTool } from '../tools/SubscribeTool/tool'
 import { PlanTool } from '../tools/PlanTool/tool'
+import { ScreenshotTool } from '../tools/ScreenshotTool/tool'
 
 export const agentTools = {
   FileReadTool,
@@ -19,11 +20,13 @@ export const agentTools = {
   HumanEditTool,
   SubagentTool,
   SubscribeTool,
-  PlanTool
+  PlanTool,
+  ScreenshotTool
 }
 
 export const chatTools = {
   FileReadTool,
   MemoryReadTool,
-  HumanEditTool
+  HumanEditTool,
+  ScreenshotTool
 }
