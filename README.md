@@ -97,8 +97,6 @@ Create a `.env` in the project root:
 ```dotenv
 OPENROUTER_API_KEY=your_openrouter_key_here
 GITHUB_CLIENT_ID=for_integrations...fallback_id_is_already_placed
-SLACK_CLIENT_ID=for_integrations
-SLACK_CLIENT_SECRET=for_integrations
 # Optional wake tuning:
 # WAKE_SCORE_THRESHOLD=0.15
 # WAKE_INPUT_DEVICE=pulse
@@ -137,12 +135,12 @@ Runtime state lives in `~/.echo/` — user profile, memory, sessions, MCP config
 
 Common environment variables read by the speech server (`src/core/server/server.py`):
 
-| Variable                    | Default | Purpose                        |
-| --------------------------- | ------- | ------------------------------ |
-| `WAKE_SCORE_THRESHOLD`      | `0.15`  | Wake-word confidence threshold |
-| `WAKE_INPUT_DEVICE`         | `pulse` | Input device name for capture  |
-| `WAKE_COOLDOWN`             | `3.0`   | Seconds between wake triggers  |
-| `WAKE_DEBUG`                | off     | Verbose detection logging      |
+| Variable               | Default | Purpose                        |
+| ---------------------- | ------- | ------------------------------ |
+| `WAKE_SCORE_THRESHOLD` | `0.15`  | Wake-word confidence threshold |
+| `WAKE_INPUT_DEVICE`    | `pulse` | Input device name for capture  |
+| `WAKE_COOLDOWN`        | `3.0`   | Seconds between wake triggers  |
+| `WAKE_DEBUG`           | off     | Verbose detection logging      |
 
 ## License
 
