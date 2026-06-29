@@ -5,6 +5,27 @@ import type { EventAlert } from '../../shared/events'
 const SYSTEM =
   'You are Echo, sir\'s voice assistant. Give a single short, natural spoken heads-up about a Slack notification — one casual sentence, like a friend nudging him. Do NOT read the message verbatim or use quotes; just let him know something came in and (only if it fits) hint you can help. Keep it under 20 words.'
 
+const SUBAGENT_SYSTEM =
+  "You are Echo, sir's voice assistant. A background helper you delegated to just finished. Relay the outcome to sir in one or two short, natural spoken sentences — plain English, no markdown, lists, code, urls, or file paths. Lead with the result, not the process. Keep it tight."
+
+export async function narrateSubagentResult(
+  agent: string,
+  task: string,
+  result: string
+): Promise<string> {
+  try {
+    const { model } = await getModel()
+    const res = await generateText({
+      model,
+      system: SUBAGENT_SYSTEM,
+      prompt: `${agent} was asked to: ${task}\n\nIts result:\n${result}\n\nTell sir what came of it.`
+    })
+    return res.text.trim() || `${agent} finished that for you, sir.`
+  } catch {
+    return `${agent} finished that for you, sir.`
+  }
+}
+
 export async function narrateAlert(alert: EventAlert): Promise<string> {
   const where = alert.channelName ?? 'a channel'
   const detail =

@@ -23,7 +23,6 @@ app = FastAPI()
 
 def load_stt() -> WhisperModel:
     candidates = [
-        ("medium.en", "cuda", "float16"),
         ("small.en", "cuda", "float16"),
         ("small", "cpu", "int8"),
     ]

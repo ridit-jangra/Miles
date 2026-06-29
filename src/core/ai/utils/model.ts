@@ -14,7 +14,7 @@ export async function getModel(): Promise<{
     apiKey: process.env.OPENROUTER_API_KEY
   }
   if (!config) {
-    throw new Error('no provider configured — run /provider add to get started 🐱')
+    throw new Error('no provider configured')
   }
   return {
     model: buildProvider(config),

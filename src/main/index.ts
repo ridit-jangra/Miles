@@ -16,6 +16,7 @@ import icon from '../../resources/icon.png?asset'
 import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
 import { startSlackPoller } from '../core/events/slack-poller'
 import { narrateAlert } from '../core/events/narrate'
+import { setSpeechEmitter } from '../core/events/speech'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -62,6 +63,10 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  setSpeechEmitter((text) => {
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, text)
+  })
 
   const stopPoller = startSlackPoller(async (alert) => {
     if (mainWindow.isDestroyed()) return
