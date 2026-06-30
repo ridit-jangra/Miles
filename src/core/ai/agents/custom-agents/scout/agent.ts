@@ -4,6 +4,9 @@ import { createSession, Session } from '../../../utils/session'
 import { getScoutSystemPrompt } from '../../../utils/systemPrompt'
 import { BashTool } from '../../../tools/BashTool/tool'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
+import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
+import { MemoryReadTool } from './tools/MemoryReadTool/tool'
+import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 
 const session = createSession()
 
@@ -17,7 +20,10 @@ export async function chatStream(
     tools: {
       ...mcpManager.getToolsByServerNames(['chrome-devtools']),
       BashTool,
-      NotifyTool
+      NotifyTool,
+      MemoryWriteTool,
+      MemoryReadTool,
+      MemoryEditTool
     },
     session,
     mode: 'subagent',

@@ -7,6 +7,9 @@ import { FileWriteTool } from './tools/FileWriteTool/tool'
 import { FileEditTool } from './tools/FileEditTool/tool'
 import { ListDirTool } from './tools/ListDirTool/tool'
 import { GrepTool } from './tools/GrepTool/tool'
+import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
+import { MemoryReadTool } from './tools/MemoryReadTool/tool'
+import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 
 const session = createSession()
 
@@ -17,7 +20,17 @@ export async function chatStream(
   return await streamLLM({
     prompt,
     system: await getHankSystemPrompt(),
-    tools: { ...agentTools, NotifyTool, FileWriteTool, FileEditTool, ListDirTool, GrepTool },
+    tools: {
+      ...agentTools,
+      NotifyTool,
+      FileWriteTool,
+      FileEditTool,
+      ListDirTool,
+      GrepTool,
+      MemoryWriteTool,
+      MemoryReadTool,
+      MemoryEditTool
+    },
     session,
     onChunk,
     onToolCall: (e) => {
