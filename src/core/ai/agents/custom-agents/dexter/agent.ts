@@ -6,6 +6,7 @@ import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { SubscribeTool } from '../../../tools/SubscribeTool/tool'
+import { NotifyTool } from '../../../tools/NotifyTool/tool'
 
 const session = createSession()
 
@@ -21,7 +22,8 @@ export async function chatStream(
       MemoryEditTool,
       MemoryWriteTool,
       MemoryReadTool,
-      SubscribeTool
+      SubscribeTool,
+      NotifyTool
     },
     session,
     onChunk,
@@ -29,7 +31,7 @@ export async function chatStream(
       console.log(`Dexter: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
     },
     onToolResult: (e) => {
-      console.log(`Dexter: [Tool Call]: ${e.toolName}: ${JSON.stringify(e.output)}`)
+      console.log(`Dexter: [Tool Result]: ${e.toolName}: ${JSON.stringify(e.output)}`)
     }
   })
 }

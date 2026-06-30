@@ -1,21 +1,25 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import type { ModelMessage } from 'ai'
+import { generateText, type ModelMessage, type LanguageModel } from 'ai'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { PROJECT_MEMORY_FILE, SESSIONS_DIR, MEMORY_DIR } from './env'
 
 export type Session = {
   id: string
+  kind?: string
   messages: ModelMessage[]
   memoryLoaded: boolean
+  continuityLoaded?: boolean
+  summary?: string
   createdAt: number
   updatedAt: number
   compacted?: boolean
 }
 
-export function createSession(id?: string): Session {
+export function createSession(id?: string, kind?: string): Session {
   return {
     id: id ?? crypto.randomUUID(),
+    kind,
     messages: [],
     memoryLoaded: false,
     createdAt: Date.now(),
@@ -103,5 +107,99 @@ export function loadMemoryIntoSession(session: Session): Session {
   }
 
   session.memoryLoaded = true
+  return session
+}
+
+function loadAllSessions(): Session[] {
+  if (!existsSync(SESSIONS_DIR)) return []
+  return readdirSync(SESSIONS_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => {
+      try {
+        return JSON.parse(readFileSync(join(SESSIONS_DIR, f), 'utf-8')) as Session
+      } catch {
+        return null
+      }
+    })
+    .filter((s): s is Session => !!s)
+}
+
+function persistSummary(session: Session): void {
+  try {
+    const path = join(SESSIONS_DIR, `${session.id}.json`)
+    writeFileSync(path, JSON.stringify(session, null, 2), 'utf-8')
+  } catch {
+    // best-effort cache
+  }
+}
+
+function elapsedPhrase(from: number, to: number): string {
+  const min = Math.round(Math.max(0, to - from) / 60000)
+  if (min < 1) return 'less than a minute'
+  if (min < 60) return `${min} minute${min === 1 ? '' : 's'}`
+  const hr = Math.round(min / 60)
+  if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'}`
+  const d = Math.round(hr / 24)
+  return `${d} day${d === 1 ? '' : 's'}`
+}
+
+async function summarizeSession(session: Session, model: LanguageModel): Promise<string> {
+  const convo = session.messages.filter((m) => {
+    const c = typeof m.content === 'string' ? m.content : ''
+    return !(
+      c.startsWith('<memory>') ||
+      c.startsWith('<previous_session>') ||
+      c.startsWith('Memory loaded') ||
+      c.startsWith('Got it, continuing')
+    )
+  })
+  if (convo.length === 0) return ''
+  const { text } = await generateText({
+    model,
+    system:
+      'Summarize this voice conversation between Echo (the assistant) and sir in 2-3 short plain sentences: what they talked about or did, any decisions made, and anything left open or unfinished. No lists, no markdown.',
+    prompt: JSON.stringify(convo)
+  })
+  return text.trim()
+}
+
+export async function loadPreviousSessionContext(
+  session: Session,
+  model: LanguageModel
+): Promise<Session> {
+  if (session.continuityLoaded) return session
+  session.continuityLoaded = true
+  if (session.kind !== 'echo') return session
+
+  const prior = loadAllSessions()
+    .filter((s) => s.id !== session.id && s.kind === 'echo')
+    .filter((s) => s.messages.some((m) => m.role === 'assistant'))
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  if (!prior) return session
+
+  const lastSeen = prior.updatedAt
+  let summary = prior.summary
+  if (!summary) {
+    try {
+      summary = await summarizeSession(prior, model)
+      if (summary) {
+        prior.summary = summary
+        persistSummary(prior)
+      }
+    } catch {
+      summary = ''
+    }
+  }
+  if (!summary) return session
+
+  session.messages.push({
+    role: 'user',
+    content: `<previous_session>\nIt is now ${new Date().toLocaleString()}. You last spoke with sir about ${elapsedPhrase(lastSeen, Date.now())} ago.\nRecap of that conversation:\n${summary}\n</previous_session>`
+  })
+  session.messages.push({
+    role: 'assistant',
+    content: "Noted — that's just background. I'll wait for sir and respond to what he says, without prompting him to resume it."
+  })
+
   return session
 }

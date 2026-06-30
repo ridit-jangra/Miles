@@ -1,15 +1,12 @@
 /* eslint-disable react-hooks/refs */
 /* eslint-disable react-hooks/immutability */
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { SERVER_PORT } from '../../../shared/constants'
 
 import { synthesize, playClip } from '../utils/speak'
 import PixelBlast from './PixlBlast'
 import { extractSpeakable } from '../utils/extractSpeakables'
 import { Bed, MicIcon, PlayIcon, Square } from 'lucide-react'
 import { SpokenCaption } from './SpokenCaption'
-import { buildWakeGreeting } from '../lib/wakeGreeting'
-import { WAKE_FOCUS_WINDOW } from '../../../shared/channels'
 import { MCPConnectionStatus, MCPServerConfig } from '../../../shared/mcp'
 
 export type MCPServerState = MCPServerConfig & {
@@ -62,6 +59,8 @@ export function Mic(): React.JSX.Element {
   const isPlaying = useRef(false)
 
   const speakAbort = useRef<AbortController | null>(null)
+
+  const genRef = useRef(0)
 
   useEffect(() => {
     listeningRef.current = listening
@@ -186,10 +185,12 @@ export function Mic(): React.JSX.Element {
 
   const chatStreaming = useCallback(
     async (userText: string): Promise<void> => {
+      const myGen = ++genRef.current
       let buffer = ''
       let spokenYet = false
 
       const removeListener = window.ai.onChunk((delta: string) => {
+        if (genRef.current !== myGen) return
         buffer += delta
         const [sentences, remaining] = spokenYet
           ? extractSpeakable(buffer)
@@ -204,7 +205,7 @@ export function Mic(): React.JSX.Element {
       try {
         const fullText: string = await window.ai.chatStream(userText)
         removeListener()
-        handleStreamComplete(fullText, buffer)
+        if (genRef.current === myGen) handleStreamComplete(fullText, buffer)
       } catch (e) {
         removeListener()
 
@@ -324,43 +325,6 @@ export function Mic(): React.JSX.Element {
     setThinking(false)
     mediaRecorder.current?.stop()
   }
-
-  useEffect(() => {
-    let ws: WebSocket
-    let retryTimeout: ReturnType<typeof setTimeout>
-
-    const connect = (): void => {
-      ws = new WebSocket(`ws://127.0.0.1:${SERVER_PORT}/wake`)
-
-      ws.onopen = () => console.log('[Echo] Wake word connected')
-
-      ws.onmessage = async (e) => {
-        if (e.data !== 'wake') return
-        if (isProcessing.current || listeningRef.current) return
-
-        window.electron.ipcRenderer.send(WAKE_FOCUS_WINDOW)
-
-        continuousMode.current = true
-
-        const { salute } = buildWakeGreeting()
-        speak(salute, startListening)
-        // speak(loading)
-        // speak(await brief, startListening)
-      }
-
-      ws.onerror = () => ws.close()
-      ws.onclose = () => {
-        retryTimeout = setTimeout(connect, 2000)
-      }
-    }
-
-    retryTimeout = setTimeout(connect, 3000)
-
-    return () => {
-      clearTimeout(retryTimeout)
-      ws?.close()
-    }
-  }, [startListening, speak])
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">

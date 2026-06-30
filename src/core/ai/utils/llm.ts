@@ -1,8 +1,14 @@
 import { generateText, streamText, stepCountIs } from 'ai'
 import { getModel } from './model'
-import { type Session, createSession, loadMemoryIntoSession, saveSession } from './session'
+import {
+  type Session,
+  createSession,
+  loadMemoryIntoSession,
+  loadPreviousSessionContext,
+  saveSession
+} from './session'
 import type { LLMOptions } from '../types'
-import { COMPACTION_THRESHOLD, compactSession, estimateTokens, shouldCompact } from './compaction'
+import { compactSession, shouldCompact } from './compaction'
 import { repairJSON } from './json'
 
 export async function runLLM({
@@ -18,6 +24,7 @@ export async function runLLM({
   const activeSession = session ?? createSession()
   loadMemoryIntoSession(activeSession)
   const { model } = await getModel()
+  await loadPreviousSessionContext(activeSession, model)
 
   if (shouldCompact(activeSession)) {
     const summary = await generateText({
@@ -29,10 +36,9 @@ export async function runLLM({
 
   const messagesBeforePrompt = [...activeSession.messages]
   activeSession.messages.push({ role: 'user', content: prompt })
-  const tokenCount = estimateTokens(activeSession.messages)
 
   const toolReminder = tools
-    ? `\n\n# STRICT TOOL RULE — you may ONLY call these tools: ${Object.keys(tools).join(', ')}. Calling anything else will crash. No exceptions.`
+    ? `\n\nOnly call these tools: ${Object.keys(tools).join(', ')}.`
     : ''
 
   const stepLimits: Record<string, number> = {
@@ -45,10 +51,7 @@ export async function runLLM({
 
   const result = await generateText({
     model,
-    system:
-      system +
-      `\n\n# Context usage\nTokens used so far: ~${tokenCount}. If this exceeds ${COMPACTION_THRESHOLD}, call CompactTool immediately.` +
-      toolReminder,
+    system: system + toolReminder,
     messages: activeSession.messages,
     stopWhen: stepCountIs(stepLimits[mode] ?? 100),
     tools,
@@ -103,6 +106,7 @@ export async function streamLLM({
   const activeSession = session ?? createSession()
   loadMemoryIntoSession(activeSession)
   const { model } = await getModel()
+  await loadPreviousSessionContext(activeSession, model)
 
   if (shouldCompact(activeSession)) {
     const summary = await generateText({
@@ -114,10 +118,9 @@ export async function streamLLM({
 
   const messagesBeforePrompt = [...activeSession.messages]
   activeSession.messages.push({ role: 'user', content: prompt })
-  const tokenCount = estimateTokens(activeSession.messages)
 
   const toolReminder = tools
-    ? `\n\n# STRICT TOOL RULE — you may ONLY call these tools: ${Object.keys(tools).join(', ')}. Calling anything else will crash. No exceptions.`
+    ? `\n\nOnly call these tools: ${Object.keys(tools).join(', ')}.`
     : ''
 
   const stepLimits: Record<string, number> = {
@@ -130,10 +133,7 @@ export async function streamLLM({
 
   const result = streamText({
     model,
-    system:
-      system +
-      `\n\n# Context usage\nTokens used so far: ~${tokenCount}. If this exceeds ${COMPACTION_THRESHOLD}, call CompactTool immediately.` +
-      toolReminder,
+    system: system + toolReminder,
     messages: activeSession.messages,
     stopWhen: stepCountIs(stepLimits[mode] ?? 100),
     tools,

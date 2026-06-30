@@ -9,7 +9,6 @@ import { SubagentTool } from '../tools/SubagentTool/tool'
 import { SubscribeTool } from '../tools/SubscribeTool/tool'
 import { PlanTool } from '../tools/PlanTool/tool'
 import { ScreenshotTool } from '../tools/ScreenshotTool/tool'
-import { SpeakTool } from '../tools/SpeakTool/tool'
 
 export const agentTools = {
   FileReadTool,
@@ -22,8 +21,7 @@ export const agentTools = {
   SubagentTool,
   SubscribeTool,
   PlanTool,
-  ScreenshotTool,
-  SpeakTool
+  ScreenshotTool
 }
 
 export const chatTools = {
