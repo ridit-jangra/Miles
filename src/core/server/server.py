@@ -11,6 +11,7 @@ from scipy.signal import resample_poly
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from faster_whisper import WhisperModel
+from faster_whisper.audio import decode_audio
 from piper.voice import PiperVoice
 from openwakeword.model import Model
 from sanitize import sanitize_for_tts
@@ -150,18 +151,57 @@ async def wake_endpoint(websocket: WebSocket) -> None:
             wake_clients.remove(websocket)
 
 
+def analyze_tone(samples: np.ndarray, words: list) -> str:
+    if samples.size == 0:
+        return "neutral"
+
+    rms = float(np.sqrt(np.mean(samples**2)))
+
+    rate = 0.0
+    if len(words) >= 2:
+        span = max(words[-1].end - words[0].start, 1e-3)
+        rate = len(words) / span
+
+    loud = rms > 0.08
+    quiet = rms < 0.02
+    fast = rate > 3.2
+    slow = 0.0 < rate < 1.8
+
+    if loud and fast:
+        return "excited"
+    if loud:
+        return "emphatic"
+    if quiet and slow:
+        return "subdued"
+    if fast:
+        return "rushed"
+    if slow:
+        return "hesitant"
+    return "neutral"
+
+
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
-    audio = io.BytesIO(await file.read())
+    data = await file.read()
     segments, _ = stt_model.transcribe(
-        audio,
+        io.BytesIO(data),
         language="en",
         beam_size=1,
         vad_filter=True,
         condition_on_previous_text=False,
+        word_timestamps=True,
     )
-    text = " ".join([s.text.strip() for s in segments])
-    return {"text": text}
+    seg_list = list(segments)
+    text = " ".join([s.text.strip() for s in seg_list])
+    words = [w for s in seg_list for w in (s.words or [])]
+
+    try:
+        samples = decode_audio(io.BytesIO(data), sampling_rate=RATE)
+    except Exception:
+        samples = np.array([], dtype=np.float32)
+
+    tone = analyze_tone(samples, words)
+    return {"text": text, "tone": tone}
 
 
 @app.post("/speak")
