@@ -25,7 +25,9 @@ import type { Briefing } from '../shared/briefing'
 import type { EventAlert } from '../shared/events'
 
 const server = {
-  transcribe: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; text: string }> =>
+  transcribe: (
+    audioBuffer: ArrayBuffer
+  ): Promise<{ success: boolean; text: string; tone?: string }> =>
     ipcRenderer.invoke(TRANSCRIBE, audioBuffer),
 
   speak: (text: string): Promise<{ success: boolean; audio: ArrayBuffer | null }> =>

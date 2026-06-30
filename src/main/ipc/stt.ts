@@ -14,10 +14,10 @@ ipcMain.handle(TRANSCRIBE, async (_, audioBuffer: ArrayBuffer) => {
     })
 
     if (!res.ok) throw new Error(`STT server error: ${res.status}`)
-    const data = (await res.json()) as { text: string }
-    return { success: true, text: data.text }
+    const data = (await res.json()) as { text: string; tone?: string }
+    return { success: true, text: data.text, tone: data.tone }
   } catch (err) {
     console.error('STT error:', err)
-    return { success: false, text: '' }
+    return { success: false, text: '', tone: undefined }
   }
 })

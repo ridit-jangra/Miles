@@ -8,6 +8,7 @@ type server_api = {
   transcribe: (buffer: ArrayBuffer) => Promise<{
     success: boolean
     text: string
+    tone?: string
   }>
   speak: (text: string) => Promise<{
     success: boolean
