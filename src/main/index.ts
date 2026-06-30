@@ -15,6 +15,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
 import { startSlackPoller } from '../core/events/slack-poller'
+import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
 
@@ -74,7 +75,11 @@ function createWindow(): void {
     const speech = await narrateAlert(alert)
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, speech)
   })
-  mainWindow.on('closed', () => stopPoller())
+  const stopStyleCollector = startSlackStyleCollector()
+  mainWindow.on('closed', () => {
+    stopPoller()
+    stopStyleCollector()
+  })
 }
 
 app.whenReady().then(() => {

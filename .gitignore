@@ -17,5 +17,3 @@ __pycache__
 en_US-danny-low.onnx.json
 electron.vite.config.*.mjs
 *.tsbuildinfo
-
-test-analytics.ts
