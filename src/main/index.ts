@@ -16,6 +16,7 @@ import icon from '../../resources/icon.png?asset'
 import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
 import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
+import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
 
@@ -76,9 +77,11 @@ function createWindow(): void {
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, speech)
   })
   const stopStyleCollector = startSlackStyleCollector()
+  const stopSubagentMonitor = startSubagentMonitor()
   mainWindow.on('closed', () => {
     stopPoller()
     stopStyleCollector()
+    stopSubagentMonitor()
   })
 }
 

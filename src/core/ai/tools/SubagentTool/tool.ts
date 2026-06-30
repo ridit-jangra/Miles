@@ -6,6 +6,12 @@ import { chatStream as merlin } from '../../agents/custom-agents/merlin/agent'
 import { chatStream as joker } from '../../agents/custom-agents/joker/agent'
 import { chatStream as scout } from '../../agents/custom-agents/scout/agent'
 import { say } from '../../../events/speech'
+import {
+  recordSubagentResult,
+  startSubagentRun,
+  appendSubagentActivity,
+  completeSubagentRun
+} from '../../../events/subagents'
 import { narrateSubagentResult } from '../../../events/narrate'
 import { DESCRIPTION, PROMPT } from './prompt'
 
@@ -21,11 +27,17 @@ export const SubagentTool = tool({
     task: z.string().describe('A clear, self-contained instruction for the subagent to carry out')
   }),
   execute: async ({ agent, task }) => {
-    void AGENTS[agent](task, () => {})
+    const runId = startSubagentRun(agent, task)
+    void AGENTS[agent](task, (delta) => appendSubagentActivity(runId, delta))
       .then(async ({ text }) => {
+        completeSubagentRun(runId, true)
+        recordSubagentResult({ agent, task, result: text, ok: true })
         say(await narrateSubagentResult(agent, task, text))
       })
       .catch((err) => {
+        completeSubagentRun(runId, false)
+        const message = err instanceof Error ? err.message : String(err)
+        recordSubagentResult({ agent, task, result: `Failed: ${message}`, ok: false })
         say(`${agent} ran into a problem with that, sir.`)
         console.error(`[Subagent ${agent}] background task failed:`, err)
       })
@@ -34,7 +46,7 @@ export const SubagentTool = tool({
       success: true,
       agent,
       status: 'running',
-      note: `${agent} is handling that in the background. You stay free to keep talking with sir — its result will be spoken aloud when it finishes, so don't wait on it or claim it's done.`
+      note: `${agent} is handling that in the background. ${agent} owns the talking for this task: it voices its own progress notes while working and its final result is spoken aloud automatically the moment it finishes (and dropped into your context as a subagent_result). So do NOT speak any status line of your own now — don't say it's done, don't say it's searching, don't narrate progress, don't end your turn with a completion sentence. Stay quiet on this task and let ${agent} report; only if sir directly asks, say ${agent} is still on it. Premature or guessed status from you will contradict ${agent}'s own voice and confuse sir.`
     }
   }
 })

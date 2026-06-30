@@ -2,11 +2,11 @@ import { mcpManager } from '../../../../mcp/manager'
 import { streamLLM } from '../../../utils/llm'
 import { createSession, Session } from '../../../utils/session'
 import { getScoutSystemPrompt } from '../../../utils/systemPrompt'
-import { BashTool } from '../../../tools/BashTool/tool'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
+import { BashTool } from '../hank/tools/BashTool/tool'
 
 const session = createSession()
 

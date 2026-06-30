@@ -10,6 +10,7 @@ import { GrepTool } from './tools/GrepTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
+import { BashTool } from './tools/BashTool/tool'
 
 const session = createSession()
 
@@ -29,7 +30,8 @@ export async function chatStream(
       GrepTool,
       MemoryWriteTool,
       MemoryReadTool,
-      MemoryEditTool
+      MemoryEditTool,
+      BashTool
     },
     session,
     onChunk,

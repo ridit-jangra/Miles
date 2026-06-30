@@ -3,7 +3,7 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { resolve } from 'path'
 import { PROMPT, DESCRIPTION } from './prompt.js'
-import { addLineNumbers, findSimilarFile } from '../../utils/file'
+import { addLineNumbers, findSimilarFile } from '../../../../../utils/file'
 
 export const FileReadTool = tool({
   description: DESCRIPTION + '\n\n' + PROMPT,
