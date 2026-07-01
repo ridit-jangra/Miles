@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Runs on your own machine (register a runner with these labels). It has the
+    # disk for the freeze + slim build; GitHub-hosted runners are too small.
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python venv + deps
+        run: |
+          python3.11 -m venv .venv || python3 -m venv .venv
+          ./.venv/bin/pip install --upgrade pip
+          ./.venv/bin/pip install -r requirements.txt pyinstaller
+
+      - name: Node deps
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Clean previous build
+        run: rm -rf build dist
+
+      - name: Build slim app (CUDA bundled, models fetched at runtime)
+        run: bash scripts/build-app.sh --linux --publish never
+
+      - name: Build models pack
+        run: bash scripts/build-packs.sh
+
+      - name: Sanity-check artifact size (GitHub caps assets at 2GB)
+        run: |
+          for f in dist/*.AppImage dist/*.deb; do
+            [ -f "$f" ] || continue
+            bytes=$(stat -c%s "$f")
+            echo "$f -> $(du -h "$f" | cut -f1)"
+            if [ "$bytes" -gt 2147483648 ]; then
+              echo "::error::$f exceeds GitHub's 2GB release-asset limit"
+              exit 1
+            fi
+          done
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          files: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/latest-linux.yml
+            dist/packs/models.tar.gz
+            dist/packs/models.tar.gz.sha256

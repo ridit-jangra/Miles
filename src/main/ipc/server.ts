@@ -3,16 +3,13 @@ import { spawn, ChildProcess } from 'child_process'
 import { join } from 'path'
 import { existsSync } from 'fs'
 import { SERVER_PORT } from '../../shared/constants'
+import { ensureAssets } from './assets'
 
 let serverProcess: ChildProcess | null = null
 
 function binaryPath(): string {
   const exe = process.platform === 'win32' ? 'server.exe' : 'server'
   return join(process.resourcesPath, 'server', exe)
-}
-
-function modelsDir(): string {
-  return join(process.resourcesPath, 'models')
 }
 
 async function waitForHealth(timeoutMs = 90000): Promise<boolean> {
@@ -30,7 +27,7 @@ async function waitForHealth(timeoutMs = 90000): Promise<boolean> {
   return false
 }
 
-export function startServer(): void {
+export async function startServer(): Promise<void> {
   if (!app.isPackaged) {
     console.log('[server] dev mode — expecting `npm run start:server`')
     return
@@ -42,15 +39,24 @@ export function startServer(): void {
     return
   }
 
-  serverProcess = spawn(bin, [], {
-    env: {
-      ...process.env,
-      ECHO_MODELS_DIR: modelsDir(),
-      ECHO_SERVER_HOST: '127.0.0.1',
-      ECHO_SERVER_PORT: SERVER_PORT
-    },
-    stdio: 'inherit'
-  })
+  let assets: Awaited<ReturnType<typeof ensureAssets>>
+  try {
+    assets = await ensureAssets()
+  } catch (err) {
+    console.error('[server] asset download failed, cannot start:', err)
+    return
+  }
+
+  // Models live in userData, fetched on first run to keep the app download
+  // under GitHub's 2GB asset cap. CUDA libs are bundled in the frozen server.
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    ECHO_MODELS_DIR: assets.modelsDir,
+    ECHO_SERVER_HOST: '127.0.0.1',
+    ECHO_SERVER_PORT: SERVER_PORT
+  }
+
+  serverProcess = spawn(bin, [], { env, stdio: 'inherit' })
 
   serverProcess.on('exit', (code) => {
     console.log(`[server] exited (code ${code})`)

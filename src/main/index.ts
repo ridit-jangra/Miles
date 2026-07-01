@@ -94,7 +94,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  startServer()
+  startServer().catch((err) => console.error('[server] start failed:', err))
 
   mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
 

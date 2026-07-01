@@ -7,6 +7,10 @@ files:
   - '!**/.vscode/*'
   - '!.claude'
   - '!**/.claude/**'
+  - '!.venv'
+  - '!**/.venv/**'
+  - '!{test-dexter.ts,send-dexter.ts,requirements.txt}'
+  - '!**/*.tsbuildinfo'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
@@ -17,10 +21,6 @@ asarUnpack:
 extraResources:
   - from: build/server
     to: server
-    filter:
-      - '**/*'
-  - from: models
-    to: models
     filter:
       - '**/*'
 win:
@@ -50,7 +50,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: ridit-jangra
+  repo: Echo
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
