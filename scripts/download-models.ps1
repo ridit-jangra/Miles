@@ -67,21 +67,24 @@ if (Test-Path $DANNY_JSON) {
 }
 
 # ── Whisper ───────────────────────────────────────────────────────────────────
-$WHISPER_CACHE = Join-Path $env:USERPROFILE ".cache\huggingface\hub\models--Systran--faster-whisper-small"
+$WHISPER_DIR = Join-Path $MODELS_DIR "whisper"
 
-if (Test-Path $WHISPER_CACHE) {
-    Log "Whisper small model already downloaded"
-} else {
-    Info "Downloading Whisper small model (~150MB)..."
-    $env:TRANSFORMERS_OFFLINE = "0"
-    $env:HF_DATASETS_OFFLINE  = "0"
-    $result = & $PYTHON -c @"
-from faster_whisper import WhisperModel
-WhisperModel('small', device='cpu', compute_type='int8')
+foreach ($SIZE in @("small.en", "small")) {
+    $target = Join-Path $WHISPER_DIR $SIZE
+    if (Test-Path $target) {
+        Log "Whisper $SIZE already present"
+    } else {
+        Info "Downloading Whisper $SIZE into models\whisper\$SIZE..."
+        $env:TRANSFORMERS_OFFLINE = "0"
+        $env:HF_DATASETS_OFFLINE  = "0"
+        $result = & $PYTHON -c @"
+from faster_whisper import download_model
+download_model('$SIZE', output_dir=r'$target')
 print('ok')
 "@
-    if ($LASTEXITCODE -ne 0) { Err "Failed to download Whisper model" }
-    Log "Whisper small model downloaded"
+        if ($LASTEXITCODE -ne 0) { Err "Failed to download Whisper $SIZE" }
+        Log "Whisper $SIZE downloaded"
+    }
 }
 
 # ── OpenWakeWord ──────────────────────────────────────────────────────────────

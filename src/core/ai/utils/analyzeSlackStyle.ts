@@ -126,6 +126,43 @@ export async function generateSampleMessages(count = 75): Promise<string[]> {
     .slice(0, count)
 }
 
+const COMPOSE_PROMPT = `You are composing a Slack message AS "sir" — in his exact voice, not yours, not generic-assistant. You are given a guide to how he writes, real messages he actually sent, the INTENT (what he wants to say), and WHERE it's going. Produce the actual message he would send.
+
+Keep his VOICE: lowercase, his slang and misspellings (ts, js, lowk, gng, rn), short bursts, his emoji, usually no periods — exactly as the guide and examples show. Match his cadence: if he tends to fire several short messages in a row, split it into multiple bursts.
+
+Preserve the INTENT exactly — never change the facts, meaning, or substance of what he wants to say; only phrase it like him. Friendly and respectful by default: no insults, putdowns, or trolling edge even if his banter has one. Scale formality to WHERE it's going — looser in casual DMs, more buttoned-up in work or public channels.
+
+Output ONLY the message text — no labels, quotes, numbering, or commentary. If it's naturally multiple short bursts, put each burst on its own line (each line is sent as a separate message). Current date: {{DATE}}.`
+
+export type SlackContext = { channelName?: string; isIm?: boolean; isPrivate?: boolean }
+
+function describeContext(ctx: SlackContext): string {
+  if (ctx.isIm) return 'a direct message (DM) — casual, one-on-one'
+  if (ctx.channelName)
+    return `the ${ctx.isPrivate ? 'private' : 'public'} channel #${ctx.channelName}`
+  return 'a Slack channel'
+}
+
+export async function composeAsSir(intent: string, ctx: SlackContext = {}): Promise<string[]> {
+  const guide = existsSync(SLACK_STYLE_FILE) ? readFileSync(SLACK_STYLE_FILE, 'utf-8').trim() : ''
+  if (!guide) return []
+
+  const { sample } = collectSlackSamples(40)
+  const today = new Date().toISOString().slice(0, 10)
+
+  const { model } = await getModel()
+  const { text } = await generateText({
+    model,
+    system: COMPOSE_PROMPT.replace('{{DATE}}', today),
+    prompt: `## STYLE GUIDE\n${guide}\n\n## REAL EXAMPLES (for grounding — do not copy)\n${sample}\n\n## WHERE IT'S GOING\n${describeContext(ctx)}\n\n## INTENT (what sir wants to say)\n${intent}\n\n## TASK\nWrite the message as sir would send it. One burst per line.`
+  })
+
+  return text
+    .split('\n')
+    .map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim())
+    .filter((l) => l.length > 0)
+}
+
 export async function analyzeSlackStyle(
   maxMessages = 400
 ): Promise<{ guide: string; total: number }> {

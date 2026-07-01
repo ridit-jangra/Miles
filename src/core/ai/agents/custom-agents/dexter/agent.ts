@@ -5,15 +5,15 @@ import { getDexterSystemPrompt } from '../../../utils/systemPrompt'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
+import { ComposeSlackTool } from './tools/ComposeSlackTool/tool'
 import { SubscribeTool } from '../../../tools/SubscribeTool/tool'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
-
-const session = createSession()
 
 export async function chatStream(
   prompt: string,
   onChunk: (delta: string) => void
 ): Promise<{ text: string; session: Session }> {
+  const session = createSession()
   return await streamLLM({
     prompt,
     system: await getDexterSystemPrompt(),
@@ -22,6 +22,7 @@ export async function chatStream(
       MemoryEditTool,
       MemoryWriteTool,
       MemoryReadTool,
+      ComposeSlackTool,
       SubscribeTool,
       NotifyTool
     },

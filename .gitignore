@@ -15,5 +15,12 @@ __pycache__
 !echo.onnx
 !wakeup.onnx
 en_US-danny-low.onnx.json
+models/whisper/
 electron.vite.config.*.mjs
 *.tsbuildinfo
+
+# Frozen Python server (PyInstaller output)
+build/server/
+build/.pyinstaller/
+
+output

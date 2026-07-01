@@ -7,12 +7,11 @@ import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 
-const session = createSession()
-
 export async function chatStream(
   prompt: string,
   onChunk: (delta: string) => void
 ): Promise<{ text: string; session: Session }> {
+  const session = createSession()
   return await streamLLM({
     prompt,
     system: await getJokerSystemPrompt(),

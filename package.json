@@ -1,5 +1,5 @@
 {
-  "name": "@ridit/echo",
+  "name": "echo",
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
@@ -17,10 +17,12 @@
     "start:server:win": "powershell -ExecutionPolicy Bypass -File scripts/start-server.ps1",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:unpack": "bash scripts/build-app.sh --dir",
+    "build:win": "powershell -ExecutionPolicy Bypass -File scripts/build-app.ps1 --win",
+    "build:mac": "bash scripts/build-app.sh --mac",
+    "build:linux": "bash scripts/build-app.sh --linux",
+    "build:server:linux": "bash scripts/build-server.sh",
+    "build:server:win": "powershell -ExecutionPolicy Bypass -File scripts/build-server.ps1",
     "download-models:linux": "bash scripts/download-models.sh",
     "download-models:win": "powershell -ExecutionPolicy Bypass -File scripts/download-models.ps1"
   },

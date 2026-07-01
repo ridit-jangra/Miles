@@ -3,7 +3,7 @@ config()
 
 import './ipc/stt'
 import './ipc/tts'
-import './ipc/server'
+import { startServer, stopServer } from './ipc/server'
 import './ipc/ai'
 import './ipc/mcp'
 import './ipc/oauth'
@@ -94,6 +94,8 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
+  startServer()
+
   mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
 
   createWindow()
@@ -110,5 +112,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  stopServer()
   mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))
 })

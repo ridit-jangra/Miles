@@ -21,26 +21,41 @@ os.environ["HF_DATASETS_OFFLINE"] = "1"
 
 app = FastAPI()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.environ.get("ECHO_MODELS_DIR") or os.path.normpath(
+    os.path.join(BASE_DIR, "../../../models")
+)
+
+
+def _whisper_source(name: str) -> str:
+    local = os.path.join(MODELS_DIR, "whisper", name)
+    return local if os.path.isdir(local) else name
+
 
 def load_stt() -> WhisperModel:
     candidates = [
         ("small.en", "cuda", "float16"),
         ("small", "cpu", "int8"),
     ]
-    for model, device, compute in candidates:
+    for name, device, compute in candidates:
+        source = _whisper_source(name)
         try:
-            m = WhisperModel(model, device=device, compute_type=compute)
-            print(f"STT: Running {model} on {device} ({compute})")
+            m = WhisperModel(source, device=device, compute_type=compute)
+            # Constructing the model doesn't touch cuBLAS/cuDNN — those load
+            # lazily on the first encode. Force a tiny inference now so a
+            # missing/unloadable GPU lib falls back to the next candidate here,
+            # instead of 500-ing on the user's first real utterance.
+            warmup = np.random.randn(16000).astype(np.float32) * 1e-3
+            list(m.transcribe(warmup, beam_size=1)[0])
+            print(f"STT: Running {name} on {device} ({compute}) from {source}")
             return m
         except Exception as e:
-            print(f"STT: {model} on {device} unavailable ({e})")
+            print(f"STT: {name} on {device} unavailable ({e})")
     raise RuntimeError("STT: no Whisper model could be loaded")
 
 
 stt_model = load_stt()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "../../../models"))
 DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
 
 DEFAULT_VOICE = "en_US-danny-low"
@@ -239,3 +254,11 @@ async def voices():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    host = os.environ.get("ECHO_SERVER_HOST", "127.0.0.1")
+    port = int(os.environ.get("ECHO_SERVER_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port, log_level="info")

@@ -47,18 +47,20 @@ else
 fi
 
 # ── Whisper ───────────────────────────────────────────────────────────────────
-WHISPER_CACHE="$HOME/.cache/huggingface/hub/small"
-if [ -d "$WHISPER_CACHE" ]; then
-  log "Whisper small model already downloaded"
-else
-  info "Downloading Whisper small model (~150MB)..."
-  TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 "$PYTHON" -c "
-from faster_whisper import WhisperModel
-WhisperModel('small', device='cpu', compute_type='int8')
+WHISPER_DIR="$MODELS_DIR/whisper"
+for SIZE in small.en small; do
+  if [ -d "$WHISPER_DIR/$SIZE" ]; then
+    log "Whisper $SIZE already present"
+  else
+    info "Downloading Whisper $SIZE into models/whisper/$SIZE..."
+    TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 "$PYTHON" -c "
+from faster_whisper import download_model
+download_model('$SIZE', output_dir='$WHISPER_DIR/$SIZE')
 print('ok')
-" || err "Failed to download Whisper model"
-  log "Whisper small model downloaded"
-fi
+" || err "Failed to download Whisper $SIZE"
+    log "Whisper $SIZE downloaded"
+  fi
+done
 
 # ── OpenWakeWord ──────────────────────────────────────────────────────────────
 OWW_MODELS_DIR="$VENV_DIR/lib/python3.11/site-packages/openwakeword/resources/models"
