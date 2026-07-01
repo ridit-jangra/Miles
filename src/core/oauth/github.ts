@@ -11,7 +11,7 @@ const JSON_HEADERS = {
 }
 
 function clientId(): string {
-  const id = process.env.GITHUB_CLIENT_ID
+  const id = process.env.GITHUB_CLIENT_ID ?? 'Ov23liayXkqJQGHBUXd0'
   if (!id || id === 'REPLACE_WITH_YOUR_CLIENT_ID') {
     throw new Error(
       'No GitHub client ID configured. Set DEFAULT_CLIENT_ID in src/core/oauth/github.ts (or the GITHUB_CLIENT_ID env var) to a GitHub OAuth app with Device Flow enabled.'

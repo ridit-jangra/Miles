@@ -4,6 +4,7 @@ config()
 import './ipc/stt'
 import './ipc/tts'
 import { startServer, stopServer } from './ipc/server'
+import { ensureBrowserLauncher } from './ipc/browser'
 import './ipc/ai'
 import './ipc/mcp'
 import './ipc/oauth'
@@ -94,6 +95,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
+  ensureBrowserLauncher()
   startServer().catch((err) => console.error('[server] start failed:', err))
 
   mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
