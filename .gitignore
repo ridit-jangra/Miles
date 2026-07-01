@@ -24,3 +24,5 @@ build/server/
 build/.pyinstaller/
 
 output
+
+actions-runner
