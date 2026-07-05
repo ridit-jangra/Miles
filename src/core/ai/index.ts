@@ -4,6 +4,7 @@ import { getAgentSystemPrompt } from './utils/systemPrompt'
 import { agentTools } from './utils/tools'
 import { SpeakTool } from './tools/SpeakTool/tool'
 import { drainSubagentResults } from '../events/subagents'
+import { hasPendingQuestion, answerPendingQuestion } from '../events/pending-question'
 
 const session = createSession(undefined, 'echo')
 
@@ -24,6 +25,10 @@ function flushSubagentResults(): void {
 }
 
 export async function chat(prompt: string): Promise<{ text: string; session: Session }> {
+  if (hasPendingQuestion()) {
+    answerPendingQuestion(prompt)
+    return { text: '', session }
+  }
   flushSubagentResults()
   return await runLLM({
     prompt,
@@ -43,6 +48,10 @@ export async function chatStream(
   prompt: string,
   onChunk: (delta: string) => void
 ): Promise<{ text: string; session: Session }> {
+  if (hasPendingQuestion()) {
+    answerPendingQuestion(prompt)
+    return { text: '', session }
+  }
   flushSubagentResults()
   return await streamLLM({
     prompt,

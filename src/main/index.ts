@@ -20,6 +20,9 @@ import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
+import { startBackupTimer, backupEchoStore } from '../core/ai/utils/backup'
+
+let stopBackupTimer: (() => void) | null = null
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -96,6 +99,7 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   ensureBrowserLauncher()
+  stopBackupTimer = startBackupTimer()
   startServer().catch((err) => console.error('[server] start failed:', err))
 
   mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
@@ -114,6 +118,8 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  if (stopBackupTimer) stopBackupTimer()
+  backupEchoStore()
   stopServer()
   mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))
 })

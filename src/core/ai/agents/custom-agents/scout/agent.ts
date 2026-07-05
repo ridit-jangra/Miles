@@ -3,6 +3,7 @@ import { streamLLM } from '../../../utils/llm'
 import { createSession, Session } from '../../../utils/session'
 import { getScoutSystemPrompt } from '../../../utils/systemPrompt'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
+import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
@@ -20,6 +21,7 @@ export async function chatStream(
       ...mcpManager.getToolsByServerNames(['chrome-devtools']),
       BashTool,
       NotifyTool,
+      AskEchoTool,
       MemoryWriteTool,
       MemoryReadTool,
       MemoryEditTool

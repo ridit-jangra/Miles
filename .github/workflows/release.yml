@@ -10,8 +10,6 @@ permissions:
 
 jobs:
   release:
-    # Runs on your own machine (register a runner with these labels). It has the
-    # disk for the freeze + slim build; GitHub-hosted runners are too small.
     runs-on: [self-hosted, linux, x64]
 
     steps:

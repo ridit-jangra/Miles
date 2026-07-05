@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
 import { DESCRIPTION, PROMPT } from './prompt'
+import { protectedRootFor } from '../../../../../utils/protectedPaths'
 
 export const FileWriteTool = tool({
   title: 'FileWrite',
@@ -13,6 +14,10 @@ export const FileWriteTool = tool({
   }),
   execute: async ({ path, content }) => {
     try {
+      const root = protectedRootFor(path)
+      if (root) {
+        return { success: false, error: `Refused: "${path}" is inside a protected path (${root}).` }
+      }
       mkdirSync(dirname(path), { recursive: true })
       writeFileSync(path, content, 'utf-8')
       return { success: true, path, bytes: Buffer.byteLength(content) }

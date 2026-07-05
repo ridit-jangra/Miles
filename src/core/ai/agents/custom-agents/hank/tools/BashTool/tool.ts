@@ -4,6 +4,7 @@ import { DESCRIPTION, PROMPT, MAX_OUTPUT_LENGTH, BANNED_COMMANDS } from './promp
 import { PersistentShell } from '../../../../../utils/PersistentShell'
 import { requestPermission } from '../../../../../permissions'
 import { shellStream } from '../../../../../utils/shellStream'
+import { scanCommandForProtected } from '../../../../../utils/protectedPaths'
 
 const inputSchema = z.object({
   command: z.string().describe('The bash command to execute'),
@@ -25,6 +26,9 @@ export const BashTool = tool({
       if (banned) return { success: false, error: `Command "${banned}" is not allowed` }
 
       const shell = PersistentShell.getInstance()
+
+      const protectedViolation = scanCommandForProtected(command, shell.pwd())
+      if (protectedViolation) return { success: false, error: protectedViolation }
 
       shellStream.emit('command', command)
 

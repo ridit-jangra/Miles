@@ -6,8 +6,10 @@ import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { ComposeSlackTool } from './tools/ComposeSlackTool/tool'
+import { ChannelInfoTool } from './tools/ChannelInfoTool/tool'
 import { SubscribeTool } from '../../../tools/SubscribeTool/tool'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
+import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 
 export async function chatStream(
   prompt: string,
@@ -23,8 +25,10 @@ export async function chatStream(
       MemoryWriteTool,
       MemoryReadTool,
       ComposeSlackTool,
+      ChannelInfoTool,
       SubscribeTool,
-      NotifyTool
+      NotifyTool,
+      AskEchoTool
     },
     session,
     onChunk,

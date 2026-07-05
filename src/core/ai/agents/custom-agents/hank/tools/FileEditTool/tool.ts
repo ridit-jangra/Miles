@@ -2,6 +2,7 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { DESCRIPTION, PROMPT } from './prompt'
+import { protectedRootFor } from '../../../../../utils/protectedPaths'
 
 export const FileEditTool = tool({
   title: 'FileEdit',
@@ -14,6 +15,10 @@ export const FileEditTool = tool({
   }),
   execute: async ({ path, old_string, new_string, replace_all }) => {
     try {
+      const root = protectedRootFor(path)
+      if (root) {
+        return { success: false, error: `Refused: "${path}" is inside a protected path (${root}).` }
+      }
       if (!existsSync(path)) return { success: false, error: `File not found: ${path}` }
       const content = readFileSync(path, 'utf-8')
       const count = content.split(old_string).length - 1

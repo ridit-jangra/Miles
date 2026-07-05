@@ -3,6 +3,7 @@ import { createSession, Session } from '../../../utils/session'
 import { getHankSystemPrompt } from '../../../utils/systemPrompt'
 import { agentTools } from '../../../utils/tools'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
+import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { FileWriteTool } from './tools/FileWriteTool/tool'
 import { FileEditTool } from './tools/FileEditTool/tool'
 import { ListDirTool } from './tools/ListDirTool/tool'
@@ -23,6 +24,7 @@ export async function chatStream(
     tools: {
       ...agentTools,
       NotifyTool,
+      AskEchoTool,
       FileWriteTool,
       FileEditTool,
       ListDirTool,
