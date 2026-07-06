@@ -11,8 +11,8 @@ export const AskEchoTool = tool({
       .string()
       .describe('One clear, self-contained question for sir, phrased for him to hear aloud.')
   }),
-  execute: async ({ question }) => {
-    const answer = await askEcho(question)
+  execute: async ({ question }, { abortSignal }) => {
+    const answer = await askEcho(question, abortSignal)
     return { success: true, answer }
   }
 })

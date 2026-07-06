@@ -227,10 +227,11 @@ class MCPManager {
 
   getToolsByServerNames(names: string[]): ToolSet {
     this.ensureLoaded()
-    const wanted = new Set(names.map((n) => n.toLowerCase()))
+    const slug = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, '')
+    const wanted = new Set(names.map(slug))
     const all: ToolSet = {}
     for (const server of this.servers.values()) {
-      if (server.status === 'connected' && wanted.has(server.config.name.toLowerCase())) {
+      if (server.status === 'connected' && wanted.has(slug(server.config.name))) {
         Object.assign(all, server.tools)
       }
     }

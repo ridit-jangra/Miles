@@ -11,11 +11,13 @@ import { BashTool } from '../hank/tools/BashTool/tool'
 
 export async function chatStream(
   prompt: string,
-  onChunk: (delta: string) => void
+  onChunk: (delta: string) => void,
+  abortSignal?: AbortSignal
 ): Promise<{ text: string; session: Session }> {
   const session = createSession()
   return await streamLLM({
     prompt,
+    abortSignal,
     system: await getScoutSystemPrompt(),
     tools: {
       ...mcpManager.getToolsByServerNames(['chrome-devtools']),

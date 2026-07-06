@@ -9,7 +9,7 @@ export type SubagentRun = {
   id: string
   agent: string
   task: string
-  status: 'running' | 'done' | 'failed'
+  status: 'running' | 'done' | 'failed' | 'killed'
   startedAt: number
   updatedAt: number
   finishedAt?: number
@@ -19,6 +19,7 @@ export type SubagentRun = {
 
 const pending: SubagentResult[] = []
 const runs = new Map<string, SubagentRun>()
+const controllers = new Map<string, AbortController>()
 
 const ACTIVITY_TAIL = 400
 const FINISHED_RETENTION_MS = 5 * 60_000
@@ -44,7 +45,28 @@ export function startSubagentRun(agent: string, task: string): string {
     lastActivity: '',
     lastCheckupAt: now
   })
+  controllers.set(id, new AbortController())
   return id
+}
+
+export function getSubagentSignal(id: string): AbortSignal | undefined {
+  return controllers.get(id)?.signal
+}
+
+export function killSubagentRuns(agent?: string): SubagentRun[] {
+  const needle = agent?.toLowerCase()
+  const killed: SubagentRun[] = []
+  for (const run of runs.values()) {
+    if (run.status !== 'running') continue
+    if (needle && run.agent.toLowerCase() !== needle) continue
+    run.status = 'killed'
+    run.finishedAt = Date.now()
+    run.updatedAt = run.finishedAt
+    controllers.get(run.id)?.abort()
+    controllers.delete(run.id)
+    killed.push(run)
+  }
+  return killed
 }
 
 export function appendSubagentActivity(id: string, delta: string): void {
@@ -55,8 +77,9 @@ export function appendSubagentActivity(id: string, delta: string): void {
 }
 
 export function completeSubagentRun(id: string, ok: boolean): void {
+  controllers.delete(id)
   const run = runs.get(id)
-  if (!run) return
+  if (!run || run.status === 'killed') return
   run.status = ok ? 'done' : 'failed'
   run.finishedAt = Date.now()
   run.updatedAt = run.finishedAt

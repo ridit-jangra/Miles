@@ -1,8 +1,10 @@
 import { ipcMain } from 'electron'
 import { TRANSCRIBE } from '../../shared/channels'
 import { SERVER_PORT, SERVER_URL } from '../../shared/constants'
+import { markActivity } from '../../core/events/announcements'
 
 ipcMain.handle(TRANSCRIBE, async (_, audioBuffer: ArrayBuffer) => {
+  markActivity()
   try {
     const formData = new FormData()
     const blob = new Blob([audioBuffer], { type: 'audio/webm' })

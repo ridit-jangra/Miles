@@ -6,6 +6,7 @@ import { MemoryEditTool } from './tools/MemoryEditTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { ComposeSlackTool } from './tools/ComposeSlackTool/tool'
+import { GenerateSamplesTool } from './tools/GenerateSamplesTool/tool'
 import { ChannelInfoTool } from './tools/ChannelInfoTool/tool'
 import { SubscribeTool } from '../../../tools/SubscribeTool/tool'
 import { NotifyTool } from '../../../tools/NotifyTool/tool'
@@ -13,11 +14,13 @@ import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 
 export async function chatStream(
   prompt: string,
-  onChunk: (delta: string) => void
+  onChunk: (delta: string) => void,
+  abortSignal?: AbortSignal
 ): Promise<{ text: string; session: Session }> {
   const session = createSession()
   return await streamLLM({
     prompt,
+    abortSignal,
     system: await getDexterSystemPrompt(),
     tools: {
       ...mcpManager.getToolsByServerNames(['slack', 'github']),
@@ -25,6 +28,7 @@ export async function chatStream(
       MemoryWriteTool,
       MemoryReadTool,
       ComposeSlackTool,
+      GenerateSamplesTool,
       ChannelInfoTool,
       SubscribeTool,
       NotifyTool,

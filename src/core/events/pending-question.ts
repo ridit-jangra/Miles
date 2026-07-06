@@ -15,16 +15,23 @@ export function hasPendingQuestion(): boolean {
   return queue.length > 0
 }
 
-export function askEcho(question: string): Promise<string> {
+export function askEcho(question: string, signal?: AbortSignal): Promise<string> {
   return new Promise<string>((resolve) => {
+    if (signal?.aborted) {
+      resolve(NO_ANSWER)
+      return
+    }
     const id = crypto.randomUUID()
-    const timer = setTimeout(() => {
+    const withdraw = (): void => {
       const idx = queue.findIndex((q) => q.id === id)
       if (idx === -1) return
       const [p] = queue.splice(idx, 1)
+      clearTimeout(p.timer)
       p.resolve(NO_ANSWER)
       if (idx === 0 && queue.length > 0) say(queue[0].question)
-    }, TIMEOUT_MS)
+    }
+    const timer = setTimeout(withdraw, TIMEOUT_MS)
+    signal?.addEventListener('abort', withdraw, { once: true })
 
     const wasEmpty = queue.length === 0
     queue.push({ id, question, resolve, timer })

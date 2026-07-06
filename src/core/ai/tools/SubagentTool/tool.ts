@@ -3,38 +3,49 @@ import { z } from 'zod'
 import { chatStream as dexter } from '../../agents/custom-agents/dexter/agent'
 import { chatStream as hank } from '../../agents/custom-agents/hank/agent'
 import { chatStream as merlin } from '../../agents/custom-agents/merlin/agent'
-import { chatStream as joker } from '../../agents/custom-agents/joker/agent'
 import { chatStream as scout } from '../../agents/custom-agents/scout/agent'
 import { say } from '../../../events/speech'
 import {
   recordSubagentResult,
   startSubagentRun,
   appendSubagentActivity,
-  completeSubagentRun
+  completeSubagentRun,
+  getSubagentRun,
+  getSubagentSignal
 } from '../../../events/subagents'
 import { narrateSubagentResult } from '../../../events/narrate'
 import { DESCRIPTION, PROMPT } from './prompt'
 
-const AGENTS = { dexter, hank, merlin, joker, scout } as const
+const AGENTS = { dexter, hank, merlin, scout } as const
 
 export const SubagentTool = tool({
   title: 'Subagent',
   description: DESCRIPTION + '\n\n' + PROMPT,
   inputSchema: z.object({
     agent: z
-      .enum(['dexter', 'hank', 'merlin', 'joker', 'scout'])
+      .enum(['dexter', 'hank', 'merlin', 'scout'])
       .describe('Which subagent to delegate to, chosen by lane'),
     task: z.string().describe('A clear, self-contained instruction for the subagent to carry out')
   }),
   execute: async ({ agent, task }) => {
     const runId = startSubagentRun(agent, task)
-    void AGENTS[agent](task, (delta) => appendSubagentActivity(runId, delta))
+    void AGENTS[agent](task, (delta) => appendSubagentActivity(runId, delta), getSubagentSignal(runId))
       .then(async ({ text }) => {
+        if (getSubagentRun(runId)?.status === 'killed') return
         completeSubagentRun(runId, true)
         recordSubagentResult({ agent, task, result: text, ok: true })
         say(await narrateSubagentResult(agent, task, text))
       })
       .catch((err) => {
+        if (getSubagentRun(runId)?.status === 'killed') {
+          recordSubagentResult({
+            agent,
+            task,
+            result: 'Killed at sir’s request before finishing. It will not report back.',
+            ok: false
+          })
+          return
+        }
         completeSubagentRun(runId, false)
         const message = err instanceof Error ? err.message : String(err)
         recordSubagentResult({ agent, task, result: `Failed: ${message}`, ok: false })

@@ -1,0 +1,44 @@
+import { say } from './speech'
+
+const QUIET_AFTER_ACTIVITY_MS = 45_000
+const FLUSH_TICK_MS = 5_000
+
+const queue: string[] = []
+let busyDepth = 0
+let lastActivityAt = 0
+
+export function markActivity(): void {
+  lastActivityAt = Date.now()
+}
+
+export function markConversationStart(): void {
+  busyDepth++
+  lastActivityAt = Date.now()
+}
+
+export function markConversationEnd(): void {
+  busyDepth = Math.max(0, busyDepth - 1)
+  lastActivityAt = Date.now()
+}
+
+function isBusy(): boolean {
+  return busyDepth > 0 || Date.now() - lastActivityAt < QUIET_AFTER_ACTIVITY_MS
+}
+
+export function announce(text: string): void {
+  const trimmed = text?.trim()
+  if (!trimmed) return
+  if (!isBusy()) {
+    say(trimmed)
+    return
+  }
+  if (!queue.includes(trimmed)) queue.push(trimmed)
+}
+
+export function startAnnouncementFlusher(): () => void {
+  const timer = setInterval(() => {
+    if (queue.length === 0 || isBusy()) return
+    for (const text of queue.splice(0, queue.length)) say(text)
+  }, FLUSH_TICK_MS)
+  return () => clearInterval(timer)
+}

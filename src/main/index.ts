@@ -18,11 +18,17 @@ import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
 import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
+import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
+import { startScheduler } from '../core/events/scheduler'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
+import { announce, markActivity, startAnnouncementFlusher } from '../core/events/announcements'
 import { startBackupTimer, backupEchoStore } from '../core/ai/utils/backup'
 
 let stopBackupTimer: (() => void) | null = null
+let stopJoker: (() => void) | null = null
+let stopScheduler: (() => void) | null = null
+let stopAnnouncements: (() => void) | null = null
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -53,7 +59,10 @@ function createWindow(): void {
     if (process.platform === 'darwin') app.focus({ steal: true })
   }
 
-  ipcMain.on(WAKE_FOCUS_WINDOW, () => focusMainWindow())
+  ipcMain.on(WAKE_FOCUS_WINDOW, () => {
+    markActivity()
+    focusMainWindow()
+  })
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -77,8 +86,7 @@ function createWindow(): void {
   const stopPoller = startSlackPoller(async (alert) => {
     if (mainWindow.isDestroyed()) return
     mainWindow.webContents.send(EVENT_ALERT, alert)
-    const speech = await narrateAlert(alert)
-    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, speech)
+    announce(await narrateAlert(alert))
   })
   const stopStyleCollector = startSlackStyleCollector()
   const stopSubagentMonitor = startSubagentMonitor()
@@ -100,6 +108,9 @@ app.whenReady().then(() => {
 
   ensureBrowserLauncher()
   stopBackupTimer = startBackupTimer()
+  stopJoker = startJoker()
+  stopScheduler = startScheduler()
+  stopAnnouncements = startAnnouncementFlusher()
   startServer().catch((err) => console.error('[server] start failed:', err))
 
   mcpManager.init().catch((err) => console.error('[MCP] init failed:', err))
@@ -119,6 +130,9 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (stopBackupTimer) stopBackupTimer()
+  if (stopJoker) stopJoker()
+  if (stopScheduler) stopScheduler()
+  if (stopAnnouncements) stopAnnouncements()
   backupEchoStore()
   stopServer()
   mcpManager.shutdown().catch((err) => console.error('[MCP] shutdown failed:', err))

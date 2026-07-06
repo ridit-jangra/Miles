@@ -19,7 +19,7 @@ function casualChannels(): Set<string> {
   }
 }
 
-function isCasual(ctx: SlackContext): boolean {
+export function isCasualContext(ctx: SlackContext): boolean {
   if (ctx.isIm) return true
   if (ctx.channelName && casualChannels().has(ctx.channelName.replace(/^#/, '').toLowerCase()))
     return true
@@ -46,7 +46,7 @@ export const ComposeSlackTool = tool({
     try {
       const ctx: SlackContext = { channelName, isIm, isPrivate }
       const messages = await composeAsSir(intent, ctx)
-      const casual = isCasual(ctx)
+      const casual = isCasualContext(ctx)
 
       if (messages.length === 0) {
         return {
