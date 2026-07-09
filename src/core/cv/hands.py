@@ -154,8 +154,14 @@ HAND_CONNECTIONS = [
 
 
 def _open_camera(index: int):
-    for attempt in range(5):
-        cap = cv2.VideoCapture(index)
+    import time
+
+    tried = []
+    for idx in [index, 0, 1, 2, 3, 4]:
+        if idx in tried:
+            continue
+        tried.append(idx)
+        cap = cv2.VideoCapture(idx)
         if cap.isOpened():
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -163,11 +169,11 @@ def _open_camera(index: int):
             cap.grab()
             ok, _ = cap.read()
             if ok:
+                if idx != index:
+                    print(f"CV: camera {index} unavailable, using camera {idx} instead")
                 return cap
         cap.release()
-        import time
-
-        time.sleep(0.4)
+        time.sleep(0.2)
     return None
 
 
