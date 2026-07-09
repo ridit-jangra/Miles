@@ -10,6 +10,8 @@ import numpy as np
 from detector import MODELS_DIR, FaceDetector
 from attention import HeadPose, PoseSmoother, head_pose, is_attentive
 from privacy import FaceIdentifier
+from wave import WaveDetector
+from hands import HandTracker
 
 CALIBRATION_FILE = os.path.join(MODELS_DIR, "attention.json")
 
@@ -130,6 +132,13 @@ class VisionService:
             identifier = None
         self._set(enrolled=bool(identifier and identifier.known))
         smoother = PoseSmoother()
+        waver = WaveDetector()
+        try:
+            hand_tracker = HandTracker()
+        except Exception as e:
+            print(f"Vision: hand tracking unavailable ({e})")
+            hand_tracker = None
+        hand_present = False
         center_yaw, center_pitch = self._load_center()
 
         cap = None
@@ -172,6 +181,18 @@ class VisionService:
                 time.sleep(self.interval)
                 continue
             read_failures = 0
+
+            if waver.step(frame):
+                self._emit({"type": "gesture", "gesture": "wave"})
+
+            if hand_tracker is not None:
+                hand = hand_tracker.track(frame)
+                if hand is not None:
+                    hand_present = True
+                    self._emit({"type": "hand", "present": True, **hand})
+                elif hand_present:
+                    hand_present = False
+                    self._emit({"type": "hand", "present": False})
 
             faces = detector.detect(frame)
             n = len(faces)

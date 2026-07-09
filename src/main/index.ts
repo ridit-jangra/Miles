@@ -19,7 +19,7 @@ import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
-import { startArgus } from '../core/ai/agents/custom-agents/argus/agent'
+import { startArgus, setGestureHandler } from '../core/ai/agents/custom-agents/argus/agent'
 import { startIris } from '../core/ai/agents/custom-agents/iris/agent'
 import { startSybil } from '../core/ai/agents/custom-agents/sybil/agent'
 import { startCerberus, triageAlert, collectSuppressed } from '../core/ai/agents/custom-agents/cerberus/agent'
@@ -68,6 +68,11 @@ function createWindow(): void {
   }
 
   ipcMain.on(WAKE_FOCUS_WINDOW, () => {
+    markActivity()
+    focusMainWindow()
+  })
+
+  setGestureHandler(() => {
     markActivity()
     focusMainWindow()
   })

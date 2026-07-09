@@ -14,6 +14,24 @@ export type VisionState = {
   known: string[]
   unknown: number
   enrolled: boolean
+  lastGesture: string | null
+  hand: { x: number; y: number; pinch: boolean } | null
+}
+
+let handHandler: ((hand: { x: number; y: number; pinch: boolean } | null) => void) | null = null
+
+export function setHandHandler(
+  fn: (hand: { x: number; y: number; pinch: boolean } | null) => void
+): void {
+  handHandler = fn
+}
+
+const WAVE_COOLDOWN_MS = 5_000
+let lastWaveAt = 0
+let gestureHandler: ((gesture: string) => void) | null = null
+
+export function setGestureHandler(fn: (gesture: string) => void): void {
+  gestureHandler = fn
 }
 
 const state: VisionState = {
@@ -23,7 +41,9 @@ const state: VisionState = {
   faces: 0,
   known: [],
   unknown: 0,
-  enrolled: false
+  enrolled: false,
+  lastGesture: null,
+  hand: null
 }
 
 let lastSurferWarnAt = 0
@@ -73,6 +93,35 @@ function onEvent(event: Record<string, unknown>): void {
           lastSurferWarnAt = now
           console.log('[argus] shoulder surfer detected')
           say('Heads up sir, someone I don’t recognize is behind you.')
+        }
+      }
+      break
+    }
+    case 'hand': {
+      if (event.present) {
+        state.hand = {
+          x: Number(event.x ?? 0),
+          y: Number(event.y ?? 0),
+          pinch: Boolean(event.pinch)
+        }
+      } else {
+        state.hand = null
+      }
+      handHandler?.(state.hand)
+      break
+    }
+    case 'gesture': {
+      const gesture = String(event.gesture ?? '')
+      state.lastGesture = gesture
+      if (gesture === 'wave') {
+        const now = Date.now()
+        if (now - lastWaveAt > WAVE_COOLDOWN_MS) {
+          lastWaveAt = now
+          state.present = true
+          setPresent(true)
+          console.log('[argus] wave detected')
+          say('Yes sir?')
+          gestureHandler?.(gesture)
         }
       }
       break

@@ -12,3 +12,4 @@ opencv-python
 nvidia-cublas-cu12; sys_platform != "darwin"
 nvidia-cudnn-cu12>=9,<10; sys_platform != "darwin"
 clap-detector
+mediapipe

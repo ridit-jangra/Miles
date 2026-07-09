@@ -1,0 +1,216 @@
+import cv2
+import mediapipe as mp
+from mediapipe.tasks.python import BaseOptions
+from mediapipe.tasks.python.vision import (
+    HandLandmarker,
+    HandLandmarkerOptions,
+    RunningMode,
+)
+
+from detector import ensure_model
+
+MODEL_FILE = "hand_landmarker.task"
+MODEL_URL = (
+    "https://storage.googleapis.com/mediapipe-models/hand_landmarker/"
+    "hand_landmarker/float16/1/hand_landmarker.task"
+)
+
+# MediaPipe hand landmark indices
+WRIST = 0
+THUMB_TIP = 4
+INDEX_MCP = 5
+INDEX_TIP = 8
+MIDDLE_MCP = 9
+
+# Pinch is scale-invariant: thumb-to-index distance divided by palm length
+# (wrist -> middle-finger knuckle), so it works whether the hand is near or far.
+# Hysteresis: two thresholds so the click doesn't flicker at the boundary.
+PINCH_ON = 0.20
+PINCH_OFF = 0.20
+
+
+def _dist(a, b) -> float:
+    return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** 0.5
+
+
+class HandTracker:
+    """Tracks one hand and reports the index-fingertip position (normalized 0-1,
+    origin top-left) plus a pinch flag (thumb tip touching index tip = a click)."""
+
+    def __init__(self, max_hands: int = 1):
+        path = ensure_model(MODEL_FILE, MODEL_URL)
+        options = HandLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=path),
+            running_mode=RunningMode.VIDEO,
+            num_hands=max_hands,
+        )
+        self._landmarker = HandLandmarker.create_from_options(options)
+        self._ts = 0
+        self._pinched = False
+        self.last_landmarks: list[tuple[float, float]] | None = None
+
+    def track(self, frame_bgr) -> dict | None:
+        rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        self._ts += 33  # detect_for_video needs strictly-increasing timestamps
+        result = self._landmarker.detect_for_video(image, self._ts)
+        if not result.hand_landmarks:
+            self.last_landmarks = None
+            self._pinched = False
+            return None
+        lm = result.hand_landmarks[0]
+        self.last_landmarks = [(p.x, p.y) for p in lm]
+
+        palm = _dist(lm[WRIST], lm[MIDDLE_MCP]) or 1e-6
+        ratio = _dist(lm[THUMB_TIP], lm[INDEX_TIP]) / palm
+        if self._pinched:
+            if ratio > PINCH_OFF:
+                self._pinched = False
+        else:
+            if ratio < PINCH_ON:
+                self._pinched = True
+
+        index = lm[INDEX_TIP]
+        return {
+            "x": float(index.x),
+            "y": float(index.y),
+            "pinch": self._pinched,
+            "ratio": round(float(ratio), 2),
+        }
+
+    def close(self) -> None:
+        try:
+            self._landmarker.close()
+        except Exception:
+            pass
+
+
+HAND_CONNECTIONS = [
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 4),
+    (0, 5),
+    (5, 6),
+    (6, 7),
+    (7, 8),
+    (5, 9),
+    (9, 10),
+    (10, 11),
+    (11, 12),
+    (9, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
+    (13, 17),
+    (17, 18),
+    (18, 19),
+    (19, 20),
+    (0, 17),
+]
+
+
+def _open_camera(index: int):
+    for attempt in range(5):
+        cap = cv2.VideoCapture(index)
+        if cap.isOpened():
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            cap.grab()
+            ok, _ = cap.read()
+            if ok:
+                return cap
+        cap.release()
+        import time
+
+        time.sleep(0.4)
+    return None
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Echo hand tracker (manual test)")
+    parser.add_argument("--camera", type=int, default=1)
+    args = parser.parse_args()
+
+    tracker = HandTracker()
+    cap = _open_camera(args.camera)
+    if cap is None:
+        raise SystemExit(
+            f"CV: camera {args.camera} wouldn't open. Try a different --camera index "
+            f"(this webcam's working stream is usually 1 or 2)."
+        )
+    print(
+        "CV: tracking — move your hand; pinch thumb+index to 'click'. Press q or ESC to quit."
+    )
+
+    try:
+        while True:
+            cap.grab()
+            ok, frame = cap.read()
+            if not ok:
+                continue
+            frame = cv2.flip(frame, 1)  # mirror so movement feels natural
+            h, w = frame.shape[:2]
+            hand = tracker.track(frame)
+            pts = tracker.last_landmarks
+
+            if pts:
+                px = [(int(x * w), int(y * h)) for x, y in pts]
+                for a, b in HAND_CONNECTIONS:
+                    cv2.line(frame, px[a], px[b], (0, 200, 0), 2)
+                for p in px:
+                    cv2.circle(frame, p, 3, (0, 255, 0), -1)
+                clicking = hand and hand["pinch"]
+                link_color = (0, 0, 255) if clicking else (255, 200, 0)
+                cv2.line(frame, px[THUMB_TIP], px[INDEX_TIP], link_color, 3)
+                cv2.circle(frame, px[INDEX_TIP], 10, (0, 255, 255), 2)
+                cv2.circle(frame, px[THUMB_TIP], 10, (255, 0, 255), 2)
+                if hand:
+                    label = f"x={hand['x']:.2f} y={hand['y']:.2f} ratio={hand['ratio']}"
+                    cv2.putText(
+                        frame,
+                        label,
+                        (10, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (255, 255, 255),
+                        2,
+                    )
+                    if clicking:
+                        cv2.putText(
+                            frame,
+                            "CLICK",
+                            (10, 70),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1.2,
+                            (0, 0, 255),
+                            3,
+                        )
+            else:
+                cv2.putText(
+                    frame,
+                    "no hand",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 0, 255),
+                    2,
+                )
+
+            cv2.imshow("Echo hand tracker", frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key in (27, ord("q")):
+                break
+    except KeyboardInterrupt:
+        pass
+    finally:
+        cap.release()
+        tracker.close()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
