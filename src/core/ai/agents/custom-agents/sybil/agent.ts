@@ -9,11 +9,15 @@ import type { Briefing } from '../../../../../shared/briefing'
 
 const TICK_MS = 60_000
 const HABIT_SAMPLE_MS = 5 * 60_000
+const NUDGE_CHECK_MS = 10 * 60_000
+const MIN_PATTERN_DAYS = 3
 const BRIEFING_HOUR = 9
 const STATE_FILE = join(ECHO_BASE_DIR, 'sybil-state.json')
 const HABITS_FILE = join(ECHO_BASE_DIR, 'habits.jsonl')
 
-type State = { lastBriefingDay?: string }
+type State = { lastBriefingDay?: string; nudged?: Record<string, string> }
+type HabitSample = { at: number; hour: number; dow: number; present: boolean; app: string | null }
+type Pattern = { hour: number; app: string; days: number }
 
 function loadState(): State {
   if (!existsSync(STATE_FILE)) return {}
@@ -94,11 +98,63 @@ function sampleHabit(): void {
   }
 }
 
+function readHabits(): HabitSample[] {
+  if (!existsSync(HABITS_FILE)) return []
+  try {
+    return readFileSync(HABITS_FILE, 'utf-8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as HabitSample)
+  } catch {
+    return []
+  }
+}
+
+// A pattern = the same app seen at the same hour on >= MIN_PATTERN_DAYS distinct days.
+export function detectPatterns(samples: HabitSample[]): Pattern[] {
+  const byHourApp = new Map<string, Set<string>>()
+  for (const s of samples) {
+    if (!s.app) continue
+    const key = `${s.hour}:${s.app}`
+    const day = new Date(s.at).toISOString().slice(0, 10)
+    if (!byHourApp.has(key)) byHourApp.set(key, new Set())
+    byHourApp.get(key)!.add(day)
+  }
+  const patterns: Pattern[] = []
+  for (const [key, days] of byHourApp) {
+    if (days.size < MIN_PATTERN_DAYS) continue
+    const [hour, app] = key.split(/:(.+)/)
+    patterns.push({ hour: Number(hour), app, days: days.size })
+  }
+  return patterns.sort((a, b) => b.days - a.days)
+}
+
 export function startSybil(): () => void {
   let stopped = false
   let running = false
   let lastHabitAt = 0
+  let lastNudgeCheckAt = 0
   const state = loadState()
+
+  const checkNudge = (): void => {
+    if (shouldStayQuiet()) return
+    const hour = new Date().getHours()
+    const patterns = detectPatterns(readHabits()).filter((p) => p.hour === hour)
+    if (patterns.length === 0) return
+    const currentApp = getScreenContext().current?.app
+    const day = today()
+    state.nudged = state.nudged ?? {}
+    for (const p of patterns) {
+      const key = `${p.hour}:${p.app}`
+      if (state.nudged[key] === day) continue
+      if (currentApp && currentApp.toLowerCase() === p.app.toLowerCase()) continue
+      state.nudged[key] = day
+      saveState(state)
+      announce(`Heads up sir — you usually have ${p.app} going around now.`)
+      console.log(`[sybil] habit nudge for ${p.app} at ${hour}:00`)
+      return
+    }
+  }
 
   const tick = async (): Promise<void> => {
     if (stopped || running) return
@@ -107,6 +163,11 @@ export function startSybil(): () => void {
       if (Date.now() - lastHabitAt >= HABIT_SAMPLE_MS) {
         lastHabitAt = Date.now()
         sampleHabit()
+      }
+
+      if (Date.now() - lastNudgeCheckAt >= NUDGE_CHECK_MS) {
+        lastNudgeCheckAt = Date.now()
+        checkNudge()
       }
 
       const now = new Date()

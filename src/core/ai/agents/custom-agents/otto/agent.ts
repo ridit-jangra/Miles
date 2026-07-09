@@ -6,6 +6,7 @@ import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { BashTool } from '../hank/tools/BashTool/tool'
 import { SystemTool } from './tools/SystemTool/tool'
+import { ShortcutTool } from './tools/ShortcutTool/tool'
 import { MemoryWriteTool } from './tools/MemoryWriteTool/tool'
 import { MemoryReadTool } from './tools/MemoryReadTool/tool'
 import { MemoryEditTool } from './tools/MemoryEditTool/tool'
@@ -23,6 +24,7 @@ export async function chatStream(
     tools: {
       MusicTool,
       SystemTool,
+      ShortcutTool,
       BashTool,
       NotifyTool,
       AskEchoTool,
