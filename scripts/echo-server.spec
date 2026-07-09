@@ -6,12 +6,13 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 ROOT = os.path.abspath(os.getcwd())
 SERVER_DIR = os.path.join(ROOT, "src", "core", "server")
+CV_DIR = os.path.join(ROOT, "src", "core", "cv")
 
 datas = []
 binaries = []
 hiddenimports = []
 
-for pkg in ("faster_whisper", "ctranslate2", "onnxruntime", "openwakeword", "piper"):
+for pkg in ("faster_whisper", "ctranslate2", "onnxruntime", "openwakeword", "piper", "cv2"):
     d, b, h = collect_all(pkg)
     datas += d
     binaries += b
@@ -52,11 +53,16 @@ hiddenimports += [
     "uvicorn.loops.auto",
     "uvicorn.protocols.http.auto",
     "uvicorn.protocols.websockets.auto",
+    # Vision service (src/core/cv), imported at runtime with a patched sys.path
+    "vision",
+    "detector",
+    "attention",
+    "privacy",
 ]
 
 a = Analysis(
     [os.path.join(SERVER_DIR, "server.py")],
-    pathex=[SERVER_DIR],
+    pathex=[SERVER_DIR, CV_DIR],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,

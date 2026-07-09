@@ -4,6 +4,7 @@ import { chatStream as dexter } from '../../agents/custom-agents/dexter/agent'
 import { chatStream as hank } from '../../agents/custom-agents/hank/agent'
 import { chatStream as merlin } from '../../agents/custom-agents/merlin/agent'
 import { chatStream as scout } from '../../agents/custom-agents/scout/agent'
+import { chatStream as otto } from '../../agents/custom-agents/otto/agent'
 import { say } from '../../../events/speech'
 import {
   recordSubagentResult,
@@ -16,14 +17,14 @@ import {
 import { narrateSubagentResult } from '../../../events/narrate'
 import { DESCRIPTION, PROMPT } from './prompt'
 
-const AGENTS = { dexter, hank, merlin, scout } as const
+const AGENTS = { dexter, hank, merlin, scout, otto } as const
 
 export const SubagentTool = tool({
   title: 'Subagent',
   description: DESCRIPTION + '\n\n' + PROMPT,
   inputSchema: z.object({
     agent: z
-      .enum(['dexter', 'hank', 'merlin', 'scout'])
+      .enum(['dexter', 'hank', 'merlin', 'scout', 'otto'])
       .describe('Which subagent to delegate to, chosen by lane'),
     task: z.string().describe('A clear, self-contained instruction for the subagent to carry out')
   }),

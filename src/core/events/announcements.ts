@@ -6,9 +6,14 @@ const FLUSH_TICK_MS = 5_000
 const queue: string[] = []
 let busyDepth = 0
 let lastActivityAt = 0
+let present = true
 
 export function markActivity(): void {
   lastActivityAt = Date.now()
+}
+
+export function setPresent(value: boolean): void {
+  present = value
 }
 
 export function markConversationStart(): void {
@@ -25,10 +30,14 @@ function isBusy(): boolean {
   return busyDepth > 0 || Date.now() - lastActivityAt < QUIET_AFTER_ACTIVITY_MS
 }
 
+function canSpeak(): boolean {
+  return present && !isBusy()
+}
+
 export function announce(text: string): void {
   const trimmed = text?.trim()
   if (!trimmed) return
-  if (!isBusy()) {
+  if (canSpeak()) {
     say(trimmed)
     return
   }
@@ -37,7 +46,7 @@ export function announce(text: string): void {
 
 export function startAnnouncementFlusher(): () => void {
   const timer = setInterval(() => {
-    if (queue.length === 0 || isBusy()) return
+    if (queue.length === 0 || !canSpeak()) return
     for (const text of queue.splice(0, queue.length)) say(text)
   }, FLUSH_TICK_MS)
   return () => clearInterval(timer)

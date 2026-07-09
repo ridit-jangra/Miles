@@ -15,11 +15,12 @@ import { chatStream as dexter } from '../ai/agents/custom-agents/dexter/agent'
 import { chatStream as hank } from '../ai/agents/custom-agents/hank/agent'
 import { chatStream as merlin } from '../ai/agents/custom-agents/merlin/agent'
 import { chatStream as scout } from '../ai/agents/custom-agents/scout/agent'
+import { chatStream as otto } from '../ai/agents/custom-agents/otto/agent'
 
 const SCHEDULES_FILE = join(ECHO_BASE_DIR, 'schedules.json')
 const TICK_MS = 20_000
 
-const AGENTS = { dexter, hank, merlin, scout } as const
+const AGENTS = { dexter, hank, merlin, scout, otto } as const
 
 export type ScheduleAgent = keyof typeof AGENTS
 

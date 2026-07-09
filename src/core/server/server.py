@@ -1,6 +1,8 @@
 import os
+import sys
 import time
 import io
+import json
 import wave
 import asyncio
 import threading
@@ -25,6 +27,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.environ.get("ECHO_MODELS_DIR") or os.path.normpath(
     os.path.join(BASE_DIR, "../../../models")
 )
+
+sys.path.insert(0, os.path.normpath(os.path.join(BASE_DIR, "../cv")))
 
 
 def _whisper_source(name: str) -> str:
@@ -82,6 +86,29 @@ WAKE_INPUT_DEVICE = os.environ.get("WAKE_INPUT_DEVICE", "pulse")
 
 last_wake_time: float = 0.0
 wake_clients: list[WebSocket] = []
+
+vision_clients: list[WebSocket] = []
+vision_service = None
+vision_loop: asyncio.AbstractEventLoop | None = None
+VISION_ENABLED = os.environ.get("ECHO_VISION", "1") not in ("", "0", "false")
+
+
+async def broadcast_vision(event: dict) -> None:
+    payload = json.dumps(event)
+    dead: list[WebSocket] = []
+    for client in vision_clients:
+        try:
+            await client.send_text(payload)
+        except Exception:
+            dead.append(client)
+    for client in dead:
+        if client in vision_clients:
+            vision_clients.remove(client)
+
+
+def _on_vision_event(event: dict) -> None:
+    if vision_loop is not None:
+        asyncio.run_coroutine_threadsafe(broadcast_vision(event), vision_loop)
 
 
 async def notify_wake(source: str = "wakeword") -> None:
@@ -147,9 +174,32 @@ def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
+    global vision_service, vision_loop
     loop = asyncio.get_event_loop()
     t = threading.Thread(target=mic_loop, args=(loop,), daemon=True)
     t.start()
+
+    if VISION_ENABLED:
+        vision_loop = loop
+        try:
+            from vision import VisionService
+
+            vision_service = VisionService(
+                on_event=_on_vision_event,
+                camera_index=int(os.environ.get("ECHO_CAMERA_INDEX", "0")),
+            )
+            vision_service.start()
+            print("Vision: service started")
+        except Exception as e:
+            print(f"Vision: failed to start ({e})")
+    else:
+        print("Vision: disabled (ECHO_VISION=0)")
+
+
+@app.on_event("shutdown")
+async def shutdown() -> None:
+    if vision_service is not None:
+        vision_service.stop()
 
 
 @app.websocket("/wake")
@@ -164,6 +214,48 @@ async def wake_endpoint(websocket: WebSocket) -> None:
     finally:
         if websocket in wake_clients:
             wake_clients.remove(websocket)
+
+
+@app.websocket("/vision")
+async def vision_endpoint(websocket: WebSocket) -> None:
+    await websocket.accept()
+    vision_clients.append(websocket)
+    try:
+        if vision_service is not None:
+            await websocket.send_text(json.dumps(vision_service.snapshot()))
+        while True:
+            await asyncio.sleep(15)
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        if websocket in vision_clients:
+            vision_clients.remove(websocket)
+
+
+@app.get("/vision/state")
+async def vision_state():
+    if vision_service is None:
+        return {"enabled": False}
+    return {"enabled": True, **vision_service.snapshot()}
+
+
+@app.post("/vision/enroll")
+async def vision_enroll(body: dict):
+    if vision_service is None:
+        return {"ok": False, "error": "vision disabled"}
+    name = (body.get("name") or "").strip()
+    if not name:
+        return {"ok": False, "error": "name required"}
+    ok = vision_service.request_enroll(name, int(body.get("samples", 10)))
+    return {"ok": ok, "error": None if ok else "enrollment already in progress"}
+
+
+@app.post("/vision/calibrate")
+async def vision_calibrate(body: dict):
+    if vision_service is None:
+        return {"ok": False, "error": "vision disabled"}
+    ok = vision_service.request_calibrate(int(body.get("samples", 10)))
+    return {"ok": ok, "error": None if ok else "calibration already in progress"}
 
 
 def analyze_tone(samples: np.ndarray, words: list) -> str:

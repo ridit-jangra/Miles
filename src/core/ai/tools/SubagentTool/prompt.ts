@@ -7,6 +7,7 @@ Subagents:
 - hank — builder & filesystem. Writes code, scripts, scaffolding; and reads/writes/edits/lists/searches files on disk.
 - merlin — research. Searches the web and reads sources to answer questions with current info and citations.
 - scout — browser automation. Drives Chrome via the chrome-devtools MCP: navigates sites, searches, plays videos, reads pages, fills forms. Use it for ANYTHING involving a browser or web page.
+- otto — system operator. Works sir's machine directly: media/music control, system volume, running terminal commands, launching and arranging apps, and multi-step voice-shortcut macros ("pixl mode" — open workspace, Slack, music in one go). Use it for control-and-integration tasks that take several actions. For a single snappy media command ("pause", "next", "what's playing"), Echo already has MusicTool and should just do it itself — only reach for otto when the job is multi-step or involves the terminal/app launching.
 
 Call this immediately when a request fits a subagent's lane rather than attempting it yourself. Use the agent whose lane matches; don't use it for plain conversation or things Echo handles directly.
 
