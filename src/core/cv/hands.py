@@ -21,6 +21,18 @@ THUMB_TIP = 4
 INDEX_MCP = 5
 INDEX_TIP = 8
 MIDDLE_MCP = 9
+MIDDLE_TIP = 12
+
+# finger (tip, pip) pairs — a finger is "up" when its tip is above its pip joint
+INDEX_FINGER = (8, 6)
+MIDDLE_FINGER = (12, 10)
+RING_FINGER = (16, 14)
+PINKY_FINGER = (20, 18)
+
+# Scroll: hold index+middle up and slide them vertically. Each SCROLL_STEP of
+# normalized fingertip travel emits one scroll tick (up = fingers move up).
+SCROLL_STEP = 0.03
+SCROLL_GRACE = 5  # frames the pose can drop out before the scroll anchor resets
 
 # Pinch is scale-invariant: thumb-to-index distance divided by palm length
 # (wrist -> middle-finger knuckle), so it works whether the hand is near or far.
@@ -47,6 +59,8 @@ class HandTracker:
         self._landmarker = HandLandmarker.create_from_options(options)
         self._ts = 0
         self._pinched = False
+        self._scroll_anchor: float | None = None
+        self._scroll_miss = 0
         self.last_landmarks: list[tuple[float, float]] | None = None
 
     def track(self, frame_bgr) -> dict | None:
@@ -57,6 +71,7 @@ class HandTracker:
         if not result.hand_landmarks:
             self.last_landmarks = None
             self._pinched = False
+            self._scroll_anchor = None
             return None
         lm = result.hand_landmarks[0]
         self.last_landmarks = [(p.x, p.y) for p in lm]
@@ -70,12 +85,40 @@ class HandTracker:
             if ratio < PINCH_ON:
                 self._pinched = True
 
+        def up(finger):
+            return lm[finger[0]].y < lm[finger[1]].y
+
+        scroll_pose = (
+            up(INDEX_FINGER)
+            and up(MIDDLE_FINGER)
+            and not up(RING_FINGER)
+            and not up(PINKY_FINGER)
+        )
+        scroll = None
+        cur_y = (lm[INDEX_TIP].y + lm[MIDDLE_TIP].y) / 2  # track the fingertips you slide
+        if scroll_pose:
+            self._scroll_miss = 0
+            if self._scroll_anchor is None:
+                self._scroll_anchor = cur_y
+            elif cur_y < self._scroll_anchor - SCROLL_STEP:
+                scroll = "up"
+                self._scroll_anchor = cur_y
+            elif cur_y > self._scroll_anchor + SCROLL_STEP:
+                scroll = "down"
+                self._scroll_anchor = cur_y
+        else:
+            self._scroll_miss += 1
+            if self._scroll_miss > SCROLL_GRACE:
+                self._scroll_anchor = None
+
         index = lm[INDEX_TIP]
         return {
             "x": float(index.x),
             "y": float(index.y),
             "pinch": self._pinched,
             "ratio": round(float(ratio), 2),
+            "scroll_pose": scroll_pose,
+            "scroll": scroll,
         }
 
     def close(self) -> None:
@@ -143,9 +186,12 @@ def main():
             f"(this webcam's working stream is usually 1 or 2)."
         )
     print(
-        "CV: tracking — move your hand; pinch thumb+index to 'click'. Press q or ESC to quit."
+        "CV: tracking — pinch thumb+index to 'click'; hold index+middle up and move "
+        "up/down to scroll. Press q or ESC to quit."
     )
 
+    scroll_msg = ""
+    scroll_ttl = 0
     try:
         while True:
             cap.grab()
@@ -189,6 +235,19 @@ def main():
                             (0, 0, 255),
                             3,
                         )
+                    if hand.get("scroll"):
+                        scroll_msg = "SCROLL " + hand["scroll"].upper()
+                        scroll_ttl = 8
+                    elif hand.get("scroll_pose"):
+                        cv2.putText(
+                            frame,
+                            "scroll ready",
+                            (10, 105),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.7,
+                            (0, 200, 255),
+                            2,
+                        )
             else:
                 cv2.putText(
                     frame,
@@ -199,6 +258,11 @@ def main():
                     (0, 0, 255),
                     2,
                 )
+
+            if scroll_ttl > 0:
+                scroll_ttl -= 1
+                cv2.putText(frame, scroll_msg, (w - 260, 40), cv2.FONT_HERSHEY_SIMPLEX,
+                            1.0, (0, 255, 255), 3)
 
             cv2.imshow("Echo hand tracker", frame)
             key = cv2.waitKey(1) & 0xFF
