@@ -29,9 +29,22 @@ const inputSchema = z.object({
       'previous',
       'volume',
       'shuffle',
-      'loop'
+      'loop',
+      'seek',
+      'players'
     ])
     .describe('What to do with the media player'),
+  seconds: z
+    .number()
+    .optional()
+    .describe(
+      'For action=seek: offset in seconds — positive skips forward, negative skips back. Omit to instead seek to an absolute position with "to".'
+    ),
+  to: z
+    .number()
+    .min(0)
+    .optional()
+    .describe('For action=seek: absolute position in seconds from the start of the track.'),
   level: z
     .number()
     .min(0)
@@ -88,12 +101,28 @@ export const MusicTool = tool({
   title: 'Music',
   description: DESCRIPTION + '\n\n' + PROMPT,
   inputSchema,
-  execute: async ({ action, level, delta, mode, player }: Input) => {
+  execute: async ({ action, level, delta, mode, seconds, to, player }: Input) => {
     const p = base(player)
     try {
       switch (action) {
         case 'status':
           return { success: true, ...(await readStatus(player)) }
+        case 'players': {
+          const out = await playerctl(['-l']).catch(() => '')
+          const players = out ? out.split('\n').filter(Boolean) : []
+          return { success: true, players }
+        }
+        case 'seek': {
+          if (typeof seconds === 'number') {
+            const sign = seconds >= 0 ? '+' : '-'
+            await playerctl([...p, 'position', `${Math.abs(seconds)}${sign}`])
+          } else if (typeof to === 'number') {
+            await playerctl([...p, 'position', String(to)])
+          } else {
+            return { success: false, error: 'seek needs either seconds (relative) or to (absolute).' }
+          }
+          return { success: true, ...(await readStatus(player)) }
+        }
         case 'play':
         case 'pause':
         case 'stop':

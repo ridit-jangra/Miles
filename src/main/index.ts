@@ -20,6 +20,9 @@ import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
 import { startArgus } from '../core/ai/agents/custom-agents/argus/agent'
+import { startIris } from '../core/ai/agents/custom-agents/iris/agent'
+import { startSybil } from '../core/ai/agents/custom-agents/sybil/agent'
+import { startCerberus, triageAlert, collectSuppressed } from '../core/ai/agents/custom-agents/cerberus/agent'
 import { startScheduler } from '../core/events/scheduler'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
@@ -29,6 +32,9 @@ import { startBackupTimer, backupEchoStore } from '../core/ai/utils/backup'
 let stopBackupTimer: (() => void) | null = null
 let stopJoker: (() => void) | null = null
 let stopArgus: (() => void) | null = null
+let stopIris: (() => void) | null = null
+let stopSybil: (() => void) | null = null
+let stopCerberus: (() => void) | null = null
 let stopScheduler: (() => void) | null = null
 let stopAnnouncements: (() => void) | null = null
 
@@ -85,10 +91,12 @@ function createWindow(): void {
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, text)
   })
 
-  const stopPoller = startSlackPoller(async (alert) => {
+  const stopPoller = startSlackPoller(async (alert, subs) => {
     if (mainWindow.isDestroyed()) return
     mainWindow.webContents.send(EVENT_ALERT, alert)
-    announce(await narrateAlert(alert))
+    const verdict = triageAlert(alert, subs)
+    if (verdict.surface) announce(await narrateAlert(alert))
+    else collectSuppressed(alert)
   })
   const stopStyleCollector = startSlackStyleCollector()
   const stopSubagentMonitor = startSubagentMonitor()
@@ -112,6 +120,9 @@ app.whenReady().then(() => {
   stopBackupTimer = startBackupTimer()
   stopJoker = startJoker()
   stopArgus = startArgus()
+  stopIris = startIris()
+  stopSybil = startSybil()
+  stopCerberus = startCerberus()
   stopScheduler = startScheduler()
   stopAnnouncements = startAnnouncementFlusher()
   startServer().catch((err) => console.error('[server] start failed:', err))
@@ -135,6 +146,9 @@ app.on('before-quit', () => {
   if (stopBackupTimer) stopBackupTimer()
   if (stopJoker) stopJoker()
   if (stopArgus) stopArgus()
+  if (stopIris) stopIris()
+  if (stopSybil) stopSybil()
+  if (stopCerberus) stopCerberus()
   if (stopScheduler) stopScheduler()
   if (stopAnnouncements) stopAnnouncements()
   backupEchoStore()
