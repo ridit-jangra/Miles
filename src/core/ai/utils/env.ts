@@ -60,12 +60,12 @@ function guardEchoStore(): void {
     mkdirSync(ECHO_BASE_DIR, { recursive: true })
     cpSync(backup, ECHO_BASE_DIR, { recursive: true, force: true })
     console.warn(
-      `[echo] ⚠️  ~/.echo was empty or missing (memory/user/sessions all gone). ` +
+      `[miles] ⚠️  ~/.echo was empty or missing (memory/user/sessions all gone). ` +
         `Auto-restored from backup: ${backup}. ` +
         `If you wiped it on purpose, relaunch with ECHO_NO_RESTORE=1.`
     )
   } catch (err) {
-    console.error('[echo] store guard failed:', err)
+    console.error('[miles] store guard failed:', err)
   }
 }
 

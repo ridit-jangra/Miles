@@ -40,7 +40,7 @@ function prune(): void {
     try {
       rmSync(dir, { recursive: true, force: true })
     } catch (err) {
-      console.error('[echo] failed to prune backup', dir, err)
+      console.error('[miles] failed to prune backup', dir, err)
     }
   }
 }
@@ -63,7 +63,7 @@ export function backupEchoStore(): void {
     })
     prune()
   } catch (err) {
-    console.error('[echo] backup failed:', err)
+    console.error('[miles] backup failed:', err)
   }
 }
 

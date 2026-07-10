@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/immutability */
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 
-import { synthesize, playClip } from './speak'
+import { synthesize } from './speak'
 import { extractSpeakable } from './extractSpeakables'
 
 const MIN_SPEECH_MS = 150
@@ -10,6 +10,7 @@ const MIN_SPEECH_MS = 150
 const BARGE_THRESHOLD = 22
 const BARGE_SUSTAIN_MS = 350
 const BARGE_ARM_MS = 600
+const BARGE_DEBUG = true
 
 const SILENCE_THRESHOLD_MS = 650
 
@@ -68,7 +69,14 @@ export function useSona(): Sona {
   )
   const isPlaying = useRef(false)
 
-  const speakAbort = useRef<AbortController | null>(null)
+  const playCtx = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const scheduleCursor = useRef(0)
+  const scheduledSources = useRef<AudioBufferSourceNode[]>([])
+  const timeline = useRef<{ text: string; start: number; end: number }[]>([])
+  const levelRaf = useRef(0)
+  const lastCaption = useRef('')
+  const pumping = useRef(false)
 
   const bargeStream = useRef<MediaStream | null>(null)
   const bargeCtx = useRef<AudioContext | null>(null)
@@ -111,12 +119,68 @@ export function useSona(): Sona {
     bargeCtx.current = null
   }, [])
 
+  const ensureCtx = useCallback((): AudioContext => {
+    if (!playCtx.current) {
+      const ctx = new AudioContext()
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 512
+      analyser.connect(ctx.destination)
+      playCtx.current = ctx
+      analyserRef.current = analyser
+    }
+    if (playCtx.current.state === 'suspended') void playCtx.current.resume()
+    return playCtx.current
+  }, [])
+
+  const startLevelLoop = useCallback((): void => {
+    if (levelRaf.current) return
+    const analyser = analyserRef.current
+    if (!analyser) return
+    const data = new Uint8Array(analyser.frequencyBinCount)
+
+    const tick = (): void => {
+      const ctx = playCtx.current
+      if (!ctx || !analyserRef.current) {
+        levelRaf.current = 0
+        return
+      }
+      analyserRef.current.getByteFrequencyData(data)
+      const volume = data.reduce((a, b) => a + b, 0) / data.length
+      setAudioLevel(Math.min(volume / 80, 1))
+
+      const now = ctx.currentTime
+      const cur = timeline.current.find((f) => now >= f.start && now < f.end)
+      if (cur) {
+        if (cur.text !== lastCaption.current) {
+          lastCaption.current = cur.text
+          setSpokenText(cur.text)
+        }
+        setSpokenProgress(Math.min((now - cur.start) / (cur.end - cur.start), 1))
+      }
+      levelRaf.current = requestAnimationFrame(tick)
+    }
+    levelRaf.current = requestAnimationFrame(tick)
+  }, [])
+
   const stopSpeaking = useCallback((): void => {
     stopBargeMonitor()
-    speakAbort.current?.abort()
-    speakAbort.current = null
     queue.current = []
+    scheduledSources.current.forEach((s) => {
+      s.onended = null
+      try {
+        s.stop()
+      } catch {
+        /* already stopped */
+      }
+    })
+    scheduledSources.current = []
+    timeline.current = []
+    scheduleCursor.current = 0
+    lastCaption.current = ''
+    pumping.current = false
     isPlaying.current = false
+    if (levelRaf.current) cancelAnimationFrame(levelRaf.current)
+    levelRaf.current = 0
     setSpeaking(false)
     setAudioLevel(0)
     setSpokenText('')
@@ -142,6 +206,7 @@ export function useSona(): Sona {
     bargeStream.current = stream
     const ctx = new AudioContext()
     bargeCtx.current = ctx
+    if (ctx.state === 'suspended') await ctx.resume()
     const source = ctx.createMediaStreamSource(stream)
     const analyser = ctx.createAnalyser()
     analyser.fftSize = 512
@@ -150,11 +215,19 @@ export function useSona(): Sona {
 
     const armAt = Date.now() + BARGE_ARM_MS
     let voiceStart = 0
+    let lastLog = 0
 
     const tick = (): void => {
       if (!bargeCtx.current) return
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
+
+      if (BARGE_DEBUG && Date.now() - lastLog > 200) {
+        lastLog = Date.now()
+        console.log(
+          `[barge] vol=${volume.toFixed(1)} thr=${BARGE_THRESHOLD} armed=${Date.now() >= armAt} ctx=${ctx.state}`
+        )
+      }
 
       if (Date.now() >= armAt && volume > BARGE_THRESHOLD) {
         if (!voiceStart) voiceStart = Date.now()
@@ -171,63 +244,107 @@ export function useSona(): Sona {
     bargeRaf.current = requestAnimationFrame(tick)
   }, [stopSpeaking])
 
-  const playNext = useCallback((): void => {
-    if (isPlaying.current || queue.current.length === 0) return
-    isPlaying.current = true
-    setSpeaking(true)
-    bargeWanted.current = true
-    startBargeMonitor()
+  const endOfSpeech = useCallback((): void => {
+    isPlaying.current = false
+    scheduleCursor.current = 0
+    timeline.current = []
+    lastCaption.current = ''
+    if (levelRaf.current) cancelAnimationFrame(levelRaf.current)
+    levelRaf.current = 0
+    stopBargeMonitor()
+    setSpeaking(false)
+    setAudioLevel(0)
+    setSpokenProgress(1)
+    setTimeout(() => setSpokenText(''), 800)
+    fadeOutTranscript()
 
-    setThinking(false)
-    const { text, onDone, audio } = queue.current.shift()!
+    if (continuousMode.current) {
+      setTimeout(() => startListeningRef.current?.(), 300)
+    }
+  }, [fadeOutTranscript, stopBargeMonitor])
 
-    setSpokenText(text)
-    setSpokenProgress(0)
+  const maybeEnd = useCallback((): void => {
+    if (
+      !pumping.current &&
+      queue.current.length === 0 &&
+      scheduledSources.current.length === 0 &&
+      isPlaying.current
+    ) {
+      endOfSpeech()
+    }
+  }, [endOfSpeech])
 
-    const controller = new AbortController()
-    speakAbort.current = controller
+  const pump = useCallback(async (): Promise<void> => {
+    if (pumping.current) return
+    pumping.current = true
+    const ctx = ensureCtx()
 
-    const finish = (): void => {
-      setAudioLevel(0)
-      isPlaying.current = false
-      onDone?.()
-      if (queue.current.length === 0) {
-        stopBargeMonitor()
-        setSpeaking(false)
-        setTimeout(() => setSpokenText(''), 800)
-        fadeOutTranscript()
+    while (queue.current.length > 0) {
+      const item = queue.current.shift()!
 
-        if (continuousMode.current) {
-          setTimeout(() => {
-            startListeningRef.current?.()
-          }, 300)
-        }
-      } else {
-        playNext()
+      let arr: ArrayBuffer | null = null
+      try {
+        arr = await item.audio
+      } catch {
+        arr = null
+      }
+      if (!isPlaying.current) {
+        pumping.current = false
+        return
+      }
+      if (!arr) {
+        item.onDone?.()
+        continue
+      }
+
+      let buf: AudioBuffer
+      try {
+        buf = await ctx.decodeAudioData(arr.slice(0))
+      } catch {
+        item.onDone?.()
+        continue
+      }
+      if (!isPlaying.current) {
+        pumping.current = false
+        return
+      }
+
+      const startAt = Math.max(ctx.currentTime + 0.03, scheduleCursor.current)
+      const src = ctx.createBufferSource()
+      src.buffer = buf
+      src.connect(analyserRef.current!)
+      src.start(startAt)
+      scheduledSources.current.push(src)
+      timeline.current.push({ text: item.text, start: startAt, end: startAt + buf.duration })
+      scheduleCursor.current = startAt + buf.duration
+
+      const onDone = item.onDone
+      src.onended = (): void => {
+        scheduledSources.current = scheduledSources.current.filter((s) => s !== src)
+        onDone?.()
+        maybeEnd()
       }
     }
 
-    audio.then((audioData) => {
-      if (controller.signal.aborted) return
-      if (!audioData) {
-        finish()
-        return
-      }
-      playClip(audioData, {
-        signal: controller.signal,
-        onLevel: (level) => setAudioLevel(level),
-        onProgress: (p) => setSpokenProgress(p),
-        onEnded: finish
-      })
-    })
-  }, [fadeOutTranscript, startBargeMonitor, stopBargeMonitor])
+    pumping.current = false
+    maybeEnd()
+  }, [ensureCtx, maybeEnd])
 
   const speak = useCallback(
     (text: string, onDone?: () => void): void => {
       queue.current.push({ text, onDone, audio: synthesize(text) })
-      if (!isPlaying.current) playNext()
+      if (!isPlaying.current) {
+        isPlaying.current = true
+        setSpeaking(true)
+        setThinking(false)
+        bargeWanted.current = true
+        startBargeMonitor()
+        ensureCtx()
+        startLevelLoop()
+      }
+      void pump()
     },
-    [playNext]
+    [pump, startBargeMonitor, startLevelLoop, ensureCtx]
   )
 
   useEffect(() => {
@@ -241,7 +358,16 @@ export function useSona(): Sona {
   useEffect(() => {
     return () => {
       if (transcriptFadeTimer.current) clearTimeout(transcriptFadeTimer.current)
-      speakAbort.current?.abort()
+      if (levelRaf.current) cancelAnimationFrame(levelRaf.current)
+      scheduledSources.current.forEach((s) => {
+        s.onended = null
+        try {
+          s.stop()
+        } catch {
+          /* already stopped */
+        }
+      })
+      playCtx.current?.close()
       if (bargeRaf.current) cancelAnimationFrame(bargeRaf.current)
       bargeStream.current?.getTracks().forEach((t) => t.stop())
       bargeCtx.current?.close()
@@ -283,7 +409,7 @@ export function useSona(): Sona {
         removeListener()
 
         setThinking(false)
-        console.error('[Echo] streaming failed:', e)
+        console.error('[Miles] streaming failed:', e)
       }
     },
     [speak, handleStreamComplete]
@@ -299,7 +425,7 @@ export function useSona(): Sona {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
-      console.error('[Echo] mic access denied')
+      console.error('[Miles] mic access denied')
       return
     }
 
@@ -356,12 +482,12 @@ export function useSona(): Sona {
         const result = await window.server.transcribe(arrayBuffer)
         const text = result.success ? (result.text?.trim() ?? '') : ''
         const tone = result.tone
-        console.log(`[Echo] tone: ${tone ?? 'none'} — ${JSON.stringify(text)}`)
+        console.log(`[Miles] tone: ${tone ?? 'none'} — ${JSON.stringify(text)}`)
 
         const tooShort = speechMs < MIN_SPEECH_MS
         if (!text || tooShort || isGarbage(text)) {
           console.log(
-            '[Echo] ignored:',
+            '[Miles] ignored:',
             JSON.stringify(text),
             `(speech ${speechMs}ms${tooShort ? ', too short' : ''})`
           )
@@ -378,7 +504,7 @@ export function useSona(): Sona {
         startBargeMonitor()
         chatStreaming(tone && tone !== 'neutral' ? `[tone: ${tone}] ${text}` : text)
       } catch (e) {
-        console.error('[Echo] transcription failed:', e)
+        console.error('[Miles] transcription failed:', e)
         setThinking(false)
 
         if (continuousMode.current) {

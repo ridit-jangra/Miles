@@ -57,19 +57,19 @@ export function collectTranscript(maxSessions = 50): { transcript: string; sessi
     }
     const turns = turnsFromSession(session)
     if (turns.length === 0) continue
-    const block = turns.map((t) => `${t.role === 'user' ? 'SIR' : 'ECHO'}: ${t.text}`).join('\n')
+    const block = turns.map((t) => `${t.role === 'user' ? 'SIR' : 'MILES'}: ${t.text}`).join('\n')
     blocks.push(block)
   }
 
   return { transcript: blocks.join('\n\n---\n\n'), sessionCount: blocks.length }
 }
 
-const ANALYSIS_PROMPT = `You are building a living profile of "sir", the user of a voice assistant named Echo, by studying transcripts of their past conversations. The goal is for Echo to anticipate what sir will do next and to subtly mirror how sir talks.
+const ANALYSIS_PROMPT = `You are building a living profile of "sir", the user of a voice assistant named Miles, by studying transcripts of their past conversations. The goal is for Miles to anticipate what sir will do next and to subtly mirror how sir talks.
 
 Below is the EXISTING profile (may be empty) followed by NEW transcripts. Update and refine the profile — keep what still holds, revise what changed, drop what's stale. Be specific and evidence-based; never invent traits not visible in the transcripts. Write it in clean markdown with these sections:
 
 # Routines & Patterns
-Recurring requests, time-of-day habits, the kinds of tasks sir leans on Echo for.
+Recurring requests, time-of-day habits, the kinds of tasks sir leans on Miles for.
 
 # Predicted Next Actions
 Given the patterns, what sir is likely to ask for or do next, and in what situations.

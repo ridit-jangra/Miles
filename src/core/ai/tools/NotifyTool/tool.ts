@@ -9,7 +9,7 @@ export const NotifyTool = tool({
   inputSchema: z.object({
     message: z
       .string()
-      .describe("A short, natural progress heads-up for sir, relayed aloud in Echo's voice")
+      .describe("A short, natural progress heads-up for sir, relayed aloud in Miles's voice")
   }),
   execute: async ({ message }) => {
     say(message)

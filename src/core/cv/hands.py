@@ -40,6 +40,11 @@ SCROLL_GRACE = 5  # frames the pose can drop out before the scroll anchor resets
 PINCH_ON = 0.20
 PINCH_OFF = 0.20
 
+# Grab = thumb touching MIDDLE finger tip (distinct from the thumb+index click).
+# Hold the grab and move your hand up/down to drag-scroll the page.
+GRAB_ON = 0.22
+GRAB_OFF = 0.30
+
 
 def _dist(a, b) -> float:
     return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** 0.5
@@ -59,6 +64,7 @@ class HandTracker:
         self._landmarker = HandLandmarker.create_from_options(options)
         self._ts = 0
         self._pinched = False
+        self._grabbed = False
         self._scroll_anchor: float | None = None
         self._scroll_miss = 0
         self.last_landmarks: list[tuple[float, float]] | None = None
@@ -71,6 +77,7 @@ class HandTracker:
         if not result.hand_landmarks:
             self.last_landmarks = None
             self._pinched = False
+            self._grabbed = False
             self._scroll_anchor = None
             return None
         lm = result.hand_landmarks[0]
@@ -84,6 +91,14 @@ class HandTracker:
         else:
             if ratio < PINCH_ON:
                 self._pinched = True
+
+        grab_ratio = _dist(lm[THUMB_TIP], lm[MIDDLE_TIP]) / palm
+        if self._grabbed:
+            if grab_ratio > GRAB_OFF:
+                self._grabbed = False
+        else:
+            if grab_ratio < GRAB_ON:
+                self._grabbed = True
 
         def up(finger):
             return lm[finger[0]].y < lm[finger[1]].y
@@ -119,6 +134,12 @@ class HandTracker:
             "ratio": round(float(ratio), 2),
             "scroll_pose": scroll_pose,
             "scroll": scroll,
+            "scroll_y": float(cur_y) if scroll_pose else None,
+            "grab": self._grabbed,
+            "grab_ratio": round(float(grab_ratio), 2),
+            "grab_y": float(lm[MIDDLE_MCP].y),
+            "index_up": bool(up(INDEX_FINGER)),
+            "thumb_rel": float(lm[THUMB_TIP].y - lm[INDEX_MCP].y),
         }
 
     def close(self) -> None:

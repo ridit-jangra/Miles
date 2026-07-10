@@ -71,7 +71,7 @@ export const CATALOG: CatalogApp[] = [
   {
     id: 'milo',
     name: 'Milo',
-    description: "Connect Milo's own MCP server to extend Echo with its built-in tools.",
+    description: "Connect Milo's own MCP server to extend Miles with its built-in tools.",
     icon: <MiloIcon />,
     fields: [],
     build: () => ({
@@ -132,7 +132,7 @@ export const CATALOG: CatalogApp[] = [
   {
     id: 'chrome-devtools',
     name: 'Chrome DevTools',
-    description: 'Let Echo drive a browser — navigate, click, type, scrape, and inspect pages.',
+    description: 'Let Miles drive a browser — navigate, click, type, scrape, and inspect pages.',
     icon: <ChromeIcon />,
     helpUrl: 'https://github.com/ChromeDevTools/chrome-devtools-mcp',
     fields: [],

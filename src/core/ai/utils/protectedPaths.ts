@@ -100,7 +100,7 @@ export function scanCommandForProtected(command: string, cwd: string): string | 
       if (!candidate) continue
       const root = protectedRootFor(candidate)
       if (root && (destructive || redirect)) {
-        return `blocked: "${head}" would modify a protected path (${root}). Echo refuses to touch it.`
+        return `blocked: "${head}" would modify a protected path (${root}). Miles refuses to touch it.`
       }
     }
   }

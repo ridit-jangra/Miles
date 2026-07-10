@@ -49,7 +49,7 @@ async function localhostCert(): Promise<{ key: string; cert: string }> {
 }
 
 const DONE_HTML = (msg: string): string =>
-  `<!doctype html><meta charset="utf-8"><title>Echo</title>` +
+  `<!doctype html><meta charset="utf-8"><title>Miles</title>` +
   `<body style="font-family:system-ui;background:#0a0a0a;color:#fff;display:grid;place-items:center;height:100vh;margin:0">` +
   `<p style="opacity:.8">${msg}</p></body>`
 
@@ -121,7 +121,7 @@ export async function runSlackOAuth(openUrl: (url: string) => void): Promise<Sla
         const data = await tokenRes.json()
         if (!data.ok) throw new Error(data.error || 'Slack token exchange failed')
 
-        respond('Connected to Slack. You can close this window and return to Echo.')
+        respond('Connected to Slack. You can close this window and return to Miles.')
         finish(() =>
           resolve({
             botToken: data.access_token,

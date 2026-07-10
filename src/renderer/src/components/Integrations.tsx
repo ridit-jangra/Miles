@@ -258,7 +258,7 @@ function GithubOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JS
           </span>
         ) : (
           <>
-            <p className="text-white/70 text-sm">Enter this code on GitHub to authorize Echo:</p>
+            <p className="text-white/70 text-sm">Enter this code on GitHub to authorize Miles:</p>
             <button
               onClick={copy}
               className="flex items-center justify-center gap-3 bg-[#171717] hover:bg-white/10 border border-white/10 rounded-md py-3 font-mono text-2xl tracking-[0.3em] cursor-pointer transition-colors"
@@ -340,7 +340,7 @@ function SlackOAuthModal({ app, onClose, onSubmit }: OAuthModalProps): React.JSX
           <>
             <span className="flex items-center gap-2 text-white/70 py-2">
               <Loader2 size={16} className="animate-spin" />
-              Continue in your browser to authorize Echo…
+              Continue in your browser to authorize Miles…
             </span>
             <p className="text-white/40 text-sm">
               Your browser may warn that the localhost page isn&apos;t secure — that&apos;s the
@@ -449,7 +449,7 @@ export function Integrations(): React.JSX.Element {
     <div className="flex flex-col gap-5 w-full min-h-screen pt-20 px-5 pl-25">
       <div>
         <h1 className="text-2xl">Integrations</h1>
-        <p className="text-white/60">Connect your apps to give Echo more to work with.</p>
+        <p className="text-white/60">Connect your apps to give Miles more to work with.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-5 pb-10">

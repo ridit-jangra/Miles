@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: Echo
+productName: Miles
 asar: false
 directories:
   buildResources: build
@@ -24,7 +24,7 @@ extraResources:
     filter:
       - '**/*'
 win:
-  executableName: '@ridit/echo'
+  executableName: '@ridit/miles'
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
