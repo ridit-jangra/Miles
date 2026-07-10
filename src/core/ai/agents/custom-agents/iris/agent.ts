@@ -1,14 +1,14 @@
 import { execFile } from 'child_process'
 import { appendFileSync } from 'fs'
-import { readFile, unlink } from 'fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { generateText, type LanguageModel } from 'ai'
-import { ECHO_BASE_DIR } from '../../../utils/env'
+import { ECHO_BASE_DIR, SCREEN_LOG_DIR } from '../../../utils/env'
 import { buildProvider } from '../../../utils/providers'
 import { getVisionState } from '../argus/agent'
 
-const SAMPLE_MS = 20_000
+const SAMPLE_MS = 60_000
 const BUFFER_LIMIT = 60
 const LOG_FILE = join(ECHO_BASE_DIR, 'iris-context.jsonl')
 
@@ -17,9 +17,8 @@ const LOG_FILE = join(ECHO_BASE_DIR, 'iris-context.jsonl')
 // presence/attention and throttled to keep cost bounded.
 const VISION_ENABLED = true
 const VISION_MODEL = 'google/gemini-3.1-flash-lite'
-const VISION_MIN_INTERVAL_MS = 3 * 60_000
 const VISION_PROMPT =
-  'Describe what is on this screen in one or two plain sentences: which app is in focus and what the user appears to be doing. Be concise and factual. No preamble.'
+  'Describe this screen in detail. State which application or website is in focus and what the user appears to be doing, then cover the key on-screen content: headings, important text, URLs, error messages, names, numbers, and notable UI elements. Quote short but meaningful text verbatim. Write 3 to 6 factual sentences. No preamble, and do not speculate beyond what is visible.'
 
 export type ScreenSample = {
   at: number
@@ -38,7 +37,6 @@ export type ScreenContext = {
 const buffer: ScreenSample[] = []
 let detection: 'xorg' | 'degraded' = 'degraded'
 let visionModel: LanguageModel | null = null
-let lastVisionAt = 0
 
 function getVisionModel(): LanguageModel | null {
   if (!process.env.OPENROUTER_API_KEY) return null
@@ -82,28 +80,80 @@ function captureScreen(outPath: string): Promise<void> {
   })
 }
 
-export async function describeScreen(): Promise<string | undefined> {
-  const model = getVisionModel()
-  if (!model) return undefined
+async function captureToBuffer(): Promise<Buffer | null> {
   const outPath = join(tmpdir(), `iris-${Date.now()}.png`)
   try {
     await captureScreen(outPath)
-    const image = await readFile(outPath)
-    const { text } = await generateText({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: VISION_PROMPT },
-            { type: 'image', image }
-          ]
-        }
-      ]
-    })
-    return text.trim() || undefined
+    return await readFile(outPath)
+  } catch (err) {
+    console.error('[iris] capture failed:', err)
+    return null
   } finally {
     await unlink(outPath).catch(() => {})
+  }
+}
+
+async function describeImage(image: Buffer, prompt: string): Promise<string | undefined> {
+  const model = getVisionModel()
+  if (!model) return undefined
+  const { text } = await generateText({
+    model,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image', image }
+        ]
+      }
+    ]
+  })
+  return text.trim() || undefined
+}
+
+export async function describeScreen(prompt: string = VISION_PROMPT): Promise<string | undefined> {
+  const image = await captureToBuffer()
+  if (!image) return undefined
+  return describeImage(image, prompt)
+}
+
+export async function describeImageFile(
+  path: string,
+  prompt: string = VISION_PROMPT
+): Promise<string | undefined> {
+  const image = await readFile(path)
+  return describeImage(image, prompt)
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+async function archiveFrame(sample: ScreenSample, image: Buffer): Promise<void> {
+  const d = new Date(sample.at)
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const stamp = `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`
+  const dir = join(SCREEN_LOG_DIR, date)
+  try {
+    await mkdir(dir, { recursive: true })
+    const base = join(dir, stamp)
+    await writeFile(`${base}.png`, image)
+    const vision = getVisionState()
+    const meta = {
+      at: sample.at,
+      iso: d.toISOString(),
+      date,
+      time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+      app: sample.app,
+      title: sample.title,
+      description: sample.description ?? null,
+      detection,
+      present: vision.present,
+      attentive: vision.attentive
+    }
+    await writeFile(`${base}.json`, JSON.stringify(meta, null, 2), 'utf-8')
+  } catch (err) {
+    console.error('[iris] archive failed:', err)
   }
 }
 
@@ -136,24 +186,24 @@ export function startIris(): () => void {
     if (stopped || running) return
     running = true
     try {
+      const vision = getVisionState()
+      if (vision.available && !vision.present) return
+
       const { app, title } = await detectActiveWindow()
-      const last = buffer[buffer.length - 1]
-      const changed = !last || last.app !== app || last.title !== title
+      const image = await captureToBuffer()
 
       let description: string | undefined
-      const vision = getVisionState()
-      const focused = vision.present && vision.attentive !== false
-      const due = Date.now() - lastVisionAt >= VISION_MIN_INTERVAL_MS
-      if (VISION_ENABLED && focused && getVisionModel() && (changed || due)) {
+      if (VISION_ENABLED && image && getVisionModel()) {
         try {
-          description = await describeScreen()
-          lastVisionAt = Date.now()
+          description = await describeImage(image, VISION_PROMPT)
         } catch (err) {
           console.error('[iris] screen description failed:', err)
         }
       }
 
-      record({ at: Date.now(), app, title, description })
+      const sample: ScreenSample = { at: Date.now(), app, title, description }
+      record(sample)
+      if (image) await archiveFrame(sample, image)
     } catch (err) {
       console.error('[iris] sample failed:', err)
     } finally {

@@ -7,6 +7,8 @@ import { extractSpeakable } from './extractSpeakables'
 
 const MIN_SPEECH_MS = 150
 
+const WAKE_SENTINEL = '<<wake>>'
+
 const BARGE_THRESHOLD = 22
 const BARGE_SUSTAIN_MS = 350
 const BARGE_ARM_MS = 600
@@ -526,8 +528,17 @@ export function useSona(): Sona {
 
   const wake = useCallback((): void => {
     continuousMode.current = true
-    startListening()
-  }, [startListening])
+    setThinking(true)
+    bargeWanted.current = true
+    startBargeMonitor()
+    void chatStreaming(WAKE_SENTINEL).finally(() => {
+      if (!isPlaying.current) {
+        setThinking(false)
+        stopBargeMonitor()
+        startListeningRef.current?.()
+      }
+    })
+  }, [chatStreaming, startBargeMonitor, stopBargeMonitor])
 
   const sleep = useCallback((): void => {
     continuousMode.current = false

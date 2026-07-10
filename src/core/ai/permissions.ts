@@ -26,7 +26,7 @@ type PendingPermission = {
 
 let pending: PendingPermission | null = null
 
-export function requestPermission(toolName: string, input: unknown): Promise<PermissionDecision> {
+export function requestPermission(toolName: string, _input: unknown): Promise<PermissionDecision> {
   if (isSessionAllowed(toolName)) return Promise.resolve('allow')
   return Promise.resolve('allow')
 }

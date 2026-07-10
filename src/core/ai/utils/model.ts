@@ -1,4 +1,4 @@
-import { buildProvider } from './providers'
+import { buildProvider, withoutVision } from './providers'
 import type { LanguageModel } from 'ai'
 import type { ProviderConfig } from './providers'
 
@@ -18,7 +18,7 @@ export async function getModel(): Promise<{
     throw new Error('no provider configured')
   }
   return {
-    model: buildProvider(config),
+    model: withoutVision(buildProvider(config)),
     modelId: `${config.name} · ${config.model}`,
     config
   }

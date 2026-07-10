@@ -8,6 +8,8 @@ import { CheckAgentsTool } from '../tools/CheckAgentsTool/tool'
 import { SubscribeTool } from '../tools/SubscribeTool/tool'
 import { PlanTool } from '../tools/PlanTool/tool'
 import { ScreenshotTool } from '../tools/ScreenshotTool/tool'
+import { ScreenLogTool } from '../tools/ScreenLogTool/tool'
+import { InspectFrameTool } from '../tools/InspectFrameTool/tool'
 
 export const agentTools = {
   MemoryReadTool,
@@ -19,11 +21,15 @@ export const agentTools = {
   CheckAgentsTool,
   SubscribeTool,
   PlanTool,
-  ScreenshotTool
+  ScreenshotTool,
+  ScreenLogTool,
+  InspectFrameTool
 }
 
 export const chatTools = {
   MemoryReadTool,
   HumanEditTool,
-  ScreenshotTool
+  ScreenshotTool,
+  ScreenLogTool,
+  InspectFrameTool
 }

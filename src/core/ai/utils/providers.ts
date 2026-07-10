@@ -8,7 +8,40 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOllama } from 'ai-sdk-ollama'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-import type { LanguageModel } from 'ai'
+import { wrapLanguageModel, type LanguageModel, type LanguageModelMiddleware } from 'ai'
+
+const IMAGE_NOTE = '[image omitted — the active model cannot read images]'
+
+function isImage(mediaType: unknown): boolean {
+  return typeof mediaType === 'string' && mediaType.startsWith('image/')
+}
+
+const stripImagesMiddleware: LanguageModelMiddleware = {
+  specificationVersion: 'v3',
+  transformParams: async ({ params }) => {
+    const prompt = (params.prompt as any[]).map((msg) => {
+      if (!msg || !Array.isArray(msg.content)) return msg
+      const content = msg.content.map((part: any) => {
+        if (part?.type === 'file' && isImage(part.mediaType)) {
+          return { type: 'text', text: IMAGE_NOTE }
+        }
+        if (part?.type === 'tool-result' && part.output?.type === 'content' && Array.isArray(part.output.value)) {
+          const value = part.output.value.map((item: any) =>
+            item?.type === 'media' && isImage(item.mediaType) ? { type: 'text', text: IMAGE_NOTE } : item
+          )
+          return { ...part, output: { ...part.output, value } }
+        }
+        return part
+      })
+      return { ...msg, content }
+    })
+    return { ...params, prompt }
+  }
+}
+
+export function withoutVision(model: LanguageModel): LanguageModel {
+  return wrapLanguageModel({ model: model as any, middleware: stripImagesMiddleware })
+}
 
 export type ProviderType =
   | 'groq'
