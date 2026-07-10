@@ -1,71 +1,23 @@
-# Echo
+# Miles
 
-Echo is a voice assistant that chats with you like a partner and helps ou achieve goals and using integrations can help you get info about other things without doing anything
+TODO
 
 ---
 
 ## Features
 
-- **Hands-free wake** — custom on-device wake word (OpenWakeWord), with cooldown and tunable sensitivity.
-- **Local speech pipeline** — speech-to-text with [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (GPU when available, CPU fallback) and text-to-speech with [Piper](https://github.com/rhasspy/piper). No audio leaves your machine for transcription or synthesis.
-- **Agentic AI core** — a agent (via the [Vercel AI SDK](https://sdk.vercel.ai)) with file read/write/edit, shell, ripgrep/glob search, web search & fetch, sub-agent delegation, and session compaction.
-- **Skills & persistent memory** — loadable skills plus per-user and per-project memory stored under `~/.echo`, so Echo remembers what matters across sessions.
-- **MCP integrations** — connect external tools through the Model Context Protocol. Built-in catalog includes **Slack**, **GitHub** (OAuth), and **Chrome DevTools** (browser automation).
-- **Voice-tuned responses** — the assistant is prompted for short, spoken-style replies (no markdown read aloud) for a natural conversation feel.
+TODO
 
 ## Architecture
 
-Echo runs as two cooperating processes:
-
-```
-┌───────────────────────────── Electron app ─────────────────────────────┐
-│                                                                         │
-│  Renderer (React + Tailwind + three.js)   ◄── IPC ──►   Main process    │
-│   • Mic, integrations, sidebar                  • AI agent     │
-│                                                          • MCP manager  │
-│                                                          • OAuth, TTS/STT│
-│                                                            IPC bridges   │
-└───────────────────────────────────┬─────────────────────────────────────┘
-                                     │ HTTP + WebSocket (127.0.0.1:8000)
-                       ┌─────────────▼──────────────┐
-                       │   Python FastAPI server     │
-                       │   • /wake  (wake word)       │
-                       │   • /transcribe (Whisper)    │
-                       │   • /speak (Piper TTS)       │
-                       └──────────────────────────────┘
-```
-
-| Layer         | Stack                                                                  |
-| ------------- | ---------------------------------------------------------------------- |
-| Desktop shell | Electron, electron-vite, electron-builder                              |
-| UI            | React, Tailwind CSS, Radix UI, three.js + postprocessing               |
-| AI            | Vercel AI SDK, `@ai-sdk/mcp`, Zod                                      |
-| Speech server | Python, FastAPI, Uvicorn, faster-whisper, Piper, OpenWakeWord, PyAudio |
-
-### Project layout
-
-```
-src/
-├── main/            Electron main process + IPC handlers (ai, mcp, oauth, tts, stt, …)
-├── preload/         Context-isolated bridge to the renderer
-├── renderer/        React UI (Mic, Sidebar, Integrations) + libs
-├── shared/          Types shared across processes (mcp, oauth, briefing, channels)
-└── core/
-    ├── ai/          Agent: tools, skills, prompts, sessions, compaction
-    ├── mcp/         MCP server manager + store
-    ├── oauth/       GitHub & Slack OAuth flows
-    ├── briefing/    Daily briefing generation
-    └── server/      Python FastAPI speech server (server.py, sanitize.py)
-scripts/             Setup, model download, and server-start scripts
-models/              ONNX models (wake word, Piper voice) — downloaded on setup
-```
+TODO
 
 ## Prerequisites
 
 - **Node.js** 18+ and a package manager ([Bun](https://bun.sh) is used here; npm works too)
 - **Python** 3.11 (see `.python-version`) with a virtual environment at `.venv`
 - **PortAudio** for microphone capture (PyAudio dependency)
-- A **Groq API key** for the AI agent
+- An **Openrouter API key** for the AI agent
 - _Optional:_ NVIDIA GPU + CUDA libraries for faster Whisper (CPU int8 fallback otherwise)
 
 ## Getting started
@@ -113,8 +65,7 @@ npm run start:client     # Electron + React with HMR
 
 ## Usage
 
-1. Say the wake word to start a turn.
-2. Speak naturally. Echo transcribes, the agent reasons and acts, and the reply is spoken back.
+2. Speak naturally. Miles transcribes, the agent reasons and acts, and the reply is spoken back.
 3. Open **Integrations** in the sidebar to connect Slack, GitHub, or Chrome DevTools.
 
 Runtime state lives in `~/.echo/` — user profile, memory, sessions, MCP config, and briefing state.
