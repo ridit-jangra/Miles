@@ -13,6 +13,10 @@ export function markActivity(): void {
   lastActivityAt = Date.now()
 }
 
+export function getLastActivityAt(): number {
+  return lastActivityAt
+}
+
 export function setPresent(value: boolean): void {
   present = value
 }

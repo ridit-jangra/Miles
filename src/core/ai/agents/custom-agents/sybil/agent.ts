@@ -1,7 +1,10 @@
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'fs'
 import { join } from 'path'
+import { generateText } from 'ai'
 import { ECHO_BASE_DIR } from '../../../utils/env'
-import { announce } from '../../../../events/announcements'
+import { getModel } from '../../../utils/model'
+import { announce, getLastActivityAt } from '../../../../events/announcements'
+import { isDnd } from '../../../../events/dnd'
 import { getVisionState } from '../argus/agent'
 import { getScreenContext } from '../iris/agent'
 import { getBriefing } from '../../../../briefing'
@@ -12,8 +15,21 @@ const HABIT_SAMPLE_MS = 5 * 60_000
 const NUDGE_CHECK_MS = 10 * 60_000
 const MIN_PATTERN_DAYS = 3
 const BRIEFING_HOUR = 9
+const CHECKIN_SILENCE_MS = 20 * 60_000
+const CHECKIN_COOLDOWN_MS = 45 * 60_000
+const CHECKIN_WINDOW_MS = 30 * 60_000
 const STATE_FILE = join(ECHO_BASE_DIR, 'sybil-state.json')
 const HABITS_FILE = join(ECHO_BASE_DIR, 'habits.jsonl')
+
+const CHECKIN_SYSTEM = `You are Miles, sir's voice companion. Sir hasn't talked to you in a while, and you just glanced at what has been on his screen. Decide his state and whether to speak.
+
+Reply with ONLY raw JSON: {"state":"working"|"stuck"|"idle","line":"..."}
+
+- "working": he's focused and making progress on something. Do NOT interrupt — line must be "".
+- "stuck": clear signs of struggle — the same error or problem on screen across many minutes, circling between the same few pages, repeated failed attempts at one thing. line = ONE short warm offer to help that names the specific thing, like a friend glancing over.
+- "idle": nothing much happening — desktop, aimless scrolling, paused media. line = ONE casual, natural conversation opener; reference what's on screen only if it genuinely fits.
+
+line rules: it is spoken aloud by TTS — plain words only, no markdown, under 18 words, address him as "sir", warm-Alfred register, never reveal that you watch or log his screen. When unsure between working and anything else, pick working and stay silent.`
 
 type State = { lastBriefingDay?: string; nudged?: Record<string, string> }
 type HabitSample = { at: number; hour: number; dow: number; present: boolean; app: string | null }
@@ -73,7 +89,8 @@ export function formatBriefing(b: Briefing): string {
       )
     }
   }
-  if (parts.length === 0) return "Morning, sir. Nothing notable came in overnight — you're all clear."
+  if (parts.length === 0)
+    return "Morning, sir. Nothing notable came in overnight — you're all clear."
   const list =
     parts.length === 1
       ? parts[0]
@@ -129,11 +146,47 @@ export function detectPatterns(samples: HabitSample[]): Pattern[] {
   return patterns.sort((a, b) => b.days - a.days)
 }
 
+async function checkIn(): Promise<void> {
+  const cutoff = Date.now() - CHECKIN_WINDOW_MS
+  const samples = getScreenContext().recent.filter((s) => s.at >= cutoff)
+  if (samples.length < 3) return
+
+  const timeline = samples
+    .map((s) => {
+      const t = new Date(s.at).toLocaleTimeString()
+      const head = `[${t}] ${s.app ?? 'unknown app'} — ${s.title ?? 'no title'}`
+      return s.description ? `${head}\n${s.description}` : head
+    })
+    .join('\n\n')
+
+  try {
+    const { model } = await getModel()
+    const res = await generateText({
+      model,
+      system: CHECKIN_SYSTEM,
+      prompt: `What has been on sir's screen recently, oldest first:\n\n${timeline}`
+    })
+    const raw = res.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')
+    const verdict = JSON.parse(raw) as { state?: string; line?: string }
+    const line = verdict.line?.trim()
+    if ((verdict.state === 'stuck' || verdict.state === 'idle') && line) {
+      announce(line)
+      console.log(`[sybil] check-in (${verdict.state}): ${line}`)
+    } else {
+      console.log(`[sybil] check-in: staying quiet (${verdict.state ?? 'unparsed'})`)
+    }
+  } catch (err) {
+    console.error('[sybil] check-in failed:', err)
+  }
+}
+
 export function startSybil(): () => void {
   let stopped = false
   let running = false
   let lastHabitAt = 0
   let lastNudgeCheckAt = 0
+  let lastCheckinAt = 0
+  const startedAt = Date.now()
   const state = loadState()
 
   const checkNudge = (): void => {
@@ -168,6 +221,17 @@ export function startSybil(): () => void {
       if (Date.now() - lastNudgeCheckAt >= NUDGE_CHECK_MS) {
         lastNudgeCheckAt = Date.now()
         checkNudge()
+      }
+
+      const silence = Date.now() - Math.max(getLastActivityAt(), startedAt)
+      if (
+        silence >= CHECKIN_SILENCE_MS &&
+        Date.now() - lastCheckinAt >= CHECKIN_COOLDOWN_MS &&
+        !shouldStayQuiet() &&
+        !isDnd()
+      ) {
+        lastCheckinAt = Date.now()
+        await checkIn()
       }
 
       const now = new Date()
