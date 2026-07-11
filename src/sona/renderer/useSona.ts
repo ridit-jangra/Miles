@@ -9,6 +9,29 @@ const MIN_SPEECH_MS = 150
 
 const WAKE_SENTINEL = '<<wake>>'
 
+const BRIEFED_KEY = 'wake:lastBriefedDate'
+
+function todayKey(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+function hasBriefedToday(): boolean {
+  try {
+    return localStorage.getItem(BRIEFED_KEY) === todayKey()
+  } catch {
+    return false
+  }
+}
+
+function markBriefedToday(): void {
+  try {
+    localStorage.setItem(BRIEFED_KEY, todayKey())
+  } catch {
+    /* storage disabled */
+  }
+}
+
 const BARGE_THRESHOLD = 22
 const BARGE_SUSTAIN_MS = 350
 const BARGE_ARM_MS = 600
@@ -527,7 +550,15 @@ export function useSona(): Sona {
   }, [startListening])
 
   const wake = useCallback((): void => {
+    if (continuousMode.current) return
     continuousMode.current = true
+
+    if (hasBriefedToday()) {
+      startListeningRef.current?.()
+      return
+    }
+    markBriefedToday()
+
     setThinking(true)
     bargeWanted.current = true
     startBargeMonitor()
@@ -540,12 +571,29 @@ export function useSona(): Sona {
     })
   }, [chatStreaming, startBargeMonitor, stopBargeMonitor])
 
+  const wakeRef = useRef(wake)
+  useEffect(() => {
+    wakeRef.current = wake
+  }, [wake])
+
+  useEffect(() => {
+    const off = window.wake?.onTrigger(() => wakeRef.current())
+    return off
+  }, [])
+
   const sleep = useCallback((): void => {
     continuousMode.current = false
     setThinking(false)
     stopBargeMonitor()
     mediaRecorder.current?.stop()
   }, [stopBargeMonitor])
+
+  useEffect(() => {
+    const off = window.dnd?.onEnter(() => {
+      continuousMode.current = false
+    })
+    return off
+  }, [])
 
   return {
     listening,

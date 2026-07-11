@@ -17,7 +17,9 @@ import {
   MCP_UPDATE,
   SPEAK,
   TRANSCRIBE,
-  EVENT_ALERT
+  EVENT_ALERT,
+  WAKE_TRIGGER,
+  DND_ENTERED
 } from '../shared/channels'
 import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/mcp'
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
@@ -89,6 +91,22 @@ const speak = {
   }
 }
 
+const wake = {
+  onTrigger: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on(WAKE_TRIGGER, handler)
+    return () => ipcRenderer.removeListener(WAKE_TRIGGER, handler)
+  }
+}
+
+const dnd = {
+  onEnter: (cb: () => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on(DND_ENTERED, handler)
+    return () => ipcRenderer.removeListener(DND_ENTERED, handler)
+  }
+}
+
 contextBridge.exposeInMainWorld('env', {
   WEATHER_API_KEY: process.env.WEATHER_API_KEY ?? '',
   NEWS_API_KEY: process.env.NEWS_API_KEY ?? ''
@@ -102,6 +120,8 @@ try {
   contextBridge.exposeInMainWorld('oauth', oauth)
   contextBridge.exposeInMainWorld('briefing', briefing)
   contextBridge.exposeInMainWorld('speak', speak)
+  contextBridge.exposeInMainWorld('wake', wake)
+  contextBridge.exposeInMainWorld('dnd', dnd)
   contextBridge.exposeInMainWorld('events', events)
 } catch (error) {
   console.error(error)

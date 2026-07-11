@@ -1,4 +1,5 @@
 import { say } from './speech'
+import { isDnd, clearDnd } from './dnd'
 
 const QUIET_AFTER_ACTIVITY_MS = 45_000
 const FLUSH_TICK_MS = 5_000
@@ -17,6 +18,7 @@ export function setPresent(value: boolean): void {
 }
 
 export function markConversationStart(): void {
+  clearDnd()
   busyDepth++
   lastActivityAt = Date.now()
 }
@@ -31,7 +33,7 @@ function isBusy(): boolean {
 }
 
 function canSpeak(): boolean {
-  return present && !isBusy()
+  return present && !isBusy() && !isDnd()
 }
 
 export function announce(text: string): void {

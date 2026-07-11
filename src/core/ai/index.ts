@@ -7,13 +7,14 @@ import { KillAgentTool } from './tools/KillAgentTool/tool'
 import { ScheduleTool } from './tools/ScheduleTool/tool'
 import { MusicTool } from './tools/MusicTool/tool'
 import { RecallTool } from './tools/RecallTool/tool'
+import { DndTool } from './tools/DndTool/tool'
 import { drainSubagentResults } from '../events/subagents'
 import { markConversationStart, markConversationEnd } from '../events/announcements'
 import { hasPendingQuestion, answerPendingQuestion } from '../events/pending-question'
 
 const session = createSession(undefined, 'echo')
 
-const echoTools = { ...agentTools, SpeakTool, KillAgentTool, ScheduleTool, MusicTool, RecallTool }
+const echoTools = { ...agentTools, SpeakTool, KillAgentTool, ScheduleTool, MusicTool, RecallTool, DndTool }
 
 export const WAKE_SENTINEL = '<<wake>>'
 

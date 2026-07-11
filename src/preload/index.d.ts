@@ -50,6 +50,8 @@ declare global {
     oauth: oauth_api
     briefing: briefing_api
     speak: { onSay: (cb: (text: string) => void) => () => void }
+    wake: { onTrigger: (cb: () => void) => () => void }
+    dnd: { onEnter: (cb: () => void) => () => void }
     events: { onAlert: (cb: (alert: EventAlert) => void) => () => void }
     env: {
       WEATHER_API_KEY: string

@@ -14,7 +14,15 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { WAKE_FOCUS_WINDOW, EVENT_ALERT, SPEAK_SAY } from '../shared/channels'
+import {
+  WAKE_FOCUS_WINDOW,
+  WAKE_TRIGGER,
+  DND_ENTERED,
+  EVENT_ALERT,
+  SPEAK_SAY
+} from '../shared/channels'
+import { startWakeListener } from './ipc/wake'
+import { isDnd, setDndEnterNotifier } from '../core/events/dnd'
 import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
@@ -73,8 +81,13 @@ function createWindow(): void {
   })
 
   setGestureHandler(() => {
+    if (isDnd()) return
     markActivity()
     focusMainWindow()
+  })
+
+  setDndEnterNotifier(() => {
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(DND_ENTERED)
   })
 
   mainWindow.on('ready-to-show', () => {
@@ -105,10 +118,17 @@ function createWindow(): void {
   })
   const stopStyleCollector = startSlackStyleCollector()
   const stopSubagentMonitor = startSubagentMonitor()
+  const stopWakeListener = startWakeListener(() => {
+    if (mainWindow.isDestroyed() || isDnd()) return
+    markActivity()
+    focusMainWindow()
+    mainWindow.webContents.send(WAKE_TRIGGER)
+  })
   mainWindow.on('closed', () => {
     stopPoller()
     stopStyleCollector()
     stopSubagentMonitor()
+    stopWakeListener()
   })
 }
 
