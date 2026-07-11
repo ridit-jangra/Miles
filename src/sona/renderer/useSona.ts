@@ -38,6 +38,11 @@ const BARGE_ARM_MS = 600
 const BARGE_DEBUG = true
 
 const SILENCE_THRESHOLD_MS = 650
+const LISTEN_TICK_MS = 50
+const SPEECH_MIN_VOL = 12
+const SPEECH_MARGIN = 8
+const NOISE_ADAPT = 0.05
+const SPEECH_SUSTAIN_TICKS = 2
 
 const HALLUCINATION_PATTERNS = [
   /^(uh+|um+|hm+|hmm+|ah+|eh+)\.?$/i,
@@ -477,25 +482,46 @@ export function useSona(): Sona {
     let spokenOnce = false
     let firstSoundAt = 0
     let lastSoundAt = 0
+    let noiseFloor = -1
+    let loudTicks = 0
 
-    const checkSilence = (): void => {
+    const recorder = mediaRecorder.current
+
+    const cleanup = (): void => {
+      clearInterval(listenTimer)
+      stream.getTracks().forEach((t) => t.stop())
+      void audioCtx.close()
+    }
+
+    const listenTimer = setInterval(() => {
+      if (recorder.state !== 'recording') {
+        cleanup()
+        return
+      }
+
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
 
-      if (volume > 12) {
-        if (!spokenOnce) firstSoundAt = Date.now()
-        spokenOnce = true
-        lastSoundAt = Date.now()
-        silenceStart = Date.now()
-      } else if (spokenOnce && Date.now() - silenceStart > SILENCE_THRESHOLD_MS) {
-        mediaRecorder.current?.stop()
-        stream.getTracks().forEach((t) => t.stop())
-        audioCtx.close()
-        return
+      if (noiseFloor < 0) noiseFloor = Math.min(volume, SPEECH_MIN_VOL)
+      const threshold = Math.max(SPEECH_MIN_VOL, noiseFloor + SPEECH_MARGIN)
+
+      if (volume > threshold) {
+        loudTicks++
+        if (loudTicks >= SPEECH_SUSTAIN_TICKS) {
+          if (!spokenOnce) firstSoundAt = Date.now()
+          spokenOnce = true
+          lastSoundAt = Date.now()
+          silenceStart = Date.now()
+        }
+      } else {
+        loudTicks = 0
+        noiseFloor += NOISE_ADAPT * (volume - noiseFloor)
+        if (spokenOnce && Date.now() - silenceStart > SILENCE_THRESHOLD_MS) {
+          cleanup()
+          recorder.stop()
+        }
       }
-      requestAnimationFrame(checkSilence)
-    }
-    requestAnimationFrame(checkSilence)
+    }, LISTEN_TICK_MS)
 
     mediaRecorder.current.onstop = async () => {
       isProcessing.current = true
