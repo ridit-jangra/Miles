@@ -3,6 +3,7 @@ import { platform } from 'os'
 import { USER_FILE, MEMORY_DIR } from './env'
 import { USER_ANALYTICS_FILE } from './analyzeUserData'
 import { collectSlackSamples, SLACK_STYLE_FILE } from './analyzeSlackStyle'
+import { currentIntentions } from './intentions'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 
 const isWindows = platform() === 'win32'
@@ -18,6 +19,13 @@ async function buildBasePrompt(identity: string): Promise<string> {
     ? `\n# Profile of sir (learned from past sessions — anticipate his needs and mirror how he talks)\n${readFileSync(USER_ANALYTICS_FILE, 'utf-8')}\n`
     : ''
 
+  const intentions = currentIntentions()
+  const intentionsBlock = intentions.length
+    ? `\n# Sir's standing intentions (his stated plans and goals, tracked across sessions with dates — if something he says now clearly contradicts one, gently note the shift and ask whether the plan changed)\n${intentions
+        .map((i) => `- [since ${new Date(i.firstAt).toISOString().slice(0, 10)}] ${i.statement}`)
+        .join('\n')}\n`
+    : ''
+
   const memoryFiles = existsSync(MEMORY_DIR)
     ? readdirSync(MEMORY_DIR).filter((f) => f.endsWith('.md') || f.endsWith('.mdc'))
     : []
@@ -30,8 +38,7 @@ async function buildBasePrompt(identity: string): Promise<string> {
 
 What user told you about themself:
 ${user}
-${analytics}
-${memoryList}
+${analytics}${intentionsBlock}${memoryList}
 Working directory: ${cwd()}. Platform: ${PLATFORM}.`
 }
 

@@ -1,5 +1,7 @@
 import { config } from 'dotenv'
+import { applyStoredSettings } from './ipc/settings'
 config()
+applyStoredSettings()
 
 import './ipc/stt'
 import './ipc/tts'
@@ -27,10 +29,11 @@ import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
 import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
-import { startArgus, setGestureHandler } from '../core/ai/agents/custom-agents/argus/agent'
+import { startArgus } from '../core/ai/agents/custom-agents/argus/agent'
 import { startIris } from '../core/ai/agents/custom-agents/iris/agent'
 import { startSybil } from '../core/ai/agents/custom-agents/sybil/agent'
 import { startCerberus, triageAlert, collectSuppressed } from '../core/ai/agents/custom-agents/cerberus/agent'
+import { startJanus } from '../core/ai/agents/custom-agents/janus/agent'
 import { startScheduler } from '../core/events/scheduler'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
@@ -43,6 +46,7 @@ let stopArgus: (() => void) | null = null
 let stopIris: (() => void) | null = null
 let stopSybil: (() => void) | null = null
 let stopCerberus: (() => void) | null = null
+let stopJanus: (() => void) | null = null
 let stopScheduler: (() => void) | null = null
 let stopAnnouncements: (() => void) | null = null
 
@@ -80,11 +84,11 @@ function createWindow(): void {
     focusMainWindow()
   })
 
-  setGestureHandler(() => {
-    if (isDnd()) return
-    markActivity()
-    focusMainWindow()
-  })
+  // setGestureHandler(() => {
+  //   if (isDnd()) return
+  //   markActivity()
+  //   focusMainWindow()
+  // })
 
   setDndEnterNotifier(() => {
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(DND_ENTERED)
@@ -148,6 +152,7 @@ app.whenReady().then(() => {
   stopIris = startIris()
   stopSybil = startSybil()
   stopCerberus = startCerberus()
+  stopJanus = startJanus()
   stopScheduler = startScheduler()
   stopAnnouncements = startAnnouncementFlusher()
   startServer().catch((err) => console.error('[server] start failed:', err))
@@ -174,6 +179,7 @@ app.on('before-quit', () => {
   if (stopIris) stopIris()
   if (stopSybil) stopSybil()
   if (stopCerberus) stopCerberus()
+  if (stopJanus) stopJanus()
   if (stopScheduler) stopScheduler()
   if (stopAnnouncements) stopAnnouncements()
   backupEchoStore()

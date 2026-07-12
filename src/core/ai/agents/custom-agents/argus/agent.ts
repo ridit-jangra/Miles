@@ -26,13 +26,13 @@ export function setHandHandler(
   handHandler = fn
 }
 
-const WAVE_COOLDOWN_MS = 5_000
-let lastWaveAt = 0
-let gestureHandler: ((gesture: string) => void) | null = null
+// const WAVE_COOLDOWN_MS = 5_000
+// let lastWaveAt = 0
+// let gestureHandler: ((gesture: string) => void) | null = null
 
-export function setGestureHandler(fn: (gesture: string) => void): void {
-  gestureHandler = fn
-}
+// export function setGestureHandler(fn: (gesture: string) => void): void {
+//   gestureHandler = fn
+// }
 
 const state: VisionState = {
   available: false,
@@ -113,17 +113,17 @@ function onEvent(event: Record<string, unknown>): void {
     case 'gesture': {
       const gesture = String(event.gesture ?? '')
       state.lastGesture = gesture
-      if (gesture === 'wave') {
-        const now = Date.now()
-        if (now - lastWaveAt > WAVE_COOLDOWN_MS) {
-          lastWaveAt = now
-          state.present = true
-          setPresent(true)
-          console.log('[argus] wave detected')
-          say('Yes sir?')
-          gestureHandler?.(gesture)
-        }
-      }
+      // if (gesture === 'wave') {
+      //   const now = Date.now()
+      //   if (now - lastWaveAt > WAVE_COOLDOWN_MS) {
+      //     lastWaveAt = now
+      //     state.present = true
+      //     setPresent(true)
+      //     console.log('[argus] wave detected')
+      //     say('Yes sir?')
+      //     gestureHandler?.(gesture)
+      //   }
+      // }
       break
     }
     case 'enrolled':

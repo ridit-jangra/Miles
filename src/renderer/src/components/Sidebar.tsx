@@ -1,4 +1,4 @@
-import { HomeIcon, LucideIcon, NetworkIcon } from 'lucide-react'
+import { HomeIcon, LucideIcon, NetworkIcon, SettingsIcon } from 'lucide-react'
 import React from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip/tooltip'
 import { cn } from '../lib/utils'
@@ -57,6 +57,7 @@ export function Sidebar({ setPage, page }: SidebarProps): React.JSX.Element {
           fill="currentColor"
         />
         <SidebarButton setPage={setPage} id="Integrations" Icon={NetworkIcon} page={page} />
+        <SidebarButton setPage={setPage} id="Settings" Icon={SettingsIcon} page={page} />
       </ul>
     </div>
   )

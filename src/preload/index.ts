@@ -15,6 +15,8 @@ import {
   MCP_LIST,
   MCP_REMOVE,
   MCP_UPDATE,
+  SETTINGS_GET,
+  SETTINGS_SET,
   SPEAK,
   TRANSCRIBE,
   EVENT_ALERT,
@@ -25,6 +27,7 @@ import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 import type { Briefing } from '../shared/briefing'
 import type { EventAlert } from '../shared/events'
+import type { AppSettings } from '../shared/settings'
 
 const server = {
   transcribe: (
@@ -75,6 +78,12 @@ const briefing = {
   get: (): Promise<Briefing> => ipcRenderer.invoke(BRIEFING_GET)
 }
 
+const settings = {
+  get: (): Promise<AppSettings> => ipcRenderer.invoke(SETTINGS_GET),
+
+  set: (patch: Partial<AppSettings>): Promise<void> => ipcRenderer.invoke(SETTINGS_SET, patch)
+}
+
 const events = {
   onAlert: (cb: (alert: EventAlert) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, alert: EventAlert): void => cb(alert)
@@ -119,6 +128,7 @@ try {
   contextBridge.exposeInMainWorld('mcp', mcp)
   contextBridge.exposeInMainWorld('oauth', oauth)
   contextBridge.exposeInMainWorld('briefing', briefing)
+  contextBridge.exposeInMainWorld('settings', settings)
   contextBridge.exposeInMainWorld('speak', speak)
   contextBridge.exposeInMainWorld('wake', wake)
   contextBridge.exposeInMainWorld('dnd', dnd)

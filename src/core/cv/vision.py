@@ -10,7 +10,7 @@ import numpy as np
 from detector import MODELS_DIR, FaceDetector
 from attention import HeadPose, PoseSmoother, head_pose, is_attentive
 from privacy import FaceIdentifier
-from wave import WaveDetector
+from wave_gesture import WaveDetector
 from hands import HandTracker
 
 CALIBRATION_FILE = os.path.join(MODELS_DIR, "attention.json")

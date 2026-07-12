@@ -86,6 +86,7 @@ WAKE_INPUT_DEVICE = os.environ.get("WAKE_INPUT_DEVICE", "pulse")
 
 last_wake_time: float = 0.0
 wake_clients: list[WebSocket] = []
+mic_ready = threading.Event()
 
 vision_clients: list[WebSocket] = []
 vision_service = None
@@ -126,32 +127,35 @@ async def notify_wake(source: str = "wakeword") -> None:
 def mic_loop(loop: asyncio.AbstractEventLoop) -> None:
     global last_wake_time
 
-    pa = pyaudio.PyAudio()
+    try:
+        pa = pyaudio.PyAudio()
 
-    device_index = None
-    if WAKE_INPUT_DEVICE:
-        for i in range(pa.get_device_count()):
-            info = pa.get_device_info_by_index(i)
-            if (
-                info.get("maxInputChannels", 0) > 0
-                and info["name"] == WAKE_INPUT_DEVICE
-            ):
-                device_index = i
-                break
-        if device_index is None:
-            print(
-                f"Wake word: input device '{WAKE_INPUT_DEVICE}' not found, using system default"
-            )
+        device_index = None
+        if WAKE_INPUT_DEVICE:
+            for i in range(pa.get_device_count()):
+                info = pa.get_device_info_by_index(i)
+                if (
+                    info.get("maxInputChannels", 0) > 0
+                    and info["name"] == WAKE_INPUT_DEVICE
+                ):
+                    device_index = i
+                    break
+            if device_index is None:
+                print(
+                    f"Wake word: input device '{WAKE_INPUT_DEVICE}' not found, using system default"
+                )
 
-    stream = pa.open(
-        rate=IN_RATE,
-        channels=1,
-        format=pyaudio.paInt16,
-        input=True,
-        input_device_index=device_index,
-        frames_per_buffer=IN_CHUNK,
-    )
-    print(f"Wake word: listening... (device={WAKE_INPUT_DEVICE or 'default'})")
+        stream = pa.open(
+            rate=IN_RATE,
+            channels=1,
+            format=pyaudio.paInt16,
+            input=True,
+            input_device_index=device_index,
+            frames_per_buffer=IN_CHUNK,
+        )
+        print(f"Wake word: listening... (device={WAKE_INPUT_DEVICE or 'default'})")
+    finally:
+        mic_ready.set()
 
     while True:
         raw = np.frombuffer(
@@ -178,6 +182,7 @@ async def startup() -> None:
     loop = asyncio.get_event_loop()
     t = threading.Thread(target=mic_loop, args=(loop,), daemon=True)
     t.start()
+    mic_ready.wait(timeout=15)
 
     if VISION_ENABLED:
         vision_loop = loop

@@ -3,6 +3,7 @@ import type { MCPServerInput, MCPServerState, MCPServerUpdate } from '../shared/
 import type { GithubDeviceStart, SlackOAuthResult } from '../shared/oauth'
 import type { Briefing } from '../shared/briefing'
 import type { EventAlert } from '../shared/events'
+import type { AppSettings } from '../shared/settings'
 
 type server_api = {
   transcribe: (buffer: ArrayBuffer) => Promise<{
@@ -41,6 +42,11 @@ type briefing_api = {
   get: () => Promise<Briefing>
 }
 
+type settings_api = {
+  get: () => Promise<AppSettings>
+  set: (patch: Partial<AppSettings>) => Promise<void>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -49,6 +55,7 @@ declare global {
     mcp: mcp_api
     oauth: oauth_api
     briefing: briefing_api
+    settings: settings_api
     speak: { onSay: (cb: (text: string) => void) => () => void }
     wake: { onTrigger: (cb: () => void) => () => void }
     dnd: { onEnter: (cb: () => void) => () => void }

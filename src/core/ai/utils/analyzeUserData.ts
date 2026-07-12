@@ -7,7 +7,7 @@ import type { Session } from './session'
 
 export const USER_ANALYTICS_FILE = join(ECHO_BASE_DIR, 'user-analytics.md')
 
-type Turn = { role: 'user' | 'echo'; text: string }
+export type Turn = { role: 'user' | 'echo'; text: string }
 
 function textFromContent(content: unknown): string {
   if (typeof content === 'string') return content
@@ -19,7 +19,7 @@ function textFromContent(content: unknown): string {
     .trim()
 }
 
-function turnsFromSession(session: Session): Turn[] {
+export function turnsFromSession(session: Session): Turn[] {
   const turns: Turn[] = []
   for (const message of session.messages) {
     if (message.role === 'user') {

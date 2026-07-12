@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Mic } from './components/Mic'
 import { Sidebar } from './components/Sidebar'
 import { Integrations } from './components/Integrations'
+import { Settings } from './components/Settings'
 import { EventBanner } from './components/EventBanner'
 
 function App(): React.JSX.Element {
@@ -18,6 +19,10 @@ function App(): React.JSX.Element {
 
         <div className={page === 'Integrations' ? 'block' : 'hidden'}>
           <Integrations />
+        </div>
+
+        <div className={page === 'Settings' ? 'block' : 'hidden'}>
+          <Settings />
         </div>
       </div>
     </div>
