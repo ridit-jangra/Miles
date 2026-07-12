@@ -5,17 +5,17 @@ $MODELS_DIR = Join-Path $ECHO_DIR "models"
 $VENV_DIR   = Join-Path $ECHO_DIR ".venv"
 $PYTHON     = Join-Path $VENV_DIR "Scripts\python.exe"
 
-function Log  { param($s) Write-Host "  [✓] $s" -ForegroundColor Green  }
-function Info { param($s) Write-Host "  [~] $s" -ForegroundColor Yellow }
-function Warn { param($s) Write-Host "  [!] $s" -ForegroundColor Yellow }
-function Err  { param($s) Write-Host "  [✗] $s" -ForegroundColor Red; exit 1 }
+function Log  { param($s) Write-Host "  [ok] $s" -ForegroundColor Green  }
+function Info { param($s) Write-Host "  [~ ] $s" -ForegroundColor Yellow }
+function Warn { param($s) Write-Host "  [! ] $s" -ForegroundColor Yellow }
+function Err  { param($s) Write-Host "  [x ] $s" -ForegroundColor Red; exit 1 }
 
 New-Item -ItemType Directory -Force -Path $MODELS_DIR | Out-Null
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║      Echo Model Downloader       ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
+Write-Host "      Echo Model Downloader       " -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not (Test-Path $PYTHON)) {
@@ -37,7 +37,7 @@ function Download-File {
     $client.DownloadFile($finalUrl, $Dest)
 }
 
-# ── Piper TTS (danny) ─────────────────────────────────────────────────────────
+# ---- Piper TTS (danny) -------------------------------------------------------
 $PIPER_BASE   = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/danny/low"
 $DANNY_ONNX   = Join-Path $MODELS_DIR "en_US-danny-low.onnx"
 $DANNY_JSON   = Join-Path $MODELS_DIR "en_US-danny-low.onnx.json"
@@ -66,7 +66,7 @@ if (Test-Path $DANNY_JSON) {
     }
 }
 
-# ── Whisper ───────────────────────────────────────────────────────────────────
+# ---- Whisper -----------------------------------------------------------------
 $WHISPER_DIR = Join-Path $MODELS_DIR "whisper"
 
 foreach ($SIZE in @("small.en", "small")) {
@@ -87,7 +87,7 @@ print('ok')
     }
 }
 
-# ── OpenWakeWord ──────────────────────────────────────────────────────────────
+# ---- OpenWakeWord ------------------------------------------------------------
 $OWW_MODELS = Join-Path $VENV_DIR "Lib\site-packages\openwakeword\resources\models\hey_jarvis_v0.1.onnx"
 
 if (Test-Path $OWW_MODELS) {
@@ -103,7 +103,7 @@ print('ok')
     Log "OpenWakeWord models downloaded"
 }
 
-# ── Custom wake word ──────────────────────────────────────────────────────────
+# ---- Custom wake word --------------------------------------------------------
 $ECHO_MODEL = Join-Path $MODELS_DIR "echo.onnx"
 if (Test-Path $ECHO_MODEL) {
     Log "Custom echo.onnx found"
@@ -117,9 +117,9 @@ if (Test-Path $ECHO_MODEL) {
 }
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     All Models Ready!            ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
+Write-Host "        All Models Ready!         " -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Run npm run server to start Echo"
 Write-Host ""
