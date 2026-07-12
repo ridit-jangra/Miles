@@ -4,7 +4,7 @@ import { isDnd, clearDnd } from './dnd'
 const QUIET_AFTER_ACTIVITY_MS = 45_000
 const FLUSH_TICK_MS = 5_000
 
-const queue: string[] = []
+const queue: { text: string; listen: boolean }[] = []
 let busyDepth = 0
 let lastActivityAt = 0
 let present = true
@@ -40,20 +40,20 @@ function canSpeak(): boolean {
   return present && !isBusy() && !isDnd()
 }
 
-export function announce(text: string): void {
+export function announce(text: string, listen = false): void {
   const trimmed = text?.trim()
   if (!trimmed) return
   if (canSpeak()) {
-    say(trimmed)
+    say(trimmed, listen)
     return
   }
-  if (!queue.includes(trimmed)) queue.push(trimmed)
+  if (!queue.some((q) => q.text === trimmed)) queue.push({ text: trimmed, listen })
 }
 
 export function startAnnouncementFlusher(): () => void {
   const timer = setInterval(() => {
     if (queue.length === 0 || !canSpeak()) return
-    for (const text of queue.splice(0, queue.length)) say(text)
+    for (const q of queue.splice(0, queue.length)) say(q.text, q.listen)
   }, FLUSH_TICK_MS)
   return () => clearInterval(timer)
 }

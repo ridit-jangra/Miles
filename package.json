@@ -41,6 +41,7 @@
     "ai-sdk-ollama": "^3.8.6",
     "chrome-remote-interface": "^0.34.0",
     "clsx": "^2.1.1",
+    "dbus-next": "^0.10.2",
     "diff": "^9.0.0",
     "dotenv": "^17.4.2",
     "electron-updater": "^6.3.9",

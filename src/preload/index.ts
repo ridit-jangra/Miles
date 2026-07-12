@@ -93,8 +93,9 @@ const events = {
 }
 
 const speak = {
-  onSay: (cb: (text: string) => void) => {
-    const handler = (_e: Electron.IpcRendererEvent, text: string) => cb(text)
+  onSay: (cb: (text: string, listen: boolean) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, text: string, listen: boolean) =>
+      cb(text, listen === true)
     ipcRenderer.on('speak:say', handler)
     return () => ipcRenderer.removeListener('speak:say', handler)
   }

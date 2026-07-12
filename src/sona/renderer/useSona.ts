@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/refs */
-/* eslint-disable react-hooks/immutability */
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 
 import { synthesize } from './speak'
@@ -32,10 +30,13 @@ function markBriefedToday(): void {
   }
 }
 
-const BARGE_THRESHOLD = 22
+const BARGE_MIN_VOL = 14
+const BARGE_MARGIN = 10
 const BARGE_SUSTAIN_MS = 350
 const BARGE_ARM_MS = 600
 const BARGE_DEBUG = true
+
+const REPLY_WINDOW_MS = 8_000
 
 const SILENCE_THRESHOLD_MS = 650
 const LISTEN_TICK_MS = 50
@@ -137,7 +138,7 @@ export function useSona(): Sona {
     }, 500)
   }, [])
 
-  const startListeningRef = useRef<(() => Promise<void>) | null>(null)
+  const startListeningRef = useRef<((maxWaitMs?: number) => Promise<void>) | null>(null)
 
   const stopBargeMonitor = useCallback((): void => {
     bargeWanted.current = false
@@ -246,20 +247,24 @@ export function useSona(): Sona {
     const armAt = Date.now() + BARGE_ARM_MS
     let voiceStart = 0
     let lastLog = 0
+    let noiseFloor = -1
 
     const tick = (): void => {
       if (!bargeCtx.current) return
       analyser.getByteFrequencyData(data)
       const volume = data.reduce((a, b) => a + b, 0) / data.length
 
+      if (noiseFloor < 0) noiseFloor = Math.min(volume, BARGE_MIN_VOL)
+      const threshold = Math.max(BARGE_MIN_VOL, noiseFloor + BARGE_MARGIN)
+
       if (BARGE_DEBUG && Date.now() - lastLog > 200) {
         lastLog = Date.now()
         console.log(
-          `[barge] vol=${volume.toFixed(1)} thr=${BARGE_THRESHOLD} armed=${Date.now() >= armAt} ctx=${ctx.state}`
+          `[barge] vol=${volume.toFixed(1)} thr=${threshold.toFixed(1)} floor=${noiseFloor.toFixed(1)} armed=${Date.now() >= armAt} ctx=${ctx.state}`
         )
       }
 
-      if (Date.now() >= armAt && volume > BARGE_THRESHOLD) {
+      if (Date.now() >= armAt && volume > threshold) {
         if (!voiceStart) voiceStart = Date.now()
         else if (Date.now() - voiceStart > BARGE_SUSTAIN_MS) {
           stopSpeaking()
@@ -268,6 +273,7 @@ export function useSona(): Sona {
         }
       } else {
         voiceStart = 0
+        noiseFloor += NOISE_ADAPT * (volume - noiseFloor)
       }
       bargeRaf.current = requestAnimationFrame(tick)
     }
@@ -377,13 +383,27 @@ export function useSona(): Sona {
     [pump, startBargeMonitor, startLevelLoop, ensureCtx]
   )
 
+  const openReplyWindow = useCallback((): void => {
+    setTimeout(() => {
+      if (
+        continuousMode.current ||
+        isPlaying.current ||
+        listeningRef.current ||
+        isProcessing.current
+      ) {
+        return
+      }
+      void startListeningRef.current?.(REPLY_WINDOW_MS)
+    }, 400)
+  }, [])
+
   useEffect(() => {
-    const off = window.speak?.onSay((text: string) => {
+    const off = window.speak?.onSay((text: string, listen: boolean) => {
       const trimmed = text?.trim()
-      if (trimmed) speak(trimmed)
+      if (trimmed) speak(trimmed, listen ? openReplyWindow : undefined)
     })
     return off
-  }, [speak])
+  }, [speak, openReplyWindow])
 
   useEffect(() => {
     return () => {
@@ -445,131 +465,142 @@ export function useSona(): Sona {
     [speak, handleStreamComplete]
   )
 
-  const startListening = useCallback(async (): Promise<void> => {
-    if (isProcessing.current || listeningRef.current || isPlaying.current) return
+  const startListening = useCallback(
+    async (maxWaitMs?: number): Promise<void> => {
+      if (isProcessing.current || listeningRef.current || isPlaying.current) return
 
-    genRef.current++
-    setThinking(false)
+      genRef.current++
+      setThinking(false)
 
-    let stream: MediaStream
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch {
-      console.error('[Miles] mic access denied')
-      return
-    }
-
-    setTranscript('')
-    setTranscriptVisible(false)
-
-    mediaRecorder.current = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=opus'
-    })
-    chunks.current = []
-
-    mediaRecorder.current.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.current.push(e.data)
-    }
-
-    const audioCtx = new AudioContext()
-    const source = audioCtx.createMediaStreamSource(stream)
-    const analyser = audioCtx.createAnalyser()
-    analyser.fftSize = 512
-    source.connect(analyser)
-    const data = new Uint8Array(analyser.frequencyBinCount)
-
-    let silenceStart = Date.now()
-    let spokenOnce = false
-    let firstSoundAt = 0
-    let lastSoundAt = 0
-    let noiseFloor = -1
-    let loudTicks = 0
-
-    const recorder = mediaRecorder.current
-
-    const cleanup = (): void => {
-      clearInterval(listenTimer)
-      stream.getTracks().forEach((t) => t.stop())
-      void audioCtx.close()
-    }
-
-    const listenTimer = setInterval(() => {
-      if (recorder.state !== 'recording') {
-        cleanup()
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      } catch {
+        console.error('[Miles] mic access denied')
         return
       }
 
-      analyser.getByteFrequencyData(data)
-      const volume = data.reduce((a, b) => a + b, 0) / data.length
+      setTranscript('')
+      setTranscriptVisible(false)
 
-      if (noiseFloor < 0) noiseFloor = Math.min(volume, SPEECH_MIN_VOL)
-      const threshold = Math.max(SPEECH_MIN_VOL, noiseFloor + SPEECH_MARGIN)
+      mediaRecorder.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
+      chunks.current = []
 
-      if (volume > threshold) {
-        loudTicks++
-        if (loudTicks >= SPEECH_SUSTAIN_TICKS) {
-          if (!spokenOnce) firstSoundAt = Date.now()
-          spokenOnce = true
-          lastSoundAt = Date.now()
-          silenceStart = Date.now()
-        }
-      } else {
-        loudTicks = 0
-        noiseFloor += NOISE_ADAPT * (volume - noiseFloor)
-        if (spokenOnce && Date.now() - silenceStart > SILENCE_THRESHOLD_MS) {
-          cleanup()
-          recorder.stop()
-        }
+      mediaRecorder.current.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.current.push(e.data)
       }
-    }, LISTEN_TICK_MS)
 
-    mediaRecorder.current.onstop = async () => {
-      isProcessing.current = true
+      const audioCtx = new AudioContext()
+      const source = audioCtx.createMediaStreamSource(stream)
+      const analyser = audioCtx.createAnalyser()
+      analyser.fftSize = 512
+      source.connect(analyser)
+      const data = new Uint8Array(analyser.frequencyBinCount)
 
-      const speechMs = spokenOnce ? lastSoundAt - firstSoundAt : 0
-      try {
-        const blob = new Blob(chunks.current, { type: 'audio/webm' })
-        const arrayBuffer = await blob.arrayBuffer()
-        const result = await window.server.transcribe(arrayBuffer)
-        const text = result.success ? (result.text?.trim() ?? '') : ''
-        const tone = result.tone
-        console.log(`[Miles] tone: ${tone ?? 'none'} — ${JSON.stringify(text)}`)
+      let silenceStart = Date.now()
+      let spokenOnce = false
+      let firstSoundAt = 0
+      let lastSoundAt = 0
+      let noiseFloor = -1
+      let loudTicks = 0
+      const openedAt = Date.now()
 
-        const tooShort = speechMs < MIN_SPEECH_MS
-        if (!text || tooShort || isGarbage(text)) {
-          console.log(
-            '[Miles] ignored:',
-            JSON.stringify(text),
-            `(speech ${speechMs}ms${tooShort ? ', too short' : ''})`
-          )
-          if (continuousMode.current) {
-            setTimeout(() => startListeningRef.current?.(), 200)
-          }
+      const recorder = mediaRecorder.current
+
+      const cleanup = (): void => {
+        clearInterval(listenTimer)
+        stream.getTracks().forEach((t) => t.stop())
+        void audioCtx.close()
+      }
+
+      const listenTimer = setInterval(() => {
+        if (recorder.state !== 'recording') {
+          cleanup()
           return
         }
 
-        showTranscript(text)
-
-        setThinking(true)
-        bargeWanted.current = true
-        startBargeMonitor()
-        chatStreaming(tone && tone !== 'neutral' ? `[tone: ${tone}] ${text}` : text)
-      } catch (e) {
-        console.error('[Miles] transcription failed:', e)
-        setThinking(false)
-
-        if (continuousMode.current) {
-          setTimeout(() => startListeningRef.current?.(), 1000)
+        if (maxWaitMs && !spokenOnce && Date.now() - openedAt > maxWaitMs) {
+          cleanup()
+          recorder.stop()
+          return
         }
-      } finally {
-        isProcessing.current = false
-        setListening(false)
-      }
-    }
 
-    mediaRecorder.current.start()
-    setListening(true)
-  }, [chatStreaming, showTranscript, startBargeMonitor])
+        analyser.getByteFrequencyData(data)
+        const volume = data.reduce((a, b) => a + b, 0) / data.length
+
+        if (noiseFloor < 0) noiseFloor = Math.min(volume, SPEECH_MIN_VOL)
+        const threshold = Math.max(SPEECH_MIN_VOL, noiseFloor + SPEECH_MARGIN)
+
+        if (volume > threshold) {
+          loudTicks++
+          if (loudTicks >= SPEECH_SUSTAIN_TICKS) {
+            if (!spokenOnce) firstSoundAt = Date.now()
+            spokenOnce = true
+            lastSoundAt = Date.now()
+            silenceStart = Date.now()
+          }
+        } else {
+          loudTicks = 0
+          noiseFloor += NOISE_ADAPT * (volume - noiseFloor)
+          if (spokenOnce && Date.now() - silenceStart > SILENCE_THRESHOLD_MS) {
+            cleanup()
+            recorder.stop()
+          }
+        }
+      }, LISTEN_TICK_MS)
+
+      mediaRecorder.current.onstop = async () => {
+        isProcessing.current = true
+
+        const speechMs = spokenOnce ? lastSoundAt - firstSoundAt : 0
+        try {
+          const blob = new Blob(chunks.current, { type: 'audio/webm' })
+          const arrayBuffer = await blob.arrayBuffer()
+          const result = await window.server.transcribe(arrayBuffer)
+          const text = result.success ? (result.text?.trim() ?? '') : ''
+          const tone = result.tone
+          console.log(`[Miles] tone: ${tone ?? 'none'} — ${JSON.stringify(text)}`)
+
+          const tooShort = speechMs < MIN_SPEECH_MS
+          if (!text || tooShort || isGarbage(text)) {
+            console.log(
+              '[Miles] ignored:',
+              JSON.stringify(text),
+              `(speech ${speechMs}ms${tooShort ? ', too short' : ''})`
+            )
+            if (continuousMode.current) {
+              setTimeout(() => startListeningRef.current?.(), 200)
+            }
+            return
+          }
+
+          showTranscript(text)
+
+          continuousMode.current = true
+          setThinking(true)
+          bargeWanted.current = true
+          startBargeMonitor()
+          chatStreaming(tone && tone !== 'neutral' ? `[tone: ${tone}] ${text}` : text)
+        } catch (e) {
+          console.error('[Miles] transcription failed:', e)
+          setThinking(false)
+
+          if (continuousMode.current) {
+            setTimeout(() => startListeningRef.current?.(), 1000)
+          }
+        } finally {
+          isProcessing.current = false
+          setListening(false)
+        }
+      }
+
+      mediaRecorder.current.start()
+      setListening(true)
+    },
+    [chatStreaming, showTranscript, startBargeMonitor]
+  )
 
   useEffect(() => {
     startListeningRef.current = startListening

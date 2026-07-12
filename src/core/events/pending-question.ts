@@ -28,14 +28,14 @@ export function askEcho(question: string, signal?: AbortSignal): Promise<string>
       const [p] = queue.splice(idx, 1)
       clearTimeout(p.timer)
       p.resolve(NO_ANSWER)
-      if (idx === 0 && queue.length > 0) say(queue[0].question)
+      if (idx === 0 && queue.length > 0) say(queue[0].question, true)
     }
     const timer = setTimeout(withdraw, TIMEOUT_MS)
     signal?.addEventListener('abort', withdraw, { once: true })
 
     const wasEmpty = queue.length === 0
     queue.push({ id, question, resolve, timer })
-    if (wasEmpty) say(question)
+    if (wasEmpty) say(question, true)
   })
 }
 
@@ -44,6 +44,6 @@ export function answerPendingQuestion(answer: string): boolean {
   if (!p) return false
   clearTimeout(p.timer)
   p.resolve(answer)
-  if (queue.length > 0) say(queue[0].question)
+  if (queue.length > 0) say(queue[0].question, true)
   return true
 }

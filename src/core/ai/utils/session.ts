@@ -3,6 +3,7 @@ import { generateText, type ModelMessage, type LanguageModel } from 'ai'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { PROJECT_MEMORY_FILE, SESSIONS_DIR, MEMORY_DIR } from './env'
+import { harvestOpenLoops } from './openLoops'
 
 export type Session = {
   id: string
@@ -11,6 +12,7 @@ export type Session = {
   memoryLoaded: boolean
   continuityLoaded?: boolean
   summary?: string
+  loopsHarvested?: boolean
   createdAt: number
   updatedAt: number
   compacted?: boolean
@@ -190,6 +192,17 @@ export async function loadPreviousSessionContext(
       summary = ''
     }
   }
+
+  if (!prior.loopsHarvested) {
+    prior.loopsHarvested = true
+    persistSummary(prior)
+    try {
+      await harvestOpenLoops(model, prior.messages)
+    } catch (err) {
+      console.error('[session] open-loop harvest failed:', err)
+    }
+  }
+
   if (!summary) return session
 
   session.messages.push({
@@ -198,7 +211,8 @@ export async function loadPreviousSessionContext(
   })
   session.messages.push({
     role: 'assistant',
-    content: "Noted — that's just background. I'll wait for sir and respond to what he says, without prompting him to resume it."
+    content:
+      "Noted — that's just background. I'll wait for sir and respond to what he says, without prompting him to resume it."
   })
 
   return session

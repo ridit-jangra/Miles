@@ -32,7 +32,11 @@ import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
 import { startArgus } from '../core/ai/agents/custom-agents/argus/agent'
 import { startIris } from '../core/ai/agents/custom-agents/iris/agent'
 import { startSybil } from '../core/ai/agents/custom-agents/sybil/agent'
-import { startCerberus, triageAlert, collectSuppressed } from '../core/ai/agents/custom-agents/cerberus/agent'
+import {
+  startCerberus,
+  triageAlert,
+  collectSuppressed
+} from '../core/ai/agents/custom-agents/cerberus/agent'
 import { startJanus } from '../core/ai/agents/custom-agents/janus/agent'
 import { startScheduler } from '../core/events/scheduler'
 import { narrateAlert } from '../core/events/narrate'
@@ -109,8 +113,8 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  setSpeechEmitter((text) => {
-    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, text)
+  setSpeechEmitter((text, listen) => {
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(SPEAK_SAY, text, listen)
   })
 
   const stopPoller = startSlackPoller(async (alert, subs) => {

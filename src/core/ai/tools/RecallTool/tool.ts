@@ -15,7 +15,7 @@ type StoredSession = {
 }
 
 const SCAFFOLD_RE =
-  /^(<memory>|<previous_session>|<subagent_result|Memory loaded|Noted — that|Got it, continuing)/
+  /^(<memory>|<previous_session>|<subagent_result|<proactive_line>|Memory loaded|Noted — that|Noted — if sir|Got it, continuing)/
 
 function messageText(content: ModelMessage['content']): string {
   if (typeof content === 'string') return content

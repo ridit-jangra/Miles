@@ -14,11 +14,30 @@ import { hasPendingQuestion, answerPendingQuestion } from '../events/pending-que
 
 const session = createSession(undefined, 'echo')
 
-const echoTools = { ...agentTools, SpeakTool, KillAgentTool, ScheduleTool, MusicTool, RecallTool, DndTool }
+const echoTools = {
+  ...agentTools,
+  SpeakTool,
+  KillAgentTool,
+  ScheduleTool,
+  MusicTool,
+  RecallTool,
+  DndTool
+}
 
 export const WAKE_SENTINEL = '<<wake>>'
 
-const WAKE_DIRECTIVE = `[System — sir just activated you; the conversation is starting and he hasn't said anything yet. Open it yourself, out loud, with ONE short spoken line in your warm-Alfred register. Vary it every time so you never sound scripted — pick whatever fits this moment: a light motto or wry one-liner, a small remark about the time of day, a random passing thought, or — if the <previous_session> recap above is recent and actually relevant — a natural warm callback to it. Just ONE sentence, address him as "sir", no markdown. This is the ONE moment you may open unprompted, but do NOT announce your readiness and do NOT ask what he needs or any productivity-filler question — say your opener and stop.]`
+const WAKE_DIRECTIVE = `[System — sir just activated you; the conversation is starting and he hasn't said anything yet. Open it yourself, out loud, with ONE short spoken line in your warm-Alfred register. Vary it every time so you never sound scripted — pick whatever fits this moment: a light motto or wry one-liner, a small remark about the time of day, a random passing thought, or — if the <previous_session> recap above is recent and actually relevant, or an "# Open threads" entry is clearly what he left off — a natural warm callback to it, like "welcome back, sir — you left the relay bridge mid-debug" (in your own words, matched to the actual thread). Just ONE sentence, address him as "sir", no markdown. This is the ONE moment you may open unprompted, but do NOT announce your readiness and do NOT ask what he needs or any productivity-filler question — say your opener and stop.]`
+
+export function noteProactiveLine(line: string): void {
+  session.messages.push({
+    role: 'user',
+    content: `<proactive_line>\nYou just said this to sir on your own initiative (a check-in or nudge, not part of a conversation): "${line}"\nIf he speaks next, it is most likely a reply to that line — respond in that context.\n</proactive_line>`
+  })
+  session.messages.push({
+    role: 'assistant',
+    content: "Noted — if sir responds now, I'll treat it as a reply to what I just said."
+  })
+}
 
 function flushSubagentResults(): void {
   for (const r of drainSubagentResults()) {

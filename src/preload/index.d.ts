@@ -56,7 +56,7 @@ declare global {
     oauth: oauth_api
     briefing: briefing_api
     settings: settings_api
-    speak: { onSay: (cb: (text: string) => void) => () => void }
+    speak: { onSay: (cb: (text: string, listen: boolean) => void) => () => void }
     wake: { onTrigger: (cb: () => void) => () => void }
     dnd: { onEnter: (cb: () => void) => () => void }
     events: { onAlert: (cb: (alert: EventAlert) => void) => () => void }

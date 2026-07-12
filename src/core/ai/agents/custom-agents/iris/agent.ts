@@ -7,6 +7,7 @@ import { generateText, type LanguageModel } from 'ai'
 import { ECHO_BASE_DIR, SCREEN_LOG_DIR } from '../../../utils/env'
 import { buildProvider } from '../../../utils/providers'
 import { getVisionState } from '../argus/agent'
+import { startKwinDetector, type ActiveWindow } from './kwin'
 
 const SAMPLE_MS = 60_000
 const BUFFER_LIMIT = 60
@@ -28,15 +29,16 @@ export type ScreenSample = {
 }
 
 export type ScreenContext = {
-  detection: 'xorg' | 'wayland' | 'degraded'
+  detection: 'kwin' | 'xorg' | 'wayland' | 'degraded'
   visionAvailable: boolean
   current: ScreenSample | null
   recent: ScreenSample[]
 }
 
 const buffer: ScreenSample[] = []
-let detection: 'xorg' | 'wayland' | 'degraded' = 'degraded'
+let detection: 'kwin' | 'xorg' | 'wayland' | 'degraded' = 'degraded'
 let visionModel: LanguageModel | null = null
+let kwinWindow: ActiveWindow | null = null
 
 function getVisionModel(): LanguageModel | null {
   if (!process.env.OPENROUTER_API_KEY) return null
@@ -67,7 +69,8 @@ async function detectViaXprop(): Promise<{ app: string | null; title: string | n
   if (!props) return { app: null, title: null }
   const classMatch = props.match(/WM_CLASS\(\w+\)\s*=\s*"[^"]*",\s*"([^"]*)"/)
   const nameMatch =
-    props.match(/_NET_WM_NAME\(\w+\)\s*=\s*"([^"]*)"/) || props.match(/WM_NAME\(\w+\)\s*=\s*"([^"]*)"/)
+    props.match(/_NET_WM_NAME\(\w+\)\s*=\s*"([^"]*)"/) ||
+    props.match(/WM_NAME\(\w+\)\s*=\s*"([^"]*)"/)
   return { app: classMatch?.[1] ?? null, title: nameMatch?.[1] ?? null }
 }
 
@@ -83,6 +86,10 @@ async function detectViaHyprctl(): Promise<{ app: string | null; title: string |
 }
 
 async function detectActiveWindow(): Promise<{ app: string | null; title: string | null }> {
+  if (kwinWindow && (kwinWindow.app || kwinWindow.title)) {
+    detection = 'kwin'
+    return kwinWindow
+  }
   const xorg = await detectViaXprop()
   if (xorg.app || xorg.title) {
     detection = 'xorg'
@@ -238,6 +245,15 @@ export function getScreenContext(): ScreenContext {
 export function startIris(): () => void {
   let stopped = false
   let running = false
+  let stopKwin: (() => void) | null = null
+
+  void startKwinDetector((w) => {
+    kwinWindow = w
+  }).then((stop) => {
+    if (!stop) return
+    if (stopped) stop()
+    else stopKwin = stop
+  })
 
   const tick = async (): Promise<void> => {
     if (stopped || running) return
@@ -273,5 +289,6 @@ export function startIris(): () => void {
   return () => {
     stopped = true
     clearInterval(timer)
+    stopKwin?.()
   }
 }

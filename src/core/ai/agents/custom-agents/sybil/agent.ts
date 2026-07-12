@@ -4,10 +4,12 @@ import { generateText } from 'ai'
 import { ECHO_BASE_DIR } from '../../../utils/env'
 import { getModel } from '../../../utils/model'
 import { announce, getLastActivityAt } from '../../../../events/announcements'
+import { noteProactiveLine } from '../../../index'
 import { isDnd } from '../../../../events/dnd'
 import { getVisionState } from '../argus/agent'
 import { getScreenContext } from '../iris/agent'
 import { getBriefing } from '../../../../briefing'
+import { currentOpenLoops } from '../../../utils/openLoops'
 import type { Briefing } from '../../../../../shared/briefing'
 
 const TICK_MS = 60_000
@@ -23,13 +25,14 @@ const HABITS_FILE = join(ECHO_BASE_DIR, 'habits.jsonl')
 
 const CHECKIN_SYSTEM = `You are Miles, sir's voice companion. Sir hasn't talked to you in a while, and you just glanced at what has been on his screen. Decide his state and whether to speak.
 
-Reply with ONLY raw JSON: {"state":"working"|"stuck"|"idle","line":"..."}
+Reply with ONLY raw JSON: {"state":"working"|"stuck"|"idle"|"milestone","line":"..."}
 
 - "working": he's focused and making progress on something. Do NOT interrupt — line must be "".
-- "stuck": clear signs of struggle — the same error or problem on screen across many minutes, circling between the same few pages, repeated failed attempts at one thing. line = ONE short warm offer to help that names the specific thing, like a friend glancing over.
+- "stuck": clear signs of struggle — the same error or problem on screen across many minutes, circling between the same few pages, repeated failed attempts at one thing. line = ONE short warm offer to help that names the specific thing, like a friend glancing over. If told how long he's been at it, you may acknowledge the duration naturally.
 - "idle": nothing much happening — desktop, aimless scrolling, paused media. line = ONE casual, natural conversation opener; reference what's on screen only if it genuinely fits.
+- "milestone": he just clearly finished or shipped something — a build finally passing after failures, a release published, a PR merged, a long-fought bug closed. line = ONE short, genuine congratulatory remark naming the win. Reserve this for a real, visible win, not routine progress.
 
-line rules: it is spoken aloud by TTS — plain words only, no markdown, under 18 words, address him as "sir", warm-Alfred register, never reveal that you watch or log his screen. When unsure between working and anything else, pick working and stay silent.`
+line rules: it is spoken aloud by TTS — plain words only, no markdown, under 18 words, address him as "sir", warm-Alfred register, never reveal that you watch or log his screen. Offer only help you can actually deliver: reading the error or page he's on, digging into the code, researching something, pulling something up in the browser, or just talking it through — never vague "assistance". When unsure between working and anything else, pick working and stay silent.`
 
 type State = { lastBriefingDay?: string; nudged?: Record<string, string> }
 type HabitSample = { at: number; hour: number; dow: number; present: boolean; app: string | null }
@@ -146,6 +149,8 @@ export function detectPatterns(samples: HabitSample[]): Pattern[] {
   return patterns.sort((a, b) => b.days - a.days)
 }
 
+let stuckSince: number | null = null
+
 async function checkIn(): Promise<void> {
   const cutoff = Date.now() - CHECKIN_WINDOW_MS
   const samples = getScreenContext().recent.filter((s) => s.at >= cutoff)
@@ -159,18 +164,32 @@ async function checkIn(): Promise<void> {
     })
     .join('\n\n')
 
+  const loops = currentOpenLoops()
+  const loopsBlock = loops.length
+    ? `\n\nSir's open threads from past sessions (context for judging whether he's progressing, circling, or just finished one):\n${loops.map((l) => `- ${l.text}`).join('\n')}`
+    : ''
+
+  const stuckBlock = stuckSince
+    ? `\n\nNote: he already seemed stuck on this when you last checked — it has been about ${Math.round((Date.now() - stuckSince) / 60000)} minutes total.`
+    : ''
+
   try {
     const { model } = await getModel()
     const res = await generateText({
       model,
       system: CHECKIN_SYSTEM,
-      prompt: `What has been on sir's screen recently, oldest first:\n\n${timeline}`
+      prompt: `What has been on sir's screen recently, oldest first:\n\n${timeline}${loopsBlock}${stuckBlock}`
     })
     const raw = res.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')
     const verdict = JSON.parse(raw) as { state?: string; line?: string }
     const line = verdict.line?.trim()
-    if ((verdict.state === 'stuck' || verdict.state === 'idle') && line) {
-      announce(line)
+    stuckSince = verdict.state === 'stuck' ? (stuckSince ?? Date.now()) : null
+    if (
+      (verdict.state === 'stuck' || verdict.state === 'idle' || verdict.state === 'milestone') &&
+      line
+    ) {
+      announce(line, true)
+      noteProactiveLine(line)
       console.log(`[sybil] check-in (${verdict.state}): ${line}`)
     } else {
       console.log(`[sybil] check-in: staying quiet (${verdict.state ?? 'unparsed'})`)
@@ -203,7 +222,9 @@ export function startSybil(): () => void {
       if (currentApp && currentApp.toLowerCase() === p.app.toLowerCase()) continue
       state.nudged[key] = day
       saveState(state)
-      announce(`Heads up sir — you usually have ${p.app} going around now.`)
+      const nudge = `Heads up sir — you usually have ${p.app} going around now.`
+      announce(nudge, true)
+      noteProactiveLine(nudge)
       console.log(`[sybil] habit nudge for ${p.app} at ${hour}:00`)
       return
     }
