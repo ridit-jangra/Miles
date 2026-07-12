@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { appendFileSync } from 'fs'
+import { appendFileSync, statSync } from 'fs'
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -28,14 +28,14 @@ export type ScreenSample = {
 }
 
 export type ScreenContext = {
-  detection: 'xorg' | 'degraded'
+  detection: 'xorg' | 'wayland' | 'degraded'
   visionAvailable: boolean
   current: ScreenSample | null
   recent: ScreenSample[]
 }
 
 const buffer: ScreenSample[] = []
-let detection: 'xorg' | 'degraded' = 'degraded'
+let detection: 'xorg' | 'wayland' | 'degraded' = 'degraded'
 let visionModel: LanguageModel | null = null
 
 function getVisionModel(): LanguageModel | null {
@@ -59,7 +59,7 @@ function run(cmd: string, args: string[]): Promise<string> {
   })
 }
 
-async function detectActiveWindow(): Promise<{ app: string | null; title: string | null }> {
+async function detectViaXprop(): Promise<{ app: string | null; title: string | null }> {
   const root = await run('xprop', ['-root', '_NET_ACTIVE_WINDOW'])
   const wid = root.match(/0x[0-9a-f]+/i)?.[0]
   if (!wid) return { app: null, title: null }
@@ -68,16 +68,73 @@ async function detectActiveWindow(): Promise<{ app: string | null; title: string
   const classMatch = props.match(/WM_CLASS\(\w+\)\s*=\s*"[^"]*",\s*"([^"]*)"/)
   const nameMatch =
     props.match(/_NET_WM_NAME\(\w+\)\s*=\s*"([^"]*)"/) || props.match(/WM_NAME\(\w+\)\s*=\s*"([^"]*)"/)
-  const app = classMatch?.[1] ?? null
-  const title = nameMatch?.[1] ?? null
-  if (app || title) detection = 'xorg'
-  return { app, title }
+  return { app: classMatch?.[1] ?? null, title: nameMatch?.[1] ?? null }
 }
 
-function captureScreen(outPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    execFile('spectacle', ['-bnf', '-o', outPath], (err) => (err ? reject(err) : resolve()))
+async function detectViaHyprctl(): Promise<{ app: string | null; title: string | null }> {
+  const out = await run('hyprctl', ['activewindow', '-j'])
+  if (!out) return { app: null, title: null }
+  try {
+    const win = JSON.parse(out) as { class?: string; initialClass?: string; title?: string }
+    return { app: win.class || win.initialClass || null, title: win.title || null }
+  } catch {
+    return { app: null, title: null }
+  }
+}
+
+async function detectActiveWindow(): Promise<{ app: string | null; title: string | null }> {
+  const xorg = await detectViaXprop()
+  if (xorg.app || xorg.title) {
+    detection = 'xorg'
+    return xorg
+  }
+  const wayland = await detectViaHyprctl()
+  if (wayland.app || wayland.title) {
+    detection = 'wayland'
+    return wayland
+  }
+  return { app: null, title: null }
+}
+
+type Capturer = { cmd: string; args: (out: string) => string[] }
+
+// Tried in order; first one present and producing a non-empty file wins and is
+// cached. Covers KDE (spectacle), GNOME (gnome-screenshot), Wayland (grim),
+// and X11 (scrot / maim / ImageMagick import).
+const CAPTURERS: Capturer[] = [
+  { cmd: 'spectacle', args: (o) => ['-bnf', '-o', o] },
+  { cmd: 'gnome-screenshot', args: (o) => ['-f', o] },
+  { cmd: 'grim', args: (o) => [o] },
+  { cmd: 'scrot', args: (o) => ['-o', o] },
+  { cmd: 'maim', args: (o) => [o] },
+  { cmd: 'import', args: (o) => ['-window', 'root', o] }
+]
+
+let captureCmd: Capturer | null = null
+
+function tryCapture(c: Capturer, outPath: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(c.cmd, c.args(outPath), { timeout: 5000 }, (err) => {
+      if (err) return resolve(false)
+      try {
+        resolve(statSync(outPath).size > 0)
+      } catch {
+        resolve(false)
+      }
+    })
   })
+}
+
+async function captureScreen(outPath: string): Promise<void> {
+  if (captureCmd && (await tryCapture(captureCmd, outPath))) return
+  captureCmd = null
+  for (const c of CAPTURERS) {
+    if (await tryCapture(c, outPath)) {
+      captureCmd = c
+      return
+    }
+  }
+  throw new Error(`no screenshot tool available (tried ${CAPTURERS.map((c) => c.cmd).join(', ')})`)
 }
 
 async function captureToBuffer(): Promise<Buffer | null> {
