@@ -38,6 +38,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "@vscode/ripgrep": "^1.18.0",
     "ai": "^6.0.198",
+    "ai-sdk-ollama": "^3.8.6",
     "chrome-remote-interface": "^0.34.0",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
