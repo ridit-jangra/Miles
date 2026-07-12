@@ -9,8 +9,20 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  create-release:
     runs-on: ubuntu-latest
+    steps:
+      - name: Create release if absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+                 --title "$GITHUB_REF_NAME" --generate-notes
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: create-release
 
     steps:
       - uses: actions/checkout@v4
@@ -71,9 +83,9 @@ jobs:
             dist/packs/models.tar.gz
             dist/packs/models.tar.gz.sha256
 
-  release-windows:
+  build-windows:
     runs-on: windows-latest
-    needs: release
+    needs: create-release
 
     steps:
       - uses: actions/checkout@v4
