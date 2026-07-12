@@ -10,16 +10,31 @@ permissions:
 
 jobs:
   release:
-    runs-on: [linux, x64]
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Free disk space (build stages ~25GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af
+          df -h /
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: System deps
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev libgl1
 
       - name: Python venv + deps
         run: |
           python3.11 -m venv .venv || python3 -m venv .venv
           ./.venv/bin/pip install --upgrade pip
-          ./.venv/bin/pip install -r requirements.txt pyinstaller
+          ./.venv/bin/pip install --no-cache-dir -r requirements.txt pyinstaller
 
       - name: Node deps
         run: bun install --frozen-lockfile || bun install
