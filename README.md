@@ -1,16 +1,21 @@
 # Miles
 
-TODO
+Miles is a partner which will help you research about "stuff", give you actual good advice, talk like a partner and not "ai chat bot" :D.
+
+It will help you actually do stuff and help you manage yourself, it will handle your schedule, your slack, your github.
 
 ---
 
 ## Features
 
-TODO
-
-## Architecture
-
-TODO
+- **Voice-first interaction** — custom wake-word detection (OpenWakeWord), local Whisper transcription, and Piper text-to-speech for natural spoken conversation.
+- **Specialized subagents** — dedicated agents for coding (`hank`), research and MCP tools (`scout`), web search/fetch (`merlin`), Slack drafting (`dexter`), and system/music control (`otto`), each with their own toolset and memory.
+- **Screen and visual awareness** — webcam-based presence/attention detection (`argus`) and continuous screen/window context tracking (`iris`) so Miles knows what you're looking at and doing.
+- **Proactive behavior** — habit tracking and unprompted nudges (`sybil`), a dated intention ledger that catches contradictions between what you said and what you did (`janus`), and alert triage that decides what's worth interrupting you for (`cerberus`).
+- **Persistent memory** — per-agent read/write/edit memory tools backed by a durable store at `~/.echo/`, so context survives across sessions.
+- **Integrations** — Slack (with writing-style mimicry), GitHub, and Chrome DevTools via MCP.
+- **Scheduling & briefings** — reminders, do-not-disturb mode, and daily briefing generation.
+- **Cross-platform desktop app** — Electron + React client with packaged builds for Linux & Windows. (macOS soon)
 
 ## Prerequisites
 
