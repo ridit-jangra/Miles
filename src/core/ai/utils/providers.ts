@@ -175,7 +175,12 @@ export function buildProvider(config: ProviderConfig): LanguageModel {
       try {
         return createOllama({
           baseURL: config.baseURL ?? 'http://localhost:11434'
-        })(config.model)
+        })(config.model, {
+          // qwen3 thinks by default, which is too slow for a voice loop
+          think: process.env.OLLAMA_THINK === '1',
+          // ollama defaults to a 4096 window, too small for tool-heavy agents
+          options: { num_ctx: Number(process.env.OLLAMA_NUM_CTX) || 16384 }
+        })
       } catch (error) {
         throw new Error(`Ollama connection failed: ${(error as any).message}`, {
           cause: error

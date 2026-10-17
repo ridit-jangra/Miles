@@ -8,6 +8,7 @@ import asyncio
 import threading
 
 import numpy as np
+import requests
 import pyaudio
 from scipy.signal import resample_poly
 from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
@@ -37,6 +38,51 @@ def _whisper_source(name: str) -> str:
     return local if os.path.isdir(local) else name
 
 
+WHISPER_CPP_URL = os.environ.get("WHISPER_CPP_URL", "http://127.0.0.1:8178")
+
+
+def whisper_cpp_available() -> bool:
+    """whisper.cpp server (Vulkan build, runs on the AMD GPU) is up."""
+    try:
+        requests.get(WHISPER_CPP_URL, timeout=1)
+        return True
+    except requests.RequestException:
+        return False
+
+
+class _Word:
+    def __init__(self, word: str, start: float, end: float):
+        self.word = word
+        self.start = start
+        self.end = end
+
+
+class _Segment:
+    def __init__(self, text: str, words: list):
+        self.text = text
+        self.words = words
+
+
+def transcribe_whisper_cpp(data: bytes):
+    r = requests.post(
+        f"{WHISPER_CPP_URL}/inference",
+        files={"file": ("audio.wav", data)},
+        data={"response_format": "verbose_json", "temperature": "0.0"},
+        timeout=60,
+    )
+    r.raise_for_status()
+    segments = []
+    for s in r.json().get("segments", []):
+        # whisper.cpp emits punctuation as its own "word"; skip those so speech-rate stays honest
+        words = [
+            _Word(w["word"], w["start"], w["end"])
+            for w in s.get("words", [])
+            if any(c.isalnum() for c in w.get("word", ""))
+        ]
+        segments.append(_Segment(s.get("text", ""), words))
+    return segments
+
+
 def load_stt() -> WhisperModel:
     candidates = [
         ("small.en", "cuda", "float16"),
@@ -59,7 +105,14 @@ def load_stt() -> WhisperModel:
     raise RuntimeError("STT: no Whisper model could be loaded")
 
 
-stt_model = load_stt()
+_stt_model = None
+
+
+def get_stt_model() -> WhisperModel:
+    global _stt_model
+    if _stt_model is None:
+        _stt_model = load_stt()
+    return _stt_model
 
 DANNY_MODEL = os.path.join(MODELS_DIR, "en_US-danny-low.onnx")
 
@@ -334,15 +387,22 @@ def analyze_tone(samples: np.ndarray, words: list) -> str:
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
     data = await file.read()
-    segments, _ = stt_model.transcribe(
-        io.BytesIO(data),
-        language="en",
-        beam_size=1,
-        vad_filter=True,
-        condition_on_previous_text=False,
-        word_timestamps=True,
-    )
-    seg_list = list(segments)
+    seg_list = None
+    if whisper_cpp_available():
+        try:
+            seg_list = await asyncio.to_thread(transcribe_whisper_cpp, data)
+        except Exception as e:
+            print(f"STT: whisper.cpp failed ({e}), falling back to faster-whisper")
+    if seg_list is None:
+        segments, _ = get_stt_model().transcribe(
+            io.BytesIO(data),
+            language="en",
+            beam_size=1,
+            vad_filter=True,
+            condition_on_previous_text=False,
+            word_timestamps=True,
+        )
+        seg_list = list(segments)
     text = " ".join([s.text.strip() for s in seg_list])
     words = [w for s in seg_list for w in (s.words or [])]
 

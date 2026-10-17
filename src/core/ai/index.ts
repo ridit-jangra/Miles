@@ -74,6 +74,7 @@ export async function chat(prompt: string): Promise<{ text: string; session: Ses
       prompt,
       system: await getAgentSystemPrompt(),
       tools: echoTools,
+      modelRole: 'miles',
       session,
       onToolCall: (e) => {
         console.log(`[Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
@@ -103,6 +104,7 @@ export async function chatStream(
       prompt: effectivePrompt,
       system: await getAgentSystemPrompt(),
       tools: echoTools,
+      modelRole: 'miles',
       session,
       mode: 'agent',
       onChunk,

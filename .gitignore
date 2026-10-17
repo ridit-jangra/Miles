@@ -29,3 +29,6 @@ actions-runner
 
 next-things-to-add.md
 next things to add.md
+# whisper.cpp (Vulkan) build + ggml models
+vendor/
+models/whisper-cpp/

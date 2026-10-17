@@ -74,6 +74,7 @@ export type LLMOptions = {
   session?: Session
   prompt: string
   mode?: 'chat' | 'agent' | 'build' | 'subagent' | 'orchestratorAgent'
+  modelRole?: 'miles' | 'agent'
   onToolCall?: (toolCall: StepToolCall) => void
   onToolResult?: (toolResult: StepToolResult) => void
   abortSignal?: AbortSignal

@@ -19,5 +19,18 @@ if (Test-Path $NVIDIA_DIR) {
     }
 }
 
+$WHISPER_EXE   = Join-Path $ECHO_DIR "vendor\whisper.cpp\build\bin\Release\whisper-server.exe"
+$WHISPER_MODEL = Join-Path $ECHO_DIR "models\whisper-cpp\ggml-small.en.bin"
+$whisperProc = $null
+if ((Test-Path $WHISPER_EXE) -and (Test-Path $WHISPER_MODEL)) {
+    $whisperProc = Start-Process -FilePath $WHISPER_EXE -PassThru -WindowStyle Hidden `
+        -ArgumentList "-m", "`"$WHISPER_MODEL`"", "--host", "127.0.0.1", "--port", "8178", "-l", "en", "-fa"
+    Write-Host "  [ok] whisper.cpp (Vulkan) started, pid $($whisperProc.Id)" -ForegroundColor Green
+} else {
+    Write-Host "  [!] whisper.cpp not built, STT falls back to faster-whisper (CPU). Run scripts\setup-windows.ps1" -ForegroundColor Yellow
+}
+
 Set-Location (Join-Path $ECHO_DIR "src\core\server")
 & $UVICORN server:app --host 127.0.0.1 --port 8000 --log-level info --reload
+
+if ($whisperProc -and -not $whisperProc.HasExited) { Stop-Process -Id $whisperProc.Id -Force }

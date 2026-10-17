@@ -1,4 +1,5 @@
 faster-whisper
+requests
 fastapi
 uvicorn[default]
 python-multipart
@@ -9,8 +10,8 @@ scipy
 openwakeword
 pyaudio
 opencv-python
-nvidia-cublas-cu12; sys_platform != "darwin"
-nvidia-cudnn-cu12>=9,<10; sys_platform != "darwin"
+nvidia-cublas-cu12; sys_platform == "linux"
+nvidia-cudnn-cu12>=9,<10; sys_platform == "linux"
 clap-detector
 mediapipe
 evdev; sys_platform == "linux"

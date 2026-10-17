@@ -17,6 +17,7 @@ export async function runLLM({
   session,
   prompt,
   mode = 'agent',
+  modelRole = 'agent',
   onToolCall,
   onToolResult,
   abortSignal,
@@ -24,7 +25,7 @@ export async function runLLM({
 }: LLMOptions): Promise<{ text: string; session: Session }> {
   const activeSession = session ?? createSession()
   loadMemoryIntoSession(activeSession)
-  const { model } = await getModel()
+  const { model } = await getModel(modelRole)
   await loadPreviousSessionContext(activeSession, model)
 
   if (shouldCompact(activeSession)) {
@@ -98,6 +99,7 @@ export async function streamLLM({
   session,
   prompt,
   mode = 'chat',
+  modelRole = 'agent',
   onToolCall,
   onToolResult,
   onChunk,
@@ -108,7 +110,7 @@ export async function streamLLM({
 }): Promise<{ text: string; session: Session }> {
   const activeSession = session ?? createSession()
   loadMemoryIntoSession(activeSession)
-  const { model } = await getModel()
+  const { model } = await getModel(modelRole)
   await loadPreviousSessionContext(activeSession, model)
 
   if (shouldCompact(activeSession)) {
