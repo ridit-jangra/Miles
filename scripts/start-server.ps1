@@ -31,6 +31,9 @@ if ((Test-Path $WHISPER_EXE) -and (Test-Path $WHISPER_MODEL)) {
 }
 
 Set-Location (Join-Path $ECHO_DIR "src\core\server")
-& $UVICORN server:app --host 127.0.0.1 --port 8000 --log-level info --reload
-
-if ($whisperProc -and -not $whisperProc.HasExited) { Stop-Process -Id $whisperProc.Id -Force }
+try {
+    & $UVICORN server:app --host 127.0.0.1 --port 8000 --log-level info --reload
+} finally {
+    # runs on Ctrl+C too, so whisper-server doesn't linger on port 8178
+    if ($whisperProc -and -not $whisperProc.HasExited) { Stop-Process -Id $whisperProc.Id -Force }
+}

@@ -63,14 +63,26 @@ class _Segment:
         self.words = words
 
 
-def transcribe_whisper_cpp(data: bytes):
+def _to_wav(samples: np.ndarray) -> bytes:
+    # whisper-server only reads wav; the client uploads webm, so we re-encode
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
+        w.writeframes((np.clip(samples, -1.0, 1.0) * 32767).astype(np.int16).tobytes())
+    return buf.getvalue()
+
+
+def transcribe_whisper_cpp(samples: np.ndarray):
     r = requests.post(
         f"{WHISPER_CPP_URL}/inference",
-        files={"file": ("audio.wav", data)},
+        files={"file": ("audio.wav", _to_wav(samples))},
         data={"response_format": "verbose_json", "temperature": "0.0"},
         timeout=60,
     )
-    r.raise_for_status()
+    if not r.ok:
+        raise RuntimeError(f"{r.status_code}: {r.text[:200]}")
     segments = []
     for s in r.json().get("segments", []):
         # whisper.cpp emits punctuation as its own "word"; skip those so speech-rate stays honest
@@ -387,10 +399,15 @@ def analyze_tone(samples: np.ndarray, words: list) -> str:
 @app.post("/transcribe")
 async def transcribe(file: UploadFile):
     data = await file.read()
+    try:
+        samples = await asyncio.to_thread(decode_audio, io.BytesIO(data), sampling_rate=RATE)
+    except Exception:
+        samples = np.array([], dtype=np.float32)
+
     seg_list = None
-    if whisper_cpp_available():
+    if samples.size and whisper_cpp_available():
         try:
-            seg_list = await asyncio.to_thread(transcribe_whisper_cpp, data)
+            seg_list = await asyncio.to_thread(transcribe_whisper_cpp, samples)
         except Exception as e:
             print(f"STT: whisper.cpp failed ({e}), falling back to faster-whisper")
     if seg_list is None:
@@ -405,11 +422,6 @@ async def transcribe(file: UploadFile):
         seg_list = list(segments)
     text = " ".join([s.text.strip() for s in seg_list])
     words = [w for s in seg_list for w in (s.words or [])]
-
-    try:
-        samples = decode_audio(io.BytesIO(data), sampling_rate=RATE)
-    except Exception:
-        samples = np.array([], dtype=np.float32)
 
     tone = analyze_tone(samples, words)
     return {"text": text, "tone": tone}

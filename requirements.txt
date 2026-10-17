@@ -1,7 +1,7 @@
 faster-whisper
 requests
 fastapi
-uvicorn[default]
+uvicorn[standard]
 python-multipart
 piper-tts
 soundfile
