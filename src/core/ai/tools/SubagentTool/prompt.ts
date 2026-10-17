@@ -11,4 +11,4 @@ Subagents:
 
 Call this immediately when a request fits a subagent's lane rather than attempting it yourself. Use the agent whose lane matches; don't use it for plain conversation or things Miles handles directly.
 
-Subagents always run in the BACKGROUND: this tool returns right away with status "running", you stay free to keep talking with sir, the subagent sends short progress notes that are voiced as you work, and its final result is spoken aloud automatically when it finishes. So after delegating, don't sit waiting and don't claim the work is done — carry on, and the result will be relayed when it's ready.`
+Subagents always run in the BACKGROUND: this tool returns right away with status "running", you stay free to keep talking with sir, and its final result is spoken aloud automatically when it finishes. So after delegating, don't sit waiting and don't claim the work is done — carry on, and the result will be relayed when it's ready.`

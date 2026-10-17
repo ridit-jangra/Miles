@@ -3,7 +3,6 @@ import { createSession, Session } from '../../../utils/session'
 import { getOttoSystemPrompt } from '../../../utils/systemPrompt'
 import { PersistentShell } from '../../../utils/PersistentShell'
 import { MusicTool } from '../../../tools/MusicTool/tool'
-import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { BashTool } from '../hank/tools/BashTool/tool'
 import { SystemTool } from './tools/SystemTool/tool'
@@ -29,7 +28,6 @@ export async function chatStream(
         SystemTool,
         ShortcutTool,
         BashTool,
-        NotifyTool,
         AskEchoTool,
         MemoryWriteTool,
         MemoryReadTool,

@@ -75,6 +75,7 @@ export type LLMOptions = {
   prompt: string
   mode?: 'chat' | 'agent' | 'build' | 'subagent' | 'orchestratorAgent'
   modelRole?: 'miles' | 'agent'
+  volatileContext?: string
   onToolCall?: (toolCall: StepToolCall) => void
   onToolResult?: (toolResult: StepToolResult) => void
   abortSignal?: AbortSignal

@@ -3,7 +3,6 @@ import { createSession, Session } from '../../../utils/session'
 import { getHankSystemPrompt } from '../../../utils/systemPrompt'
 import { agentTools } from '../../../utils/tools'
 import { PersistentShell } from '../../../utils/PersistentShell'
-import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { FileWriteTool } from './tools/FileWriteTool/tool'
 import { FileEditTool } from './tools/FileEditTool/tool'
@@ -28,7 +27,6 @@ export async function chatStream(
       system: await getHankSystemPrompt(),
       tools: {
         ...agentTools,
-        NotifyTool,
         AskEchoTool,
         FileWriteTool,
         FileEditTool,

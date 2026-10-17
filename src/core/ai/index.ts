@@ -1,8 +1,7 @@
 import { runLLM, streamLLM } from './utils/llm'
 import { createSession, Session } from './utils/session'
-import { getAgentSystemPrompt } from './utils/systemPrompt'
+import { getAgentSystemPrompt, getVolatileContext } from './utils/systemPrompt'
 import { agentTools } from './utils/tools'
-import { SpeakTool } from './tools/SpeakTool/tool'
 import { KillAgentTool } from './tools/KillAgentTool/tool'
 import { ScheduleTool } from './tools/ScheduleTool/tool'
 import { MusicTool } from './tools/MusicTool/tool'
@@ -20,7 +19,6 @@ const session = createSession(undefined, 'echo')
 
 const echoTools = {
   ...agentTools,
-  SpeakTool,
   KillAgentTool,
   ScheduleTool,
   MusicTool,
@@ -75,6 +73,7 @@ export async function chat(prompt: string): Promise<{ text: string; session: Ses
       system: await getAgentSystemPrompt(),
       tools: echoTools,
       modelRole: 'miles',
+      volatileContext: getVolatileContext(),
       session,
       onToolCall: (e) => {
         console.log(`[Tool Call]: ${e.toolName}: ${JSON.stringify(e.input)}`)
@@ -105,6 +104,7 @@ export async function chatStream(
       system: await getAgentSystemPrompt(),
       tools: echoTools,
       modelRole: 'miles',
+      volatileContext: getVolatileContext(),
       session,
       mode: 'agent',
       onChunk,

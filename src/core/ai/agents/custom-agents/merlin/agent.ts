@@ -2,7 +2,6 @@ import { streamLLM } from '../../../utils/llm'
 import { createSession, Session } from '../../../utils/session'
 import { getMerlinSystemPrompt } from '../../../utils/systemPrompt'
 import { agentTools } from '../../../utils/tools'
-import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 import { WebSearchTool } from './tools/WebSearchTool/tool'
 import { WebFetchTool } from './tools/WebFetchTool/tool'
@@ -22,7 +21,6 @@ export async function chatStream(
     system: await getMerlinSystemPrompt(),
     tools: {
       ...agentTools,
-      NotifyTool,
       AskEchoTool,
       WebSearchTool,
       WebFetchTool,

@@ -31,7 +31,6 @@ import { startWakeListener } from './ipc/wake'
 import { isDnd, setDndEnterNotifier } from '../core/events/dnd'
 import { startSlackPoller } from '../core/events/slack-poller'
 import { startSlackStyleCollector } from '../core/events/slack-style-collector'
-import { startSubagentMonitor } from '../core/events/subagent-monitor'
 import { startJoker } from '../core/ai/agents/custom-agents/joker/agent'
 import { startArgus } from '../core/ai/agents/custom-agents/argus/agent'
 import { startIris } from '../core/ai/agents/custom-agents/iris/agent'
@@ -45,7 +44,7 @@ import { startJanus } from '../core/ai/agents/custom-agents/janus/agent'
 import { startScheduler } from '../core/events/scheduler'
 import { narrateAlert } from '../core/events/narrate'
 import { setSpeechEmitter } from '../core/events/speech'
-import { setFillerEmitter, refreshFillerPool } from '../core/events/fillers'
+import { setFillerEmitter } from '../core/events/fillers'
 import { announce, markActivity, startAnnouncementFlusher } from '../core/events/announcements'
 import { startBackupTimer, backupEchoStore } from '../core/ai/utils/backup'
 
@@ -141,9 +140,6 @@ function createWindow(): void {
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(FILLER_UPDATE, agent, pool)
   })
 
-  mainWindow.webContents.once('did-finish-load', () => {
-    refreshFillerPool('miles', '')
-  })
 
   const stopPoller = startSlackPoller(async (alert, subs) => {
     if (mainWindow.isDestroyed()) return
@@ -153,7 +149,6 @@ function createWindow(): void {
     else collectSuppressed(alert)
   })
   const stopStyleCollector = startSlackStyleCollector()
-  const stopSubagentMonitor = startSubagentMonitor()
   const stopWakeListener = startWakeListener(() => {
     if (mainWindow.isDestroyed() || isDnd()) return
     markActivity()
@@ -163,7 +158,6 @@ function createWindow(): void {
   mainWindow.on('closed', () => {
     stopPoller()
     stopStyleCollector()
-    stopSubagentMonitor()
     stopWakeListener()
   })
 }

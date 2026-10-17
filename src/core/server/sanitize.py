@@ -21,6 +21,10 @@ def sanitize_for_tts(text: str) -> str:
 
     text = _EMOJI_PATTERN.sub("", text)
 
+    # small local models sometimes echo the "[tone: ...]" marker we prepend to
+    # sir's speech; nothing in square brackets should ever be spoken
+    text = re.sub(r"\[[^\]]*\]", " ", text)
+
     text = re.sub(r"```[\s\S]*?```", " ", text)
     text = text.replace("`", "")
 

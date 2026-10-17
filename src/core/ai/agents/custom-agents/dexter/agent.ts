@@ -9,7 +9,6 @@ import { ComposeSlackTool } from './tools/ComposeSlackTool/tool'
 import { GenerateSamplesTool } from './tools/GenerateSamplesTool/tool'
 import { ChannelInfoTool } from './tools/ChannelInfoTool/tool'
 import { SubscribeTool } from '../../../tools/SubscribeTool/tool'
-import { NotifyTool } from '../../../tools/NotifyTool/tool'
 import { AskEchoTool } from '../../../tools/AskEchoTool/tool'
 
 export async function chatStream(
@@ -31,7 +30,6 @@ export async function chatStream(
       GenerateSamplesTool,
       ChannelInfoTool,
       SubscribeTool,
-      NotifyTool,
       AskEchoTool
     },
     session,

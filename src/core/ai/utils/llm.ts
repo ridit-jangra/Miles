@@ -11,6 +11,15 @@ import type { LLMOptions } from '../types'
 import { compactSession, shouldCompact } from './compaction'
 import { repairJSON } from './json'
 
+// Per-turn context (screen glances, open threads) goes on the last user message for this
+// call only — it is not saved to the session, and it keeps the system prompt + tools
+// identical between turns so the local model's prompt cache survives.
+function withVolatileContext(messages: Session['messages'], context?: string): Session['messages'] {
+  const last = messages[messages.length - 1]
+  if (!context || last?.role !== 'user' || typeof last.content !== 'string') return messages
+  return [...messages.slice(0, -1), { ...last, content: `${context}\n\n${last.content}` }]
+}
+
 export async function runLLM({
   system,
   tools,
@@ -18,6 +27,7 @@ export async function runLLM({
   prompt,
   mode = 'agent',
   modelRole = 'agent',
+  volatileContext,
   onToolCall,
   onToolResult,
   abortSignal,
@@ -54,7 +64,7 @@ export async function runLLM({
   const result = await generateText({
     model,
     system: system + toolReminder,
-    messages: activeSession.messages,
+    messages: withVolatileContext(activeSession.messages, volatileContext),
     stopWhen: stepCountIs(stepLimits[mode] ?? 100),
     tools,
     abortSignal,
@@ -100,6 +110,7 @@ export async function streamLLM({
   prompt,
   mode = 'chat',
   modelRole = 'agent',
+  volatileContext,
   onToolCall,
   onToolResult,
   onChunk,
@@ -139,7 +150,7 @@ export async function streamLLM({
   const result = streamText({
     model,
     system: system + toolReminder,
-    messages: activeSession.messages,
+    messages: withVolatileContext(activeSession.messages, volatileContext),
     stopWhen: stepCountIs(stepLimits[mode] ?? 100),
     tools,
     abortSignal,
