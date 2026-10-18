@@ -1,5 +1,5 @@
 from pathlib import Path
 
-
-PLUGINS_DIR = Path(__file__).resolve().parents[2] / "plugins"
-AGENTS_DIR = Path(__file__).resolve().parents[2] / "agents"
+ROOT = Path(__file__).resolve().parents[2]
+PLUGINS_DIR = ROOT / "plugins"
+AGENTS_DIR = ROOT / "agents"

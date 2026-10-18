@@ -1,10 +1,9 @@
-from pathlib import Path
 import tomllib
+from pathlib import Path
 
 from pydantic import BaseModel
 
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.toml"
-
 
 class BaseSettings(BaseModel):
     model: str = "anthropic/claude-haiku-5.5"

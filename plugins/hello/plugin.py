@@ -1,9 +1,6 @@
 def register(api):
-    @api.tool
-    def say_hello(name: str) -> dict:
-        """Greet someone by name.
+    greeting = api.config.get("greeting", "Hello")
 
-        Args:
-            name: The person's name.
-        """
-        return {"greeting": f"Hello {name}!"}
+    @api.tool
+    async def say_hello(name: str) -> dict:
+        return {"greeting": f"{greeting} {name}"}

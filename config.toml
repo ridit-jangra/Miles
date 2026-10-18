@@ -6,5 +6,8 @@ voice = "en_US-danny-low"
 enabled = true
 disabled = []
 
+[plugin_settings.web]
+searxng_url = ""   # leave empty to use DuckDuckGo, or e.g. "http://localhost:8080"
+
 [plugin_settings.hello]
-greeting = "Hello"
+greeting = "Yo"

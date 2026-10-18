@@ -3,11 +3,12 @@ from collections.abc import Callable
 
 from pipecat.services.llm_service import FunctionCallParams
 
-
 def to_pipecat(fn: Callable) -> Callable:
     sig = inspect.signature(fn)
     params_arg = inspect.Parameter(
-        "params", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=FunctionCallParams
+        "params",
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        annotation=FunctionCallParams
     )
 
     async def wrapper(params: FunctionCallParams, **kwargs):
@@ -23,6 +24,6 @@ def to_pipecat(fn: Callable) -> Callable:
     wrapper.__signature__ = sig.replace(parameters=[params_arg, *sig.parameters.values()])
     wrapper.__annotations__ = {
         "params": FunctionCallParams,
-        **{k: v for k, v in fn.__annotations__.items() if k != "return"},
+        **{k: v for k, v in fn.__annotations__.items() if k != "return"}
     }
     return wrapper
