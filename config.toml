@@ -1,6 +1,6 @@
 [miles]
 model = "anthropic/claude-haiku-5.5"
-voice = "bm_george"
+voice = "en_US-danny-low"
 
 [plugins]
 enabled = true

@@ -8,7 +8,7 @@ CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.toml"
 
 class BaseSettings(BaseModel):
     model: str = "anthropic/claude-haiku-5.5"
-    voice: str = "bm_george"
+    voice: str = "en_US-danny-low"
 
 class PluginsSettings(BaseModel):
     enabled: bool = True

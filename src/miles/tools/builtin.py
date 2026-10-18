@@ -1,10 +1,9 @@
 from datetime import datetime
 
 from miles.tools.registry import tool
-from pipecat.services.llm_service import FunctionCallParams
 
-# Example function
+# Tools are plain functions: take your arguments, return a value.
 @tool
-async def get_time(params: FunctionCallParams):
+def get_time() -> dict:
     """Get the current local time."""
-    await params.result_callback({"time": datetime.now().strftime("%H:%M")})
+    return {"time": datetime.now().strftime("%H:%M")}
