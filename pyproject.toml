@@ -1,0 +1,18 @@
+[project]
+name = "miles"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Ridit", email = "riditjangra09@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pipecat-ai[kokoro,openrouter,runner,silero,webrtc,whisper]>=1.12.0",
+]
+
+[project.scripts]
+miles = "miles:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"

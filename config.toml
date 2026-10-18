@@ -1,0 +1,10 @@
+[miles]
+model = "anthropic/claude-haiku-5.5"
+voice = "bm_george"
+
+[plugins]
+enabled = true
+disabled = []
+
+[plugin_settings.hello]
+greeting = "Hello"
