@@ -26,4 +26,5 @@ def to_pipecat(fn: Callable) -> Callable:
         "params": FunctionCallParams,
         **{k: v for k, v in fn.__annotations__.items() if k != "return"}
     }
+
     return wrapper

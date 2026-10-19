@@ -5,11 +5,13 @@ from miles.agents.definition import load_agents
 from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
+from miles.confirm.confirmer import Confirmer
 from miles.env import AGENTS_DIR
 from miles.plugins.loader import load_plugins
+from miles.voice.confirm_processor import ConfirmProcessor
 from miles.voice.tools import to_pipecat
 from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.frames.frames import LLMRunFrame
+from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import WorkerRunner
 from pipecat.pipeline.task import PipelineParams, PipelineWorker
@@ -53,7 +55,15 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         )
     )
 
-    tools = load_plugins(config)
+    async def speak(text: str) -> None:
+        await task.queue_frame(TTSSpeakFrame(text))
+
+    def inform(text: str) -> None:
+        context.add_message({"role": "developer", "content": text})
+
+    confirmer = Confirmer(speak, inform)
+
+    tools = load_plugins(config, confirmer)
 
     async def on_task_done(t: Task):
         context.add_message({"role": "developer", "content": t.report()})
@@ -72,12 +82,16 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
 
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
-        user_params = LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer())
+        user_params = LLMUserAggregatorParams(
+            vad_analyzer=SileroVADAnalyzer(),
+            empty_user_turn=None
+        ),
     )
 
     pipeline = Pipeline([
         transport.input(),
         stt,
+        ConfirmProcessor(confirmer),
         user_aggregator,
         llm,
         tts,
@@ -97,6 +111,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected")
         manager.cancel_all()
+        confirmer.cancel()
         await task.cancel()
 
     await WorkerRunner(handle_sigint=runner_args.handle_sigint).run(task)
