@@ -1,9 +1,10 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from miles.agents.definition import AgentDef
 from miles.confirm.confirmer import DECLINED, Confirmer
+from miles.mcp.config import McpServer
 from miles.watchers.parser import parse_time
 from miles.watchers.scheduler import Scheduler, Watcher
 
@@ -13,6 +14,7 @@ class PluginBundle:
     tools: list[Callable]
     agents: dict[str, AgentDef]
     plugin_tools: dict[str, dict[str, Callable]]
+    mcp_servers: dict[str, dict[str, McpServer]] = field(default_factory=dict)
 
 class PluginContext:
     def __init__(self, name: str, config: dict, confirmer: Confirmer, scheduler: Scheduler) -> None:
