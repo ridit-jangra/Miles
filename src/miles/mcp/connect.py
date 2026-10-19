@@ -12,19 +12,51 @@ from pydantic_ai.mcp import MCPToolset
 from miles.mcp.config import McpServer
 
 
+
 @dataclass
 class McpConnection:
     clients: list[MCPClient] = field(default_factory=list)
     tools: list[FunctionSchema] = field(default_factory=list)
+    status: dict[tuple[str, str], str] = field(default_factory=dict)
+    _jobs: list[asyncio.Task] = field(default_factory=list)
+
+    def start(self, servers, on_ready, timeout: float = 60) -> None:
+        for plugin, group in servers.items():
+            for name, server in group.items():
+                if server.miles:
+                    self.status[(plugin, name)] = "starting"
+                    self._jobs.append(asyncio.create_task(
+                        self._run_one(plugin, name, server, timeout, on_ready)))
+
+    async def _run_one(self, plugin, name, server, timeout, on_ready) -> None:
+        result = await start_server(plugin, name, server, timeout)
+        if result is None:
+            self.status[(plugin, name)] = "failed"
+            return
+        client, schema = result
+        self.clients.append(client)
+        have = {x.name for x in self.tools}
+        new = []
+        for tool in schema.standard_tools:
+            if tool.name in have:
+                logger.warning(f"MCP tool {tool.name!r} is offered by two servers, skipping the second")
+                continue
+            new.append(tool)
+        self.tools.extend(new)
+        self.status[(plugin, name)] = "ready"
+        on_ready(plugin, name, new)
 
     async def close(self) -> None:
+        for job in self._jobs:
+            job.cancel()
+        await asyncio.gather(*self._jobs, return_exceptions=True)
+        self._jobs.clear()
         for client in self.clients:
             try:
                 await client.close()
             except Exception:
                 logger.exception("Failed to close an MCP client")
         self.clients.clear()
-
 
 def make_client(server: McpServer) -> MCPClient:
     if server.command is not None:
@@ -49,12 +81,14 @@ async def start_server(plugin: str, name: str, server: McpServer, timeout: float
     client = make_client(server)
     try:
         schema = await asyncio.wait_for(client.tools(), timeout)
-    except Exception as e:
-        logger.error(f"MCP server {plugin}/{name} failed to start: {e!r}")
+    except BaseException as e:
         try:
             await client.close()
         except Exception:
             pass
+        if isinstance(e, asyncio.CancelledError):
+            raise
+        logger.error(f"MCP server {plugin}/{name} failed to start: {e!r}")
         return None
     logger.info(f"MCP server {plugin}/{name} started with {len(schema.standard_tools)} tools")
     return client, schema

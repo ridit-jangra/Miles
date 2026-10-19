@@ -5,7 +5,7 @@ from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
-from miles.mcp.connect import connect_servers
+from miles.mcp.connect import McpConnection, connect_servers
 from miles.mcp.pool import McpPool
 from miles.plugins.loader import load_plugins
 from miles.tools.registry import TOOLS
@@ -86,8 +86,6 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     tools = bundle.tools
     tools += make_inbox_tools(inbox)
 
-    mcp_conn = await connect_servers(bundle.mcp_servers)
-
     mcp_pool = McpPool()
     mcp_pool.start(
         bundle.mcp_servers,
@@ -108,7 +106,15 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     )
     tools += make_agent_tools(manager)
 
-    context = LLMContext(tools=[to_pipecat(t) for t in tools] + mcp_conn.tools)
+    base_tools = [to_pipecat(t) for t in tools]
+    context = LLMContext(tools=list(base_tools))
+
+    def on_mcp_ready(plugin, name, new_tools):
+        context.set_tools(base_tools + mcp_conn.tools)
+        inform(f"New tools are now available from {plugin}/{name}: " + ", ".join(t.name for t in new_tools))
+
+    mcp_conn = McpConnection()
+    mcp_conn.start(bundle.mcp_servers, on_mcp_ready)
 
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
