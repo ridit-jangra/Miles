@@ -70,17 +70,3 @@ class Scheduler:
             logger.exception(f"Watcher {watcher.name} failed")
         finally:
             watcher.running = False
-
-if __name__ == "__main__":
-    async def main():
-        inbox = Inbox()
-        inbox.on_new(lambda a: print("NEW:", a.source, a.text))
-        s = Scheduler(inbox)
-        s.add(Watcher("fast", lambda: Alert("tick"), seconds=1))
-        s.add(Watcher("broken", lambda: 1 / 0, seconds=1))
-        s.start()
-        await asyncio.sleep(4)
-        await s.stop()
-        print("stopped")
-
-    asyncio.run(main())
