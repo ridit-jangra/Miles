@@ -5,6 +5,7 @@ from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
+from miles.mcp.connect import connect_servers
 from miles.plugins.loader import load_plugins
 from miles.tools.registry import TOOLS
 from miles.voice.confirm_processor import ConfirmProcessor
@@ -84,6 +85,8 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     tools = bundle.tools
     tools += make_inbox_tools(inbox)
 
+    mcp_conn = await connect_servers(bundle.mcp_servers)
+
     async def on_task_done(t: Task):
         context.add_message({"role": "developer", "content": t.report()})
         await task.queue_frames([LLMRunFrame()])
@@ -97,7 +100,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     )
     tools += make_agent_tools(manager)
 
-    context = LLMContext(tools=[to_pipecat(t) for t in tools])
+    context = LLMContext(tools=[to_pipecat(t) for t in tools] + mcp_conn.tools)
 
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
@@ -137,4 +140,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         confirmer.cancel()
         await task.cancel()
 
-    await WorkerRunner(handle_sigint=runner_args.handle_sigint).run(task)
+    try:
+        await WorkerRunner(handle_sigint=runner_args.handle_sigint).run(task)
+    finally:
+        await mcp_conn.close()
