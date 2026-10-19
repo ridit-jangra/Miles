@@ -10,8 +10,13 @@ from miles.env import AGENTS_DIR
 from miles.plugins.loader import load_plugins
 from miles.voice.confirm_processor import ConfirmProcessor
 from miles.voice.tools import to_pipecat
+from miles.watchers.activity import ActivityTracker
+from miles.watchers.inbox import Inbox
+from miles.watchers.notifier import Notifier
+from miles.watchers.scheduler import Scheduler
+from miles.watchers.tools import make_inbox_tools
 from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame
+from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame, InterruptionFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import WorkerRunner
 from pipecat.pipeline.task import PipelineParams, PipelineWorker
@@ -58,12 +63,26 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     async def speak(text: str) -> None:
         await task.queue_frame(TTSSpeakFrame(text))
 
+    async def run_llm() -> None:
+        tracker.expect_response()
+        await task.queue_frames([LLMRunFrame()])
+
+    async def interrupt() -> None:
+        await task.queue_frame(InterruptionFrame())
+
     def inform(text: str) -> None:
         context.add_message({"role": "developer", "content": text})
 
+    inbox = Inbox()
     confirmer = Confirmer(speak, inform)
+    scheduler = Scheduler(inbox)
 
-    tools = load_plugins(config, confirmer)
+    tracker = ActivityTracker()
+    notifier = Notifier(inbox, lambda: tracker.busy, inform, run_llm, interrupt)
+    tracker.on_idle = notifier.on_idle
+
+    tools = load_plugins(config, confirmer, scheduler)
+    tools += make_inbox_tools(inbox)
 
     async def on_task_done(t: Task):
         context.add_message({"role": "developer", "content": t.report()})
@@ -96,7 +115,8 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         llm,
         tts,
         transport.output(),
-        assistant_aggregator
+        assistant_aggregator,
+        tracker,
     ])
 
     task = PipelineWorker(pipeline, params=PipelineParams(enable_usage_metrics=True, enable_metrics=True))
@@ -105,12 +125,15 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     async def on_client_connected(transport, client):
         logger.info("Client connected")
         context.add_message({"role": "user", "content": "Say hi in one short sentence."})
+        tracker.expect_response()
+        scheduler.start()
         await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected")
         manager.cancel_all()
+        await scheduler.stop()
         confirmer.cancel()
         await task.cancel()
 

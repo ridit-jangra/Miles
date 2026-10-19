@@ -8,9 +8,10 @@ from miles.confirm.confirmer import Confirmer
 from miles.env import PLUGINS_DIR
 from miles.plugins.api import PluginContext
 from miles.tools.registry import TOOLS
+from miles.watchers.scheduler import Scheduler
 
 
-def load_plugins(config: Config, confirmer: Confirmer, dir: Path = PLUGINS_DIR) -> list:
+def load_plugins(config: Config, confirmer: Confirmer, scheduler: Scheduler, dir: Path = PLUGINS_DIR) -> list:
     tools = list(TOOLS)
     if not config.plugins.enabled:
         logger.info("Plugins are disabled in config.")
@@ -28,7 +29,7 @@ def load_plugins(config: Config, confirmer: Confirmer, dir: Path = PLUGINS_DIR) 
             spec = importlib.util.spec_from_file_location(f"miles_plugin_{name}", entry)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            api = PluginContext(name, config.plugin_settings.get(name, {}), confirmer)
+            api = PluginContext(name, config.plugin_settings.get(name, {}), confirmer, scheduler)
             module.register(api)
             tools.extend(api.tools)
             logger.info(f"Loaded plugin {name} with {len(api.tools)} tools.")
