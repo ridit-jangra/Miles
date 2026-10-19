@@ -1,11 +1,10 @@
-import asyncio
+from loguru import logger
 from collections.abc import Callable
 from dataclasses import dataclass
-import inspect
-
-from loguru import logger
 from miles.watchers.inbox import Alert, Inbox
 
+import asyncio
+import inspect
 
 @dataclass
 class Watcher:
