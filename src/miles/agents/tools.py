@@ -17,6 +17,10 @@ def make_agent_tools(manager: TaskManager) -> list[Callable]:
     available = "; ".join(f"{a.name}: {a.description}" for a in manager.agents.values())
     delegate.__doc__ = f"""Hand a job to a background agent and keep talking. Returns a task id right away.
 
+    The task runs in the background. After calling this, just tell the user it's started.
+    Do NOT call check_task to wait for it. You will be told automatically when it finishes.
+    If an agent's description matches the job, use it instead of doing the work yourself with other tools.
+
     Available agents: {available}.
 
     Args:
@@ -25,7 +29,8 @@ def make_agent_tools(manager: TaskManager) -> list[Callable]:
     """
 
     def check_task(task_id: str) -> dict:
-        """Check the status of a background task, and get its result if it is done.
+        """Check one background task, only when the user asks about it.
+        Never poll this in a loop; finished tasks are reported to you automatically.
 
         Args:
             task_id: The id returned by delegate.

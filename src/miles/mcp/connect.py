@@ -6,7 +6,9 @@ from mcp import StdioServerParameters
 from mcp.client.session_group import StreamableHttpParameters
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.services.mcp_service import MCPClient
+from fastmcp.client.transports import StdioTransport
 
+from pydantic_ai.mcp import MCPToolset
 from miles.mcp.config import McpServer
 
 
@@ -33,6 +35,15 @@ def make_client(server: McpServer) -> MCPClient:
         params = StreamableHttpParameters(url=server.url)
     return MCPClient(params, tools_filter=server.tools)
 
+def make_toolset(server: McpServer):
+    if server.command is not None:
+        toolset = MCPToolset(StdioTransport(server.command, server.args, env=server.env or None, keep_alive=False), init_timeout=30)
+    else:
+        toolset = MCPToolset(server.url, init_timeout=30)
+    if server.tools is not None:
+        allowed = set(server.tools)
+        toolset = toolset.filtered(lambda ctx, tool: tool.name in allowed)
+    return toolset
 
 async def start_server(plugin: str, name: str, server: McpServer, timeout: float):
     client = make_client(server)

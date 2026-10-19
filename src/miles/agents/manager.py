@@ -7,6 +7,7 @@ from loguru import logger
 
 from miles.agents.definition import AgentDef
 from miles.agents.runner import run_agent
+from miles.mcp.pool import McpPool
 
 
 @dataclass
@@ -37,6 +38,7 @@ class TaskManager:
         agents: dict[str, AgentDef],
         plugin_tools: dict[str, dict[str, Callable]],
         builtin_tools: dict[str, Callable],
+        mcp_pool: McpPool,
         default_model: str,
         on_done: Callable[[Task], Awaitable[None]] | None = None,
     ) -> None:
@@ -47,6 +49,7 @@ class TaskManager:
         self._ids = itertools.count(1)
         self.plugin_tools = plugin_tools
         self.builtin_tools = builtin_tools
+        self.mcp_pool = mcp_pool
 
     def start(self, agent: str, task: str) -> Task:
         if agent not in self.agents:
@@ -58,8 +61,11 @@ class TaskManager:
 
     async def _run(self, t: Task) -> None:
         try:
+            agent_def = self.agents[t.agent]
+            toolsets = await self.mcp_pool.toolsets_for(agent_def.plugin, agent_def.mcp)
             t.result = await run_agent(
-                self.agents[t.agent], t.task, self._tools_for(self.agents[t.agent]), self.default_model
+                agent_def, t.task, self._tools_for(agent_def), self.default_model,
+                toolsets=toolsets,
             )
             t.status = "done"
         except asyncio.CancelledError:

@@ -14,6 +14,7 @@ async def run_agent(
     task: str,
     tools: dict[str, Callable],
     default_model: str,
+    toolsets=(),
     memory=None,  # later; agent memory goes here
 ) -> str:
     missing = [name for name in agent_def.tools if name not in tools]
@@ -28,6 +29,8 @@ async def run_agent(
         model,
         instructions=agent_def.prompt,
         tools=[tools[name] for name in agent_def.tools],
+        toolsets=list(toolsets)
     )
-    result = await agent.run(task, usage_limits=UsageLimits(request_limit=agent_def.max_steps))
+    async with agent:
+        result = await agent.run(task, usage_limits=UsageLimits(request_limit=agent_def.max_steps))
     return result.output

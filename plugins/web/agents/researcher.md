@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Researches a topic on the web and gives a short summary
+description: Researches a topic across several web pages and reports back a short summary. Use for questions that need more than one search, or comparing sources.
 tools: [web_search, web_fetch]
 mcp: [playwright]
 max_steps: 10

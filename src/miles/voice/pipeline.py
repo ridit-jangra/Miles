@@ -6,6 +6,7 @@ from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
 from miles.mcp.connect import connect_servers
+from miles.mcp.pool import McpPool
 from miles.plugins.loader import load_plugins
 from miles.tools.registry import TOOLS
 from miles.voice.confirm_processor import ConfirmProcessor
@@ -87,6 +88,12 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
 
     mcp_conn = await connect_servers(bundle.mcp_servers)
 
+    mcp_pool = McpPool()
+    mcp_pool.start(
+        bundle.mcp_servers,
+        wanted={(a.plugin, n) for a in bundle.agents.values() for n in a.mcp},
+    )
+
     async def on_task_done(t: Task):
         context.add_message({"role": "developer", "content": t.report()})
         await task.queue_frames([LLMRunFrame()])
@@ -95,6 +102,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         bundle.agents,
         bundle.plugin_tools,
         {t.__name__: t for t in TOOLS},
+        mcp_pool,
         config.miles.model,
         on_done=on_task_done,
     )
@@ -143,4 +151,5 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     try:
         await WorkerRunner(handle_sigint=runner_args.handle_sigint).run(task)
     finally:
+        await mcp_pool.close()
         await mcp_conn.close()
