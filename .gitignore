@@ -3,3 +3,5 @@
 !.env.example
 
 old/
+
+__pycache__
