@@ -1,2 +1,11 @@
 name = "web"
 description = "Search the web and read pages"
+
+[permissions]
+network = true
+shell = true
+
+[mcp.playwright]
+command = "bunx"
+args = ["@playwright/mcp@1.2.3"]
+miles = false

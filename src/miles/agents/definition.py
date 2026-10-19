@@ -12,6 +12,8 @@ class AgentDef(BaseModel):
     tools: list[str] = []
     max_steps: int = 10
     prompt: str
+    mcp: list[str] = []
+    plugin: str = ""
 
 
 def load_agent(path: Path) -> AgentDef:

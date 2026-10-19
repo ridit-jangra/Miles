@@ -35,16 +35,18 @@ class TaskManager:
     def __init__(
         self,
         agents: dict[str, AgentDef],
-        tools: dict[str, Callable],
+        plugin_tools: dict[str, dict[str, Callable]],
+        builtin_tools: dict[str, Callable],
         default_model: str,
         on_done: Callable[[Task], Awaitable[None]] | None = None,
     ) -> None:
         self.agents = agents
-        self.tools = tools
         self.default_model = default_model
         self.on_done = on_done
         self.tasks: dict[str, Task] = {}
         self._ids = itertools.count(1)
+        self.plugin_tools = plugin_tools
+        self.builtin_tools = builtin_tools
 
     def start(self, agent: str, task: str) -> Task:
         if agent not in self.agents:
@@ -57,7 +59,7 @@ class TaskManager:
     async def _run(self, t: Task) -> None:
         try:
             t.result = await run_agent(
-                self.agents[t.agent], t.task, self.tools, self.default_model
+                self.agents[t.agent], t.task, self._tools_for(self.agents[t.agent]), self.default_model
             )
             t.status = "done"
         except asyncio.CancelledError:
@@ -81,3 +83,6 @@ class TaskManager:
     def cancel_all(self) -> None:
         for task_id in list(self.tasks):
             self.cancel(task_id)
+
+    def _tools_for(self, agent: AgentDef) -> dict[str, Callable]:
+        return {**self.builtin_tools, **self.plugin_tools.get(agent.plugin, {})}

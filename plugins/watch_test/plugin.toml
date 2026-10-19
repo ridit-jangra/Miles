@@ -1,2 +1,0 @@
-name = "watch_test"
-description = "Fake watchers to test alerts: a normal, a low and an urgent one"

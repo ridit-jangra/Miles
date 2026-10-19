@@ -1,10 +1,18 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
+from miles.agents.definition import AgentDef
 from miles.confirm.confirmer import DECLINED, Confirmer
 from miles.watchers.parser import parse_time
 from miles.watchers.scheduler import Scheduler, Watcher
 
+
+@dataclass
+class PluginBundle:
+    tools: list[Callable]
+    agents: dict[str, AgentDef]
+    plugin_tools: dict[str, dict[str, Callable]]
 
 class PluginContext:
     def __init__(self, name: str, config: dict, confirmer: Confirmer, scheduler: Scheduler) -> None:

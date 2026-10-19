@@ -1,13 +1,12 @@
 import os
 
 from loguru import logger
-from miles.agents.definition import load_agents
 from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
-from miles.env import AGENTS_DIR
 from miles.plugins.loader import load_plugins
+from miles.tools.registry import TOOLS
 from miles.voice.confirm_processor import ConfirmProcessor
 from miles.voice.tools import to_pipecat
 from miles.watchers.activity import ActivityTracker
@@ -81,17 +80,18 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     notifier = Notifier(inbox, lambda: tracker.busy, inform, run_llm, interrupt)
     tracker.on_idle = notifier.on_idle
 
-    tools = load_plugins(config, confirmer, scheduler)
+    bundle = load_plugins(config, confirmer, scheduler)
+    tools = bundle.tools
     tools += make_inbox_tools(inbox)
 
     async def on_task_done(t: Task):
         context.add_message({"role": "developer", "content": t.report()})
         await task.queue_frames([LLMRunFrame()])
 
-    # subagents only get the plugin tools, so they can't delegate to each other
     manager = TaskManager(
-        load_agents(AGENTS_DIR),
-        {t.__name__: t for t in tools},
+        bundle.agents,
+        bundle.plugin_tools,
+        {t.__name__: t for t in TOOLS},
         config.miles.model,
         on_done=on_task_done,
     )
