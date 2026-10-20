@@ -1,21 +1,48 @@
 import tomllib
-from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel
+from miles.env import CONFIG_PATH
+from pydantic import BaseModel, ConfigDict
 
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.toml"
 
-class BaseSettings(BaseModel):
-    model: str = "anthropic/claude-haiku-5.5"
-    voice: str = "en_US-danny-low"
+class ProviderSettings(BaseModel):
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str
+    model: str | None = None
+    api_key_env: str | None = None
+    options: dict[str, Any] = {}
+
+
+class LLMSettings(ProviderSettings):
+    provider: str = "openrouter"
+    model: str | None = "anthropic/claude-haiku-5.5"
+
+class TTSSettings(ProviderSettings):
+    provider: str = "piper"
+    voice: str | None = "en_US-danny-low"
+
+class STTSettings(ProviderSettings):
+    provider: str = "whisper"
+    model: str | None = "small"
+    device: str = "cpu"
+    compute_type: str = "int8"
+
+class AgentsSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model: str = "anthropic/claude-sonnet-5-5"
 
 class PluginsSettings(BaseModel):
     enabled: bool = True
     disabled: list[str] = []
 
-
 class Config(BaseModel):
-    miles: BaseSettings = BaseSettings()
+    llm: LLMSettings = LLMSettings()
+    stt: STTSettings = STTSettings()
+    tts: TTSSettings = TTSSettings()
+    agents: AgentsSettings = AgentsSettings()
     plugins: PluginsSettings = PluginsSettings()
     plugin_settings: dict[str, dict] = {}
 

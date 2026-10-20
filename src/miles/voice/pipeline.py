@@ -8,6 +8,7 @@ from miles.confirm.confirmer import Confirmer
 from miles.mcp.connect import McpConnection, connect_servers
 from miles.mcp.pool import McpPool
 from miles.plugins.loader import load_plugins
+from miles.providers import build_llm, build_stt, build_tts, close_providers
 from miles.tools.registry import TOOLS
 from miles.voice.confirm_processor import ConfirmProcessor
 from miles.voice.tools import to_pipecat
@@ -41,25 +42,9 @@ DEFAULT_SYSTEM_PROMPT = (
 async def run(transport: BaseTransport, runner_args: RunnerArguments, system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> None:
     config = load_config()
 
-    stt = WhisperSTTService(
-        device="cpu",
-        compute_type="int8",
-        settings=WhisperSTTService.Settings(model=Model.SMALL)
-    )
-
-    llm = OpenRouterLLMService(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        settings=OpenRouterLLMService.Settings(
-            model = "anthropic/claude-haiku-5.5",
-            system_instruction=system_prompt
-        )
-    )
-
-    tts = PiperTTSService(
-        settings=PiperTTSService.Settings(
-            voice="en_US-danny-low"
-        )
-    )
+    stt = build_stt(config.stt)
+    llm = build_llm(config.llm, system_prompt)
+    tts = build_tts(config.tts)
 
     async def speak(text: str) -> None:
         await task.queue_frame(TTSSpeakFrame(text))
@@ -101,7 +86,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         bundle.plugin_tools,
         {t.__name__: t for t in TOOLS},
         mcp_pool,
-        config.miles.model,
+        config.agents.model,
         on_done=on_task_done,
     )
     tools += make_agent_tools(manager)
@@ -159,3 +144,4 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     finally:
         await mcp_pool.close()
         await mcp_conn.close()
+        await close_providers()

@@ -1,5 +1,18 @@
-[miles]
+[llm]
+provider = "openrouter"
 model = "anthropic/claude-haiku-5.5"
+
+[agents]
+model = "anthropic/claude-sonnet-5-5"
+
+[stt]
+provider = "whisper"
+model = "small"
+device = "cpu"
+compute_type = "int8"
+
+[tts]
+provider = "piper"
 voice = "en_US-danny-low"
 
 [plugins]
@@ -7,7 +20,7 @@ enabled = true
 disabled = []
 
 [plugin_settings.web]
-searxng_url = ""   # leave empty to use DuckDuckGo, or e.g. "http://localhost:8080"
+searxng_url = ""
 
 [plugin_settings.hello]
 greeting = "Yo"
