@@ -5,3 +5,7 @@
 old/
 
 __pycache__
+
+# The user given context which might be private
+context.md
+.context_cache.json

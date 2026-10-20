@@ -5,6 +5,7 @@ from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
+from miles.context import load_context
 from miles.mcp.connect import McpConnection, connect_servers
 from miles.mcp.pool import McpPool
 from miles.plugins.loader import load_plugins
@@ -43,6 +44,11 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     config = load_config()
 
     stt = build_stt(config.stt)
+
+    extra = await load_context(config)
+    if extra:
+        system_prompt = f"{system_prompt}\n\n{extra}"
+
     llm = build_llm(config.llm, system_prompt)
     tts = build_tts(config.tts)
 
@@ -86,7 +92,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         bundle.plugin_tools,
         {t.__name__: t for t in TOOLS},
         mcp_pool,
-        config.agents.model,
+        config.agents,
         on_done=on_task_done,
     )
     tools += make_agent_tools(manager)

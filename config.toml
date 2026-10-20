@@ -3,7 +3,12 @@ provider = "openrouter"
 model = "anthropic/claude-haiku-5.5"
 
 [agents]
+provider = "openrouter"
 model = "anthropic/claude-sonnet-5-5"
+
+[context]
+provider = "openrouter"
+model = "anthropic/claude-haiku-5.5"
 
 [stt]
 provider = "whisper"
@@ -21,6 +26,3 @@ disabled = []
 
 [plugin_settings.web]
 searxng_url = ""
-
-[plugin_settings.hello]
-greeting = "Yo"

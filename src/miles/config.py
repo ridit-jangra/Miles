@@ -6,9 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ProviderSettings(BaseModel):
-
     model_config = ConfigDict(extra="forbid")
-
     provider: str
     model: str | None = None
     api_key_env: str | None = None
@@ -31,8 +29,15 @@ class STTSettings(ProviderSettings):
 
 class AgentsSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
+    provider: str = "openrouter"
     model: str = "anthropic/claude-sonnet-5-5"
+    api_key_env: str | None = None
+
+class ContextSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    provider: str = "openrouter"
+    model: str = "anthropic/claude-haiku-5.5"
+    api_key_env: str | None = None
 
 class PluginsSettings(BaseModel):
     enabled: bool = True
@@ -42,6 +47,7 @@ class Config(BaseModel):
     llm: LLMSettings = LLMSettings()
     stt: STTSettings = STTSettings()
     tts: TTSSettings = TTSSettings()
+    context: ContextSettings = ContextSettings()
     agents: AgentsSettings = AgentsSettings()
     plugins: PluginsSettings = PluginsSettings()
     plugin_settings: dict[str, dict] = {}

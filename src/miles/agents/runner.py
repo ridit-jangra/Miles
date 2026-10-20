@@ -1,9 +1,7 @@
-import os
 from collections.abc import Callable
 
 from pydantic_ai import Agent
-from pydantic_ai.models.openrouter import OpenRouterModel
-from pydantic_ai.providers.openrouter import OpenRouterProvider
+from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
 
 from miles.agents.definition import AgentDef
@@ -13,7 +11,7 @@ async def run_agent(
     agent_def: AgentDef,
     task: str,
     tools: dict[str, Callable],
-    default_model: str,
+    model: Model,
     toolsets=(),
     memory=None,  # later; agent memory goes here
 ) -> str:
@@ -21,10 +19,6 @@ async def run_agent(
     if missing:
         raise ValueError(f"Agent {agent_def.name} asks for unknown tools: {missing}")
 
-    model = OpenRouterModel(
-        agent_def.model or default_model,
-        provider=OpenRouterProvider(api_key=os.getenv("OPENROUTER_API_KEY")),
-    )
     agent = Agent(
         model,
         instructions=agent_def.prompt,

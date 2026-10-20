@@ -7,6 +7,8 @@ from loguru import logger
 
 from miles.agents.definition import AgentDef
 from miles.agents.runner import run_agent
+from miles.config import AgentsSettings
+from miles.models import build_model
 from miles.mcp.pool import McpPool
 
 
@@ -39,11 +41,11 @@ class TaskManager:
         plugin_tools: dict[str, dict[str, Callable]],
         builtin_tools: dict[str, Callable],
         mcp_pool: McpPool,
-        default_model: str,
+        settings: AgentsSettings,
         on_done: Callable[[Task], Awaitable[None]] | None = None,
     ) -> None:
         self.agents = agents
-        self.default_model = default_model
+        self.settings = settings
         self.on_done = on_done
         self.tasks: dict[str, Task] = {}
         self._ids = itertools.count(1)
@@ -63,8 +65,9 @@ class TaskManager:
         try:
             agent_def = self.agents[t.agent]
             toolsets = await self.mcp_pool.toolsets_for(agent_def.plugin, agent_def.mcp)
+            model = build_model(self.settings.provider, agent_def.model or self.settings.model, self.settings.api_key_env)
             t.result = await run_agent(
-                agent_def, t.task, self._tools_for(agent_def), self.default_model,
+                agent_def, t.task, self._tools_for(agent_def), model,
                 toolsets=toolsets,
             )
             t.status = "done"
