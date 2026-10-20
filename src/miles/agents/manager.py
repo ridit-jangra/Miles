@@ -26,12 +26,17 @@ class Task:
         """A message for the LLM saying how this task ended."""
         if self.status == "done":
             outcome = f"finished. Result: {self.result}"
+            ending = (
+                "Tell the user what came of it in one short sentence. Give only the result, "
+                "not how the agent got it. If the result only describes steps taken, just say it's done."
+            )
         else:
             outcome = f"{self.status}. Error: {self.error}"
-        return (
-            f"Background task {self.id} ({self.agent} agent, asked: {self.task!r}) {outcome}\n"
-            "Tell the user briefly, in your own words."
-        )
+            ending = (
+                "Tell the user in one short sentence that it failed and why, in plain words. "
+                "Don't read the error text out."
+            )
+        return f"Background task {self.id} ({self.agent} agent, asked: {self.task!r}) {outcome}\n{ending}"
 
 
 class TaskManager:

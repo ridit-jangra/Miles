@@ -45,7 +45,11 @@ class Notifier:
 
     async def _deliver(self, alerts: list[Alert]) -> None:
         lines = [f"#{a.id} from {a.source} ({a.priority}): {a.text}" for a in alerts]
-        text = "New alerts:\n" + "\n".join(lines) + "\nTell the user briefly."
+        text = (
+            "New alerts:\n" + "\n".join(lines)
+            + "\nTell the user in one short sentence, in your own words. Don't read the alert text out "
+            "word for word. If there are several, say how many and lead with the most important."
+        )
         self.inform(text)
         await self.run_llm()
         for a in alerts:
