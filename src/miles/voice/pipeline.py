@@ -5,6 +5,7 @@ from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
+from miles.env import PROMPTS_DIR
 from miles.context import load_context
 from miles.mcp.connect import McpConnection, connect_servers
 from miles.mcp.pool import McpPool
@@ -34,11 +35,7 @@ from pipecat.services.piper.tts import PiperTTSService
 from pipecat.services.whisper.stt import Model, WhisperSTTService
 from pipecat.transports.base_transport import BaseTransport
 
-DEFAULT_SYSTEM_PROMPT = (
-    "You are Miles, a voice assistant. Your replies are spoken out loud, so keep them "
-    "short and conversational: one to three sentences. No markdown, no lists, no emojis, "
-    "no code blocks. Be warm, dry and to the point."
-)
+DEFAULT_SYSTEM_PROMPT = (PROMPTS_DIR / "system.md").read_text().strip()
 
 async def run(transport: BaseTransport, runner_args: RunnerArguments, system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> None:
     config = load_config()
