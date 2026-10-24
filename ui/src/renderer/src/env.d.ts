@@ -1,6 +1,11 @@
 export {}
 
-type ServerStatus = { state: "starting" | "ready" | "error"; text: string }
+type ServerStatus = {
+  state: "starting" | "ready" | "error"
+  text: string
+  steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[]
+  log?: string
+}
 
 declare global {
   interface Window {

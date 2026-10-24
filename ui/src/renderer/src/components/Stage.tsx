@@ -45,7 +45,7 @@ export function Stage(): React.JSX.Element {
 
   return (
     <div className="pointer-events-none fixed inset-y-0 left-[45%] z-[1] flex w-[min(640px,90vw)] -translate-x-1/2 flex-col items-center justify-center gap-6 text-center">
-      <PixelSquare level={voice.level} speaking={voice.speaking} thinking={voice.thinking} connecting={voice.status === "connecting"} size={size}/>
+      <PixelSquare level={voice.level} speaking={voice.speaking} thinking={voice.thinking} connecting={voice.status === "connecting"} size={size} className="mt-20" />
 
       <div className="flex flex-col items-center gap-5">
         <div

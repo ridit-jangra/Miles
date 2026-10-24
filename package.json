@@ -1,0 +1,9 @@
+{
+  "name": "miles",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --cwd ui dev",
+    "build": "bun run --cwd ui build",
+    "typecheck": "bun run --cwd ui typecheck"
+  }
+}

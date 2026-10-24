@@ -16,6 +16,7 @@ class Spec:
     extra: str | None = None
     session: bool = False
     pass_cfg: tuple[str, ...] = ()
+    local: bool = False
 
 
 def _table(kind: str, rows: dict[str, tuple]) -> dict[str, Spec]:
@@ -23,9 +24,9 @@ def _table(kind: str, rows: dict[str, tuple]) -> dict[str, Spec]:
 
 
 STT = _table("stt", {
-    "whisper": ("whisper", "WhisperSTTService", None, "whisper", False, ("device", "compute_type")),
-    "moonshine": ("moonshine", "MoonshineSTTService", None, "moonshine"),
-    "funasr": ("funasr", "FunASRSTTService", None, "funasr"),
+    "whisper": ("whisper", "WhisperSTTService", None, "whisper", False, ("device", "compute_type"), True),
+    "moonshine": ("moonshine", "MoonshineSTTService", None, "moonshine", False, (), True),
+    "funasr": ("funasr", "FunASRSTTService", None, "funasr", False, (), True),
     "assemblyai": ("assemblyai", "AssemblyAISTTService", "ASSEMBLYAI_API_KEY"),
     "aws": ("aws", "AWSTranscribeSTTService", None, "aws"),
     "azure": ("azure", "AzureSTTService", "AZURE_SPEECH_API_KEY", "azure"),
@@ -77,9 +78,9 @@ LLM = _table("llm", {
 LLM["openai-responses"] = Spec("openai.responses.llm", "OpenAIResponsesLLMService", "OPENAI_API_KEY")
 
 TTS = _table("tts", {
-    "piper": ("piper", "PiperTTSService", None, "piper"),
-    "kokoro": ("kokoro", "KokoroTTSService", None, "kokoro"),
-    "pocket-tts": ("pocket_tts", "PocketTTSService", None, "pocket-tts"),
+    "piper": ("piper", "PiperTTSService", None, "piper", False, (), True),
+    "kokoro": ("kokoro", "KokoroTTSService", None, "kokoro", False, (), True),
+    "pocket-tts": ("pocket_tts", "PocketTTSService", None, "pocket-tts", False, (), True),
     "xtts": ("xtts", "XTTSService", None, None, True),
     "asyncai": ("asyncai", "AsyncAITTSService", "ASYNCAI_API_KEY"),
     "aws": ("aws", "AWSPollyTTSService", None, "aws"),

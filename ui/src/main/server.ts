@@ -23,27 +23,59 @@ export function lastLogLines(count = 15): string {
   return tail.slice(-count).join("\n")
 }
 
+export type BootStep = {
+  id: string
+  label: string
+  state: "pending" | "active" | "done"
+  fraction: number
+}
+
+export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string }
+
+const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g
+const TQDM = /\d+%\||it\/s\]|B\/s/
+
 export async function startServer(
   root: string,
   logPath: string,
-  onStatus?: (text: string) => void
+  onStatus?: (update: StatusUpdate) => void
 ): Promise<"reused" | "started"> {
+  const steps = new Map<string, BootStep>()
   if (await isUp()) return "reused"
 
   log = createWriteStream(logPath, { flags: "a" })
   child = spawn("uv", ["run", "src/miles/main.py"], {
     cwd: root,
     detached: process.platform !== "win32",
-    stdio: ["ignore", "pipe", "pipe"]
+    env: { ...process.env, MILES_EXIT_ON_STDIN_CLOSE: "1" },
+    stdio: ["pipe", "pipe", "pipe"]
   })
 
-  const onData = (data: Buffer) => {
-    log?.write(data)
-    tail.push(...data.toString().split("\n").filter(Boolean))
-    if (tail.length > 200) tail.splice(0, tail.length - 200)
+  let booting = true
+  const emit = (text = "") =>
+    booting && onStatus?.({ text, steps: steps.size ? [...steps.values()] : undefined, log: tail[tail.length - 1] })
+
+  const listen = (stream: NodeJS.ReadableStream | null) => {
+    let partial = ""
+    stream?.on("data", (data: Buffer) => {
+      log?.write(data)
+      const lines = (partial + data.toString()).replace(ANSI, "").split(/[\r\n]/)
+      partial = lines.pop() ?? ""
+      for (const line of lines.filter(Boolean)) {
+        if (line.startsWith("MILES_STEP ")) {
+          const [id, label, state, fraction] = line.slice(11).split("|")
+          steps.set(id, { id, label, state: state as BootStep["state"], fraction: Number(fraction) })
+          emit()
+        } else if (!TQDM.test(line)) {
+          tail.push(line)
+        }
+      }
+      emit()
+      if (tail.length > 200) tail.splice(0, tail.length - 200)
+    })
   }
-  child.stdout?.on("data", onData)
-  child.stderr?.on("data", onData)
+  listen(child.stdout)
+  listen(child.stderr)
 
   let exited = false
   child.once("exit", () => {
@@ -53,13 +85,19 @@ export async function startServer(
 
   const began = Date.now()
   while (Date.now() - began < MAX_WAIT_MS) {
-    if (await isUp()) return "started"
-    if (exited) throw new Error("The server stopped while starting.")
+    if (await isUp()) {
+      booting = false
+      return "started"
+    }
+    if (exited) {
+      booting = false
+      throw new Error("The server stopped while starting.")
+    }
     const seconds = Math.round((Date.now() - began) / 1000)
-    const last = tail.length ? `\n${tail[tail.length - 1].slice(0, 90)}` : ""
-    onStatus?.(`Starting Miles… ${seconds}s${last}`)
+    if (steps.size === 0) emit(`Starting Miles… ${seconds}s`)
     await sleep(1000)
   }
+  booting = false
   throw new Error("The server did not become ready in 15 minutes.")
 }
 

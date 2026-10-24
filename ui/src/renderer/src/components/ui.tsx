@@ -164,9 +164,9 @@ export function DoneMark(): React.JSX.Element {
 }
 
 export function VoiceControls(props: { live: boolean; muted: boolean; busy: boolean; onToggle: () => void; onMute: () => void }): React.JSX.Element {
-  const seg = "inline-flex cursor-pointer items-center gap-2 font-display px-[15px] py-[9px] text-ui leading-[1.4286] font-medium outline-none transition-colors duration-120 disabled:cursor-default disabled:opacity-55"
+  const seg = "inline-flex cursor-pointer items-center gap-2 bg-ink text-on-light font-display px-[15px] py-[9px] text-ui leading-[1.4286] font-medium outline-none transition-colors duration-120 disabled:cursor-default disabled:opacity-55"
   return (
-    <div className="inline-flex overflow-hidden rounded-control border border-ink bg-ink text-on-light ">
+    <div className="inline-flex overflow-hidden rounded-control border border-ink transition-colors duration-120 hover:border-edge focus-within:border-edge">
       {props.live && (
         <button type="button" onClick={props.onMute} className={cn(seg, "border-r border-on-light/25 hover:bg-surface hover:text-ink focus-visible:bg-surface focus-visible:text-ink")}>
           {props.muted ? <MicOff size={16} /> : <Mic size={16} />}

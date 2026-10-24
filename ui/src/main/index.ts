@@ -3,7 +3,12 @@ import { join } from "node:path";
 
 import { lastLogLines, startServer, stopServer } from "./server";
 
-type ServerStatus = { state: "starting" | "ready" | "error"; text: string };
+type ServerStatus = {
+  state: "starting" | "ready" | "error";
+  text: string;
+  steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
+  log?: string;
+};
 
 let status: ServerStatus = { state: "starting", text: "Starting Miles…" };
 
@@ -48,7 +53,7 @@ app.whenReady().then(async () => {
     await startServer(
       join(app.getAppPath(), ".."),
       join(app.getPath("userData"), "server.log"),
-      (text) => setStatus({ state: "starting", text }),
+      (update) => setStatus({ state: "starting", ...update }),
     );
     setStatus({ state: "ready", text: "" });
   } catch (error) {

@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-export type ServerStatus = { state: "starting" | "ready" | "error"; text: string };
+export type ServerStatus = {
+  state: "starting" | "ready" | "error";
+  text: string;
+  steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
+  log?: string;
+};
 
 contextBridge.exposeInMainWorld("miles", {
   platform: process.platform,
