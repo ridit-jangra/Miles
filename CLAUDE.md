@@ -12,6 +12,10 @@ Miles is a voice-agent harness in pure Python on Pipecat ("Jarvis for everyone",
 uv run src/miles/main.py        # starts the Pipecat dev runner, open http://localhost:7860
 uv run ruff check src plugins   # lint (ruff is the only dev dependency)
 uv add <pkg>                    # use uv for Python deps; use bun, never npm, for anything JS
+
+cd ui && bun install && ./node_modules/.bin/install-electron   # bun skips Electron's install script, so fetch the binary by hand
+cd ui && bun run dev            # Electron window; the Python server must already be running
+cd ui && bun run typecheck && bun run build
 ```
 
 There is no test suite. Behaviour is verified with small throwaway scripts and by talking to the bot. After a session, check for leaked MCP subprocesses with `pgrep -af "[m]cp-server-time"` (the `[m]` stops pgrep matching itself).
@@ -42,6 +46,16 @@ Secrets go in `.env` only (`OPENROUTER_API_KEY`, see `.env.example`). Never in `
 - Tool functions are plain functions or async direct functions, converted by `voice/tools.py:to_pipecat`, which yields once (`await asyncio.sleep(0)`) before returning its result. Without that, when the LLM calls an instant tool in parallel with a slower one (e.g. `remember` + an MCP tool), Pipecat's assistant aggregator sees the instant result before the sibling's in-progress frame, runs the LLM twice, and Miles answers twice. The docstring becomes the tool description, so tools need docstrings, and they must return JSON-serializable values (plain dicts, never dataclasses).
 - STT/LLM/TTS come from `[stt]`/`[llm]`/`[tts]` in `config.toml` via `providers.py`: a table of `Spec`s (module, class, API-key env var, pip extra) plus one generic `_build`. Services are imported lazily, extra constructor args go in `options = {...}`, `api_key_env` overrides the key variable, and a provider whose extra isn't installed raises a clear "uv add pipecat-ai[...]" error. Providers needing an aiohttp session are closed by `close_providers()`. To add a provider, add one table row.
 - Config is typed in `config.py` (root `config.toml`); `env.py` only holds path constants (`ROOT`, `PLUGINS_DIR`); `.env` is loaded in `main.py`.
+
+## UI
+
+`ui/` is an Electron + React 19 + TypeScript app built with electron-vite and Tailwind v4 (`src/main`, `src/preload`, `src/renderer/src`). Colours, radius, fonts and sizes live in the `@theme` block of `styles.css` (so classes like `bg-panel`, `text-ink-dim`, `rounded-control`, `text-note`, `font-display`); fonts come from `@fontsource-variable/*` imports (JetBrains Mono for headings, Geist, Geist Mono; licences in `ui/THIRD_PARTY.md`), and the components in `components/ui.tsx` carry plain Tailwind utilities. `lib/cn.ts` extends tailwind-merge with the custom `text-note`/`text-ui` sizes (without that, `cn()` treats them as colours and drops them). The background is `components/AsciiField.tsx`: a canvas grid of monospace glyphs (an ordered Bayer dither over drifting noise, cached in a glyph atlas, ~25 fps, static when reduced motion is on). Props: `cell`, `speed`, `strength`. Pages are in `pages/`; `lib/sample.ts` holds example data that the server bridge will replace (panels say "example").
+
+Voice: `lib/voice.tsx` wraps a `PipecatClient` (SmallWebRTC) in a `VoiceProvider` and `useVoice()`. It calls `POST /start` on the Pipecat runner, then posts the offer to `/sessions/<id>/api/offer`. Bot text arrives twice per sentence (`spoken_status` "new" then "completed", different `segment_id`), so `pushBot` drops the repeat. `src/main/server.ts` starts `uv run src/miles/main.py` if nothing answers on :7860 and stops its process group with SIGINT on quit.
+
+Planned server-to-UI state (inbox, tasks, MCP status, memory) goes over Pipecat's UI command channel: `RTVIUICommandFrame` on the Python side, `useUICommandHandler(command, fn)` in React; UI-to-server is `useUIEventSender()` / `RTVIUIEventFrame`. The CLI will live in `src/miles/cli/` (inside the package; a top-level `src/cli` would not be installed).
+
+To look at the UI without a display, serve `ui/out/renderer` with `python3 -m http.server` and drive headless `google-chrome-stable` over the DevTools protocol with a real wait (the Field worker needs wall-clock time, so `--screenshot` and `--virtual-time-budget` capture a black background).
 
 ## Working style for this repo
 

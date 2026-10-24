@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@theme {
+  --color-bg: #0a0a0c;
+  --color-fg: #e9e6e1;
+  --color-ink: #e9e6e1;
+  --color-ink-mid: #beb9b2;
+  --color-ink-dim: #a49c94;
+  --color-on-light: #17161a;
+  --color-surface: rgb(255 255 255 / 0.08);
+  --color-line: rgb(255 255 255 / 0.12);
+  --color-panel: rgb(255 255 255 / 0.05);
+  --color-lift: rgb(255 255 255 / 0.1);
+  --color-raise: rgb(255 255 255 / 0.16);
+  --color-edge: rgb(255 255 255 / 0.18);
+
+  --radius-control: 10px;
+
+  --font-display: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --text-note: 13px;
+  --text-ui: 17px;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  ::selection {
+    background: var(--color-lift);
+    color: var(--color-fg);
+  }
+}
