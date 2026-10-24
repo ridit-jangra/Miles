@@ -26,3 +26,9 @@ disabled = []
 
 [plugin_settings.web]
 searxng_url = ""
+
+[memory]
+enabled = true
+auto_remember = true      # Miles may save facts on his own; "remember that..." always works
+history_days = "never"         # a number of days, or "never"
+max_prompt_chars = 2000

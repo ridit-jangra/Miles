@@ -13,16 +13,18 @@ async def run_agent(
     tools: dict[str, Callable],
     model: Model,
     toolsets=(),
-    memory=None,  # later; agent memory goes here
+    memory: str | None = None,
+    extra_tools: tuple[Callable, ...] = (),
 ) -> str:
     missing = [name for name in agent_def.tools if name not in tools]
     if missing:
         raise ValueError(f"Agent {agent_def.name} asks for unknown tools: {missing}")
 
+    instructions = f"{agent_def.prompt}\n\n{memory}" if memory else agent_def.prompt
     agent = Agent(
         model,
-        instructions=agent_def.prompt,
-        tools=[tools[name] for name in agent_def.tools],
+        instructions=instructions,
+        tools=[tools[name] for name in agent_def.tools] + list(extra_tools),
         toolsets=list(toolsets)
     )
     async with agent:

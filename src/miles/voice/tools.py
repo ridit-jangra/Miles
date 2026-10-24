@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from collections.abc import Callable
 
@@ -17,6 +18,7 @@ def to_pipecat(fn: Callable) -> Callable:
             result = await result
         if not isinstance(result, dict):
             result = {"result": result}
+        await asyncio.sleep(0)
         await params.result_callback(result)
 
     wrapper.__name__ = fn.__name__

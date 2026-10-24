@@ -1,5 +1,5 @@
 import tomllib
-from typing import Any
+from typing import Any, Literal
 
 from miles.env import CONFIG_PATH
 from pydantic import BaseModel, ConfigDict
@@ -39,6 +39,14 @@ class ContextSettings(BaseModel):
     model: str = "anthropic/claude-haiku-5.5"
     api_key_env: str | None = None
 
+class MemorySettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool = True
+    auto_remember: bool = True
+    history_days: int | Literal["never"] = 90
+    max_prompt_chars: int = 2000
+    max_facts: int = 200
+
 class PluginsSettings(BaseModel):
     enabled: bool = True
     disabled: list[str] = []
@@ -49,6 +57,7 @@ class Config(BaseModel):
     tts: TTSSettings = TTSSettings()
     context: ContextSettings = ContextSettings()
     agents: AgentsSettings = AgentsSettings()
+    memory: MemorySettings = MemorySettings()
     plugins: PluginsSettings = PluginsSettings()
     plugin_settings: dict[str, dict] = {}
 

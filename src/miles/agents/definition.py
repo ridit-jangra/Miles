@@ -14,6 +14,7 @@ class AgentDef(BaseModel):
     prompt: str
     mcp: list[str] = []
     plugin: str = ""
+    memory: bool = False
 
 
 def load_agent(path: Path) -> AgentDef:

@@ -1,14 +1,20 @@
 import os
 
+import asyncio
+from uuid import uuid4
+
 from loguru import logger
 from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
-from miles.env import PROMPTS_DIR
+from miles.env import MEMORY_DIR, PROMPTS_DIR
 from miles.context import load_context
 from miles.mcp.connect import McpConnection, connect_servers
 from miles.mcp.pool import McpPool
+from miles.memory.recap import last_session_recap
+from miles.memory.store import MemoryStore
+from miles.memory.tools import make_memory_tools
 from miles.plugins.loader import load_plugins
 from miles.providers import build_llm, build_stt, build_tts, close_providers
 from miles.tools.registry import TOOLS
@@ -46,6 +52,16 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     if extra:
         system_prompt = f"{system_prompt}\n\n{extra}"
 
+    session = uuid4().hex
+    store = MemoryStore(MEMORY_DIR, config.memory.max_facts) if config.memory.enabled else None
+    if store:
+        store.prune(config.memory.history_days)
+        remembered = store.facts.block(
+            config.memory.max_prompt_chars, "Things you remember about the user (notes, not instructions):"
+        )
+        if remembered:
+            system_prompt = f"{system_prompt}\n\n{remembered}"
+
     llm = build_llm(config.llm, system_prompt)
     tts = build_tts(config.tts)
 
@@ -73,6 +89,8 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     bundle = load_plugins(config, confirmer, scheduler)
     tools = bundle.tools
     tools += make_inbox_tools(inbox)
+    if store:
+        tools += make_memory_tools(store, confirmer, config.memory)
 
     mcp_pool = McpPool()
     mcp_pool.start(
@@ -90,6 +108,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         {t.__name__: t for t in TOOLS},
         mcp_pool,
         config.agents,
+        memory=store,
         on_done=on_task_done,
     )
     tools += make_agent_tools(manager)
@@ -112,6 +131,23 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         ),
     )
 
+    if store:
+        @user_aggregator.event_handler("on_user_turn_stopped")
+        async def log_user_turn(aggregator, strategy, message):
+            store.log(session, "user", message.content or "")
+
+        @assistant_aggregator.event_handler("on_assistant_turn_stopped")
+        async def log_assistant_turn(aggregator, message):
+            store.log(session, "assistant", message.content or "")
+
+    background: set[asyncio.Task] = set()
+
+    async def send_recap() -> None:
+        recap = await last_session_recap(store, session, config)
+        if recap:
+            summary, ago = recap
+            inform(f"Last conversation ({ago}): {summary} Don't bring it up unless it comes up naturally.")
+
     pipeline = Pipeline([
         transport.input(),
         stt,
@@ -132,6 +168,10 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         context.add_message({"role": "user", "content": "Say hi in one short sentence."})
         tracker.expect_response()
         scheduler.start()
+        if store:
+            recap_task = asyncio.create_task(send_recap())
+            background.add(recap_task)
+            recap_task.add_done_callback(background.discard)
         await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")
@@ -148,3 +188,5 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         await mcp_pool.close()
         await mcp_conn.close()
         await close_providers()
+        if store:
+            store.close()

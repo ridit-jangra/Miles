@@ -8,6 +8,8 @@ from loguru import logger
 from miles.agents.definition import AgentDef
 from miles.agents.runner import run_agent
 from miles.config import AgentsSettings
+from miles.memory.store import MemoryStore
+from miles.memory.tools import make_note_tool
 from miles.models import build_model
 from miles.mcp.pool import McpPool
 
@@ -47,10 +49,12 @@ class TaskManager:
         builtin_tools: dict[str, Callable],
         mcp_pool: McpPool,
         settings: AgentsSettings,
+        memory: MemoryStore | None = None,
         on_done: Callable[[Task], Awaitable[None]] | None = None,
     ) -> None:
         self.agents = agents
         self.settings = settings
+        self.memory = memory
         self.on_done = on_done
         self.tasks: dict[str, Task] = {}
         self._ids = itertools.count(1)
@@ -71,9 +75,15 @@ class TaskManager:
             agent_def = self.agents[t.agent]
             toolsets = await self.mcp_pool.toolsets_for(agent_def.plugin, agent_def.mcp)
             model = build_model(self.settings.provider, agent_def.model or self.settings.model, self.settings.api_key_env)
+            notes = None
+            extra_tools = ()
+            if agent_def.memory and self.memory:
+                file = self.memory.agent_notes(agent_def.name)
+                notes = file.block(1500, "Your notes from earlier tasks:")
+                extra_tools = (make_note_tool(file),)
             t.result = await run_agent(
                 agent_def, t.task, self._tools_for(agent_def), model,
-                toolsets=toolsets,
+                toolsets=toolsets, memory=notes, extra_tools=extra_tools,
             )
             t.status = "done"
         except asyncio.CancelledError:
