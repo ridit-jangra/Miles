@@ -47,7 +47,7 @@ class McpPool:
             logger.info(f"MCP server {key[0]}/{key[1]} ready")
         except asyncio.CancelledError:
             raise
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             entry.status, entry.error = "failed", repr(e)
             logger.error(f"MCP server {key[0]}/{key[1]} failed to start: {e!r}")
         finally:
@@ -62,7 +62,7 @@ class McpPool:
                 continue
             try:
                 await asyncio.wait_for(entry.ready.wait(), timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise RuntimeError(f"MCP server {plugin}/{name} is still starting") from None
             if entry.status != "ready":
                 raise RuntimeError(f"MCP server {plugin}/{name} failed to start: {entry.error}")
@@ -79,6 +79,6 @@ class McpPool:
                 continue
             try:
                 await entry.toolset.__aexit__(None, None, None)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.exception(f"Failed to close MCP server {key[0]}/{key[1]}")
         self.entries.clear()

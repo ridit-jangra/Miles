@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from pipecat.services.llm_service import FunctionCallParams
 
+
 def to_pipecat(fn: Callable) -> Callable:
     sig = inspect.signature(fn)
     params_arg = inspect.Parameter(

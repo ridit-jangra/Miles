@@ -1,6 +1,8 @@
-from pydantic import ValidationError
 from loguru import logger
+from pydantic import ValidationError
+
 from miles.mcp.config import McpServer
+
 
 def parse_mcp_servers(plugin: str, raw: dict) -> dict[str, McpServer]:
     servers = {}

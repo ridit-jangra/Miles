@@ -12,7 +12,7 @@ from miles.models import build_model
 
 MAX_CHARS = 8000
 
-SECRET_PATTERN = re.compile(r"(xox[abprs]-|sk-[A-Za-z0-9]|ghp_|AKIA[0-9A-Z]{12}|api[_-]?key\s*[:=])", re.I)
+SECRET_PATTERN = re.compile(r"(xox[abprs]-|sk-[A-Za-z0-9]|ghp_|AKIA[0-9A-Z]{12}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
 SUMMARY_PROMPT = """Turn the user's notes into a short system prompt addendum for a voice assistant called Miles. Write in second person, for example "The user is..." or "Prefer...". Keep only facts that change how Miles should behave or answer. Under 250 words. Plain sentences, no markdown or lists. Never invent facts. Never include tokens, passwords or keys."""
 
@@ -63,7 +63,7 @@ async def load_context(config: Config) -> str | None:
         model = build_model(settings.provider, settings.model, settings.api_key_env)
         agent = Agent(model, instructions=SUMMARY_PROMPT)
         result = await asyncio.wait_for(agent.run(text), 20)
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.exception("context.md summary failed")
         return cache.get("prompt") if cache else None
 

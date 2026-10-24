@@ -1,10 +1,12 @@
-from loguru import logger
-from collections.abc import Callable
-from dataclasses import dataclass
-from miles.watchers.inbox import Alert, Inbox
-
 import asyncio
 import inspect
+from collections.abc import Callable
+from dataclasses import dataclass
+
+from loguru import logger
+
+from miles.watchers.inbox import Alert, Inbox
+
 
 @dataclass
 class Watcher:
@@ -65,7 +67,7 @@ class Scheduler:
                 if not alert.source:
                     alert.source = watcher.name
                 self.inbox.add(alert)
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(f"Watcher {watcher.name} failed")
         finally:
             watcher.running = False

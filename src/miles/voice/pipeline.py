@@ -1,16 +1,29 @@
-import os
 
 import asyncio
 from uuid import uuid4
 
 from loguru import logger
+from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.frames.frames import InterruptionFrame, LLMRunFrame, TTSSpeakFrame
+from pipecat.pipeline.pipeline import Pipeline
+from pipecat.pipeline.runner import WorkerRunner
+from pipecat.pipeline.task import PipelineParams, PipelineWorker
+from pipecat.processors.aggregators.llm_context import LLMContext
+from pipecat.processors.aggregators.llm_response_universal import (
+    LLMContextAggregatorPair,
+    LLMUserAggregatorParams,
+)
+from pipecat.runner.types import RunnerArguments
+from pipecat.transports.base_transport import BaseTransport
+
+from miles import state
 from miles.agents.manager import Task, TaskManager
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
-from miles.env import MEMORY_DIR, PROMPTS_DIR
 from miles.context import load_context
-from miles.mcp.connect import McpConnection, connect_servers
+from miles.env import MEMORY_DIR, PROMPTS_DIR
+from miles.mcp.connect import McpConnection
 from miles.mcp.pool import McpPool
 from miles.memory.recap import last_session_recap
 from miles.memory.store import MemoryStore
@@ -25,21 +38,6 @@ from miles.watchers.inbox import Inbox
 from miles.watchers.notifier import Notifier
 from miles.watchers.scheduler import Scheduler
 from miles.watchers.tools import make_inbox_tools
-from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.frames.frames import LLMRunFrame, TTSSpeakFrame, InterruptionFrame
-from pipecat.pipeline.pipeline import Pipeline
-from pipecat.pipeline.runner import WorkerRunner
-from pipecat.pipeline.task import PipelineParams, PipelineWorker
-from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.processors.aggregators.llm_response_universal import (
-    LLMContextAggregatorPair,
-    LLMUserAggregatorParams,
-)
-from pipecat.runner.types import RunnerArguments
-from pipecat.services.openrouter.llm import OpenRouterLLMService
-from pipecat.services.piper.tts import PiperTTSService
-from pipecat.services.whisper.stt import Model, WhisperSTTService
-from pipecat.transports.base_transport import BaseTransport
 
 DEFAULT_SYSTEM_PROMPT = (PROMPTS_DIR / "system.md").read_text().strip()
 
@@ -79,6 +77,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         context.add_message({"role": "developer", "content": text})
 
     inbox = Inbox()
+    state.current["inbox"] = inbox
     confirmer = Confirmer(speak, inform)
     scheduler = Scheduler(inbox)
 
@@ -111,6 +110,8 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         memory=store,
         on_done=on_task_done,
     )
+    state.current["tasks"] = manager
+
     tools += make_agent_tools(manager)
 
     base_tools = [to_pipecat(t) for t in tools]
@@ -188,5 +189,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         await mcp_pool.close()
         await mcp_conn.close()
         await close_providers()
+        state.current["tasks"] = None
+        state.current["inbox"] = None
         if store:
             store.close()

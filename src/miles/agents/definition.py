@@ -28,6 +28,6 @@ def load_agents(agents_dir: Path) -> dict[str, AgentDef]:
         try:
             agent = load_agent(path)
             agents[agent.name] = agent
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(f"Failed to load agent {path.name}")
     return agents

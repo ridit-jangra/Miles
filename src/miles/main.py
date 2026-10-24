@@ -31,7 +31,11 @@ def exit_with_parent():
     threading.Thread(target=watch, daemon=True).start()
 
 if __name__ == "__main__":
-    from pipecat.runner.run import main
+    from pipecat.runner.run import app, main
+
+    from miles.api import router
+
+    app.include_router(router)
 
     if os.getenv("MILES_EXIT_ON_STDIN_CLOSE"):
         exit_with_parent()

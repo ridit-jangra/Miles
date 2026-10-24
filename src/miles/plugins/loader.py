@@ -1,8 +1,9 @@
 import importlib.util
-from pathlib import Path
 import tomllib
+from pathlib import Path
 
 from loguru import logger
+
 from miles.agents.definition import load_agents
 from miles.config import Config
 from miles.confirm.confirmer import Confirmer
@@ -51,6 +52,6 @@ def load_plugins(config: Config, confirmer: Confirmer, scheduler: Scheduler, dir
                         logger.warning(f"Agent {agent.name!r} in plugin {name} lists unknown MCP servers {unknown}")
                     bundle.agents[agent.name] = agent
             logger.info(f"Loaded plugin {name} with {len(api.tools)} tools.")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.exception(f"Plugin {folder.name} could not be loaded because an error occured; \n Error: {e}")
     return bundle

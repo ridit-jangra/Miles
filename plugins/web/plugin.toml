@@ -8,4 +8,4 @@ shell = true
 # [mcp.playwright]
 # command = "bunx"
 # args = ["@playwright/mcp@1.2.3"]
-# miles = false
+miles = false

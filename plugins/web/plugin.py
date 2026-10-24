@@ -12,9 +12,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Miles/1.0)"}
 
 
 def html_to_text(raw: str) -> str:
-    raw = re.sub(r"<(script|style|noscript)[\s\S]*?</\1>", " ", raw, flags=re.I)
+    raw = re.sub(r"<(script|style|noscript)[\s\S]*?</\1>", " ", raw, flags=re.IGNORECASE)
     raw = re.sub(r"<!--[\s\S]*?-->", " ", raw)
-    raw = re.sub(r"</(p|div|h[1-6]|li|br|tr|section|article)>", "\n", raw, flags=re.I)
+    raw = re.sub(r"</(p|div|h[1-6]|li|br|tr|section|article)>", "\n", raw, flags=re.IGNORECASE)
     text = html.unescape(re.sub(r"<[^>]+>", " ", raw))
     text = re.sub(r"[ \t]+", " ", text)
     return re.sub(r"\n\s*\n\s*\n+", "\n\n", text).strip()
@@ -58,7 +58,7 @@ def register(api):
                 results = await search_searxng(query, count)
             else:
                 results = await asyncio.to_thread(search_ddg, query, count)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": f"Search failed: {e}"}
         return {"query": query, "results": results}
 

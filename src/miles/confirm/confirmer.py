@@ -90,7 +90,7 @@ class Confirmer:
             result = pending.action()
             if inspect.isawaitable(result):
                 result = await result
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.exception("Confirmed action failed")
             return f"The user said yes, but the action failed: {e}"
         return f"The user said yes and the action was done. Result: {result}"

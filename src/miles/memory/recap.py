@@ -41,7 +41,7 @@ async def last_session_recap(store: MemoryStore, current: str, config: Config) -
     try:
         model = build_model(settings.provider, settings.model, settings.api_key_env)
         result = await asyncio.wait_for(Agent(model, instructions=RECAP_PROMPT).run(transcript), 20)
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.exception("Last session recap failed")
         return None
 

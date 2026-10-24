@@ -1,16 +1,16 @@
 import asyncio
+import contextlib
 from dataclasses import dataclass, field
 
+from fastmcp.client.transports import StdioTransport
 from loguru import logger
 from mcp import StdioServerParameters
 from mcp.client.session_group import StreamableHttpParameters
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.services.mcp_service import MCPClient
-from fastmcp.client.transports import StdioTransport
-
 from pydantic_ai.mcp import MCPToolset
-from miles.mcp.config import McpServer
 
+from miles.mcp.config import McpServer
 
 
 @dataclass
@@ -54,7 +54,7 @@ class McpConnection:
         for client in self.clients:
             try:
                 await client.close()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.exception("Failed to close an MCP client")
         self.clients.clear()
 
@@ -82,10 +82,8 @@ async def start_server(plugin: str, name: str, server: McpServer, timeout: float
     try:
         schema = await asyncio.wait_for(client.tools(), timeout)
     except BaseException as e:
-        try:
+        with contextlib.suppress(Exception):
             await client.close()
-        except Exception:
-            pass
         if isinstance(e, asyncio.CancelledError):
             raise
         logger.error(f"MCP server {plugin}/{name} failed to start: {e!r}")

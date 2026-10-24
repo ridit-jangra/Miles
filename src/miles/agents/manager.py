@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
@@ -8,10 +9,10 @@ from loguru import logger
 from miles.agents.definition import AgentDef
 from miles.agents.runner import run_agent
 from miles.config import AgentsSettings
+from miles.mcp.pool import McpPool
 from miles.memory.store import MemoryStore
 from miles.memory.tools import make_note_tool
 from miles.models import build_model
-from miles.mcp.pool import McpPool
 
 
 @dataclass
@@ -23,6 +24,8 @@ class Task:
     result: str | None = None
     error: str | None = None
     handle: asyncio.Task | None = field(default=None, repr=False)
+    started: float = field(default_factory=time.time)
+    ended: float | None = None
 
     def report(self) -> str:
         """A message for the LLM saying how this task ended."""
@@ -89,7 +92,7 @@ class TaskManager:
         except asyncio.CancelledError:
             t.status = "cancelled"
             raise
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.exception(f"Agent task {t.id} failed")
             t.status = "failed"
             t.error = str(e)

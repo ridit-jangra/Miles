@@ -1,8 +1,9 @@
 import tomllib
 from typing import Any, Literal
 
-from miles.env import CONFIG_PATH
 from pydantic import BaseModel, ConfigDict
+
+from miles.env import CONFIG_PATH
 
 
 class ProviderSettings(BaseModel):
