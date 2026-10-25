@@ -10,7 +10,7 @@ Miles is a voice-agent harness in pure Python on Pipecat ("Jarvis for everyone",
 
 ```fish
 uv run src/miles/main.py        # starts the Pipecat dev runner, open http://localhost:7860
-uv run ruff check src plugins   # lint (ruff is the only dev dependency)
+uv run ruff check src   # lint (ruff is the only dev dependency)
 uv add <pkg>                    # use uv for Python deps; use bun, never npm, for anything JS
 
 cd ui && bun install && ./node_modules/.bin/install-electron   # bun skips Electron's install script, so fetch the binary by hand

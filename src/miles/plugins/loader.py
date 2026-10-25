@@ -7,21 +7,36 @@ from loguru import logger
 from miles.agents.definition import load_agents
 from miles.config import Config
 from miles.confirm.confirmer import Confirmer
-from miles.env import PLUGINS_DIR
+from miles.env import PLUGIN_DIRS
 from miles.mcp.parse import parse_mcp_servers
 from miles.plugins.api import PluginBundle, PluginContext
 from miles.tools.registry import TOOLS
 from miles.watchers.scheduler import Scheduler
 
 
-def load_plugins(config: Config, confirmer: Confirmer, scheduler: Scheduler, dir: Path = PLUGINS_DIR) -> PluginBundle:
+def plugin_folders(dirs: list[Path] = PLUGIN_DIRS) -> list[Path]:
+    folders = []
+    seen = set()
+    for dir in dirs:
+        if not dir.is_dir():
+            continue
+        for folder in sorted(p for p in dir.iterdir() if p.is_dir()):
+            if folder.name in seen:
+                logger.error(f"Plugin folder {folder} clashes with an earlier {folder.name!r}, skipping it")
+                continue
+            seen.add(folder.name)
+            folders.append(folder)
+    return folders
+
+
+def load_plugins(config: Config, confirmer: Confirmer, scheduler: Scheduler, dirs: list[Path] = PLUGIN_DIRS) -> PluginBundle:
     tools = list(TOOLS)
     plugin_tools = {}
     bundle = PluginBundle(list(tools), {}, plugin_tools)
     if not config.plugins.enabled:
         logger.info("Plugins are disabled in config.")
         return bundle
-    for folder in sorted(p for p in dir.iterdir() if p.is_dir()):
+    for folder in plugin_folders(dirs):
         manifest, entry = folder / "plugin.toml", folder / "plugin.py"
         agents_dir = folder / "agents"
         if not manifest.exists() or not entry.exists():

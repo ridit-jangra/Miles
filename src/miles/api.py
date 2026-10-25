@@ -6,8 +6,9 @@ from fastapi import APIRouter
 
 from miles import state
 from miles.config import load_config
-from miles.env import MEMORY_DIR, PLUGINS_DIR
+from miles.env import MEMORY_DIR
 from miles.memory.store import FactFile
+from miles.plugins.loader import plugin_folders
 
 router = APIRouter(prefix="/api")
 
@@ -64,7 +65,7 @@ def read_alert(alert_id: int):
 def list_plugins():
     plugins = load_config().plugins
     out = []
-    for folder in sorted(p for p in PLUGINS_DIR.iterdir() if p.is_dir()):
+    for folder in plugin_folders():
         manifest = folder / "plugin.toml"
         if not manifest.exists() or not (folder / "plugin.py").exists():
             continue
