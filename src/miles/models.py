@@ -39,11 +39,15 @@ def build_model(provider: str, name: str, api_key_env: str | None = None) -> Mod
         raise ValueError(f"Unknown provider {provider!r} for agents; choose from: {sorted(PROVIDERS)}")
 
     def factory(pydantic_name: str):
-        if api_key_env:
-            key = os.getenv(api_key_env)
-            if not key:
-                raise ValueError(f"{api_key_env} is not set in your .env file")
-            return infer_provider_class(pydantic_name)(api_key=key)
+        key = os.getenv(api_key_env or "LLM_API_KEY")
+        if api_key_env and not key:
+            raise ValueError(f"{api_key_env} is not set in your .env file")
+        if key:
+            try:
+                return infer_provider_class(pydantic_name)(api_key=key)
+            except TypeError:
+                if api_key_env:
+                    raise
         return infer_provider(pydantic_name)
 
     try:

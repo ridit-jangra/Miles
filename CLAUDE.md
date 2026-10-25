@@ -20,7 +20,7 @@ cd ui && bun run typecheck && bun run build
 
 There is no test suite. Behaviour is verified with small throwaway scripts and by talking to the bot. After a session, check for leaked MCP subprocesses with `pgrep -af "[m]cp-server-time"` (the `[m]` stops pgrep matching itself).
 
-Secrets go in `.env` only (`OPENROUTER_API_KEY`, see `.env.example`). Never in `config.toml`, plugin manifests or a future `context.md`.
+Secrets go in `.env` only (`LLM_API_KEY`, `STT_API_KEY`, `TTS_API_KEY`, see `.env.example`). Each of `[llm]`/`[stt]`/`[tts]` reads its own variable, subagents and the context summary read `LLM_API_KEY`, and `api_key_env` in a section picks another variable. A provider's own variable (like `OPENROUTER_API_KEY`) still works as a fallback. Never in `config.toml`, plugin manifests or a future `context.md`.
 
 ## Architecture
 

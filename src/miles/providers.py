@@ -149,10 +149,11 @@ def _build(kind: str, table: dict[str, Spec], cfg: ProviderSettings, **settings:
     kwargs: dict[str, Any] = dict(cfg.options)
 
     if spec.key:
-        env = cfg.api_key_env or spec.key
-        if not os.getenv(env):
-            raise ValueError(f"The {kind} provider {cfg.provider!r} needs {env} in your .env file")
-        kwargs["api_key"] = os.environ[env]
+        names = [cfg.api_key_env] if cfg.api_key_env else [f"{kind}_API_KEY", spec.key]
+        key = next((os.environ[n] for n in names if os.getenv(n)), None)
+        if not key:
+            raise ValueError(f"The {kind} provider {cfg.provider!r} needs {names[0]} in your .env file")
+        kwargs["api_key"] = key
 
     if spec.session:
         session = aiohttp.ClientSession()
