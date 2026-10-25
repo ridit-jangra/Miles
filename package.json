@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "bun run --cwd ui dev",
     "build": "bun run --cwd ui build",
-    "typecheck": "bun run --cwd ui typecheck"
+    "typecheck": "bun run --cwd ui typecheck",
+    "package": "bun run --cwd ui package"
   }
 }

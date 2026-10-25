@@ -1,0 +1,19 @@
+appId: dev.ridit.miles
+productName: Miles
+artifactName: Miles-${version}-${arch}.${ext}
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+asar: true
+linux:
+  target:
+    - AppImage
+  category: Utility
+  icon: build/icon.png
+  synopsis: A voice assistant on your own machine

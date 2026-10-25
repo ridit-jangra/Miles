@@ -5,7 +5,9 @@ export type ServerStatus = {
   text: string;
   steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
   log?: string;
-  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[] }[];
+  title?: string;
+  intro?: string;
+  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[];
 };
 
 contextBridge.exposeInMainWorld("miles", {

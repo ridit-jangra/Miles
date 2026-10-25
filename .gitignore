@@ -15,3 +15,8 @@ context.md
 
 # README draft written by Claude, not part of the repo
 CLAUDE_README.md
+
+yt.yml
+
+.playwright-mcp
+.ruff_cache

@@ -1,6 +1,8 @@
 import { ChildProcess, spawn } from "node:child_process"
 import { createWriteStream, WriteStream } from "node:fs"
 
+import { toolEnv } from "./paths"
+
 const READY_URL = "http://localhost:7860/client/"
 const MAX_WAIT_MS = 15 * 60 * 1000
 
@@ -37,11 +39,12 @@ export type ReviewItem = {
   permissions: string[]
   dependencies: string[]
   servers: { name: string; run: string }[]
+  selected?: boolean
 }
 
 export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string; review?: ReviewItem[] }
 
-const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g
+export const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g
 const TQDM = /\d+%\||it\/s\]|B\/s/
 
 export async function startServer(
@@ -57,7 +60,7 @@ export async function startServer(
   child = spawn("uv", ["run", "src/miles/main.py"], {
     cwd: root,
     detached: process.platform !== "win32",
-    env: { ...process.env, MILES_EXIT_ON_STDIN_CLOSE: "1" },
+    env: { ...toolEnv(), MILES_EXIT_ON_STDIN_CLOSE: "1" },
     stdio: ["pipe", "pipe", "pipe"]
   })
 
@@ -95,6 +98,11 @@ export async function startServer(
   listen(child.stderr)
 
   let exited = false
+  child.once("error", (error) => {
+    tail.push(String(error))
+    exited = true
+    child = null
+  })
   child.once("exit", () => {
     exited = true
     child = null

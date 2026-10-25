@@ -40,8 +40,8 @@ function Detail({ label, value }: { label: string; value: string }): React.JSX.E
   )
 }
 
-function Review({ plugins }: { plugins: ReviewItem[] }): React.JSX.Element {
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+function Review({ plugins, intro }: { plugins: ReviewItem[]; intro?: string }): React.JSX.Element {
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(plugins.filter((p) => p.selected).map((p) => p.name)))
   const everything = picked.size === plugins.length
 
   const toggle = (name: string): void =>
@@ -58,7 +58,7 @@ function Review({ plugins }: { plugins: ReviewItem[] }): React.JSX.Element {
     <div className="flex w-full flex-col gap-4 text-left">
       <div className="flex items-center justify-between gap-4 font-mono text-note text-ink-dim">
         <span>
-          {plugins.length} new or changed plugin{plugins.length === 1 ? "" : "s"}. Pick what Miles may install and run.
+          {intro ?? `${plugins.length} new or changed plugin${plugins.length === 1 ? "" : "s"}. Pick what Miles may install and run.`}
         </span>
         <button
           type="button"
@@ -116,10 +116,10 @@ export function Loading({ status }: { status: ServerStatus }): React.JSX.Element
     <>
       <AsciiField />
       <div className="fixed inset-0 z-1000 flex flex-col items-center justify-center gap-10 px-6 text-center">
-        <PageTitle>{status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server"}</PageTitle>
+        <PageTitle>{status.title ?? (status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server")}</PageTitle>
         {status.review?.length ? (
           <div className="w-full max-w-xl">
-            <Review key={status.review.map((p) => p.name).join()} plugins={status.review} />
+            <Review key={status.review.map((p) => p.name).join()} plugins={status.review} intro={status.intro} />
           </div>
         ) : (
         <div className="flex w-full max-w-sm flex-col gap-4">

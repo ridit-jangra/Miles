@@ -1,14 +1,19 @@
 import { app, BrowserWindow, ipcMain, session } from "electron";
 import { join } from "node:path";
 
-import { lastLogLines, sendToServer, startServer, stopServer } from "./server";
+import { installLauncher } from "./desktop";
+import { ensureInstalled, installed, type InstallUI } from "./install";
+import { serverRoot } from "./paths";
+import { type BootStep, lastLogLines, sendToServer, startServer, stopServer } from "./server";
 
 type ServerStatus = {
   state: "starting" | "ready" | "error";
   text: string;
   steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
   log?: string;
-  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[] }[];
+  title?: string;
+  intro?: string;
+  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[];
 };
 
 let status: ServerStatus = { state: "starting", text: "Starting Miles…" };
@@ -16,6 +21,35 @@ let status: ServerStatus = { state: "starting", text: "Starting Miles…" };
 function setStatus(next: ServerStatus): void {
   status = next;
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send("server:status", next);
+}
+
+const installSteps = new Map<string, BootStep>();
+let waiting: ((names: string[]) => void) | null = null;
+
+function installUi(installLog: string[]): InstallUI {
+  const title = "Installing Miles";
+  return {
+    step(id, label, state, fraction = 0) {
+      installSteps.set(id, { id, label, state, fraction });
+      setStatus({ ...status, state: "starting", text: "", title, steps: [...installSteps.values()] });
+    },
+    log(line) {
+      installLog.push(line);
+      setStatus({ ...status, log: line });
+    },
+    ask(items) {
+      return new Promise((resolve) => {
+        waiting = resolve;
+        setStatus({
+          ...status,
+          text: "",
+          title,
+          intro: "Miles needs a few tools to set itself up. Pick what it may install.",
+          review: items,
+        });
+      });
+    },
+  };
 }
 
 function createWindow(): BrowserWindow {
@@ -47,22 +81,38 @@ app.whenReady().then(async () => {
     callback(permission === "media");
   });
 
+  try {
+    installLauncher();
+  } catch (error) {
+    console.error("Couldn't add Miles to the app menu:", error);
+  }
+
   ipcMain.handle("server:status", () => status);
   ipcMain.handle("server:review", (_event, decision: { approve: string[] }) => {
-    sendToServer(decision);
-    setStatus({ ...status, review: undefined });
+    if (waiting) {
+      waiting(decision.approve);
+      waiting = null;
+    } else {
+      sendToServer(decision);
+    }
+    setStatus({ ...status, review: undefined, intro: undefined });
   });
   loadApp(createWindow());
 
+  const installLog: string[] = [];
   try {
+    const root = serverRoot(app);
+    await ensureInstalled(installUi(installLog), root, app.getVersion());
+    if (process.env.MILES_INSTALL_DRY_RUN && !installed(root)) throw new Error("Dry run finished, nothing was installed.");
     await startServer(
-      join(app.getAppPath(), ".."),
+      root,
       join(app.getPath("userData"), "server.log"),
       (update) => setStatus({ state: "starting", ...update }),
     );
     setStatus({ state: "ready", text: "" });
   } catch (error) {
-    setStatus({ state: "error", text: `${(error as Error).message}\n\n${lastLogLines()}` });
+    const log = lastLogLines() || installLog.slice(-15).join("\n");
+    setStatus({ state: "error", text: `${(error as Error).message}\n\n${log}` });
   }
 
   app.on("activate", () => {
