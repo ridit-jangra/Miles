@@ -1,4 +1,5 @@
 import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -10,6 +11,8 @@ from loguru import logger
 from miles.env import DEPS_DIR
 
 MARKER = ".miles-deps"
+WARM_DIR = DEPS_DIR.parent / "warm"
+LAUNCHERS = {"bunx", "npx", "uvx"}
 
 
 def requirements(folder: Path) -> list[str]:
@@ -69,3 +72,37 @@ def activate(folder: Path) -> None:
         logger.warning(f"Plugin {folder.name} has dependencies that are not installed yet")
     if target.is_dir() and str(target) not in sys.path:
         sys.path.insert(0, str(target))
+
+
+def mcp_servers(folder: Path) -> dict[str, dict]:
+    try:
+        meta = tomllib.loads((folder / "plugin.toml").read_text())
+    except (OSError, ValueError):
+        return {}
+    return {name: server for name, server in meta.get("mcp", {}).items() if isinstance(server, dict)}
+
+
+def _warm_key(server: dict) -> str:
+    return hashlib.sha256(json.dumps([server.get("command"), server.get("args", [])]).encode()).hexdigest()[:16]
+
+
+def needs_warm(server: dict) -> bool:
+    return server.get("command") in LAUNCHERS and not (WARM_DIR / _warm_key(server)).exists()
+
+
+def warm(plugin: str, name: str, server: dict) -> bool:
+    package = next((a for a in server.get("args", []) if not a.startswith("-")), None)
+    if package:
+        try:
+            subprocess.run(
+                [server["command"], package, "--help"],
+                capture_output=True, stdin=subprocess.DEVNULL, timeout=180, check=False,
+            )
+        except subprocess.TimeoutExpired:
+            pass
+        except OSError as e:
+            logger.error(f"Plugin {plugin}: couldn't fetch the {name} server: {e}")
+            return False
+    WARM_DIR.mkdir(parents=True, exist_ok=True)
+    (WARM_DIR / _warm_key(server)).write_text("")
+    return True

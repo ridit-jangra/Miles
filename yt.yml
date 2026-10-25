@@ -1,0 +1,631 @@
+- generic [ref=f2e2]:
+  - banner [ref=f2e4]:
+    - generic [ref=f2e6]:
+      - generic [ref=f2e7]:
+        - button "Guide" [active] [ref=f2e9] [cursor=pointer]
+        - generic [ref=f2e11]:
+          - link "YouTube Home" [ref=f2e12] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f2e16]: IN
+        - button "Skip navigation" [ref=f2e20] [cursor=pointer]
+      - generic [ref=f2e24]:
+        - search [ref=f2e25]:
+          - generic [ref=f2e27]:
+            - generic [ref=f2e28]:
+              - combobox "Search" [expanded] [ref=f2e30]: Python tutorials
+              - button "Clear search query" [ref=f2e32] [cursor=pointer]
+            - button "Search" [ref=f2e37] [cursor=pointer]
+        - generic [ref=f2e40]:
+          - button "Search with your voice" [ref=f2e42] [cursor=pointer]
+          - tooltip "tooltip"
+      - generic [ref=f2e419]:
+        - button "Settings" [ref=f2e424] [cursor=pointer]
+        - link "Sign in" [ref=f2e430] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26hl%3Den%26next%3Dhttps%253A%252F%252Fwww.youtube.com%252Fresults%253Fsearch_query%253DPython%252Btutorials&hl=en&ec=65620
+  - navigation [ref=f2e51]:
+    - generic [ref=f2e434]:
+      - link "Home" [ref=f2e436] [cursor=pointer]:
+        - /url: /
+      - link "Shorts" [ref=f2e442] [cursor=pointer]:
+        - /url: /shorts/
+      - link "Subscriptions" [ref=f2e448] [cursor=pointer]:
+        - /url: /feed/subscriptions
+      - link "You" [ref=f2e454] [cursor=pointer]:
+        - /url: /feed/you
+  - generic [ref=f2e52]:
+    - main [ref=f2e53]:
+      - generic [ref=f2e54]:
+        - generic [ref=f2e56]:
+          - tablist [ref=f2e61]:
+            - tab "All" [selected] [ref=f2e64] [cursor=pointer]
+            - tab "Unwatched" [ref=f2e69] [cursor=pointer]
+            - tab "Videos" [ref=f2e74] [cursor=pointer]
+            - tab "Recently uploaded" [ref=f2e79] [cursor=pointer]
+            - tab "Live" [ref=f2e84] [cursor=pointer]
+          - generic [ref=f2e88]:
+            - button "Search filters" [ref=f2e90] [cursor=pointer]:
+              - generic: Filters
+            - tooltip "tooltip"
+        - generic [ref=f2e99]:
+          - generic [ref=f2e112] [cursor=pointer]:
+            - generic [ref=f2e113]:
+              - link "Future-Ready AI Skills" [ref=f2e116]:
+                - /url: https://www.googleadservices.com/pagead/aclk?sa=L&ai=CxTCYMpHdaqzGCvzt0PoP54-X2APops21igHpxv2jrxZkEAEgAGDlgoCApA6CARdjYS1wdWItNjIxOTgxMTc0NzA0OTM3MaABoLuEliqpAhS-B8w1y7I-qAMEyAMKqgSfAk_QbsOTk7etYCnI1YoqkxXegS_xIgbW8Sqe-ngOP0dVjxJMMbHhUg0i61mZwcFhhZ22y6BsRqqOrEDNqD8OR6UbFtxJRY6R42Ax5qHorEG_7taGVTVx8LC412JOg8ZhDXNKWcKKnhO-fr2wm5LAJPFrIG_QZJRVL8Hprr1pvwx-dN1dCo5Jtgtrk5G6yw-GtD0C6T6ft08D31v6-exLT53yxc6svkVRuc9SlhGImbIl6rOeeuXkz32w3yjj2lkRfaCoySN4xFufMsKjgqq44923zKjkyrTN2wEpGXdtT6GKAkWpAOQbS9DBq9FTIs0S4vo0CNXS72RJRId4yDzJJTzEd-lPBfgWKACrQrBYFJMktdNepdU4afgwvQvsK3PWiAWJ4rDeWpIFCAgTeJ6HuqYFoAakAYAHoPPU9QSQBwSoB-rusQKoB6XPsQKoB-edsQKoB-idsQKoB_nTsQKoB8nasQKoB6ngsQKoB6jSG6gHsdwbqAewm7ECqAeusbECqAf9srECqAfIz7ECqAfJz7ECqAf81bECqAf71bECqAeM1rECqAeL1rECqAea4rECqAeb4rECqAe86rECqAf8r7ECqAe-2bECqAe3obECqAfVqbECqAfn2rECqAfetbECqAfqsbECqAe-t7ECqAeZtbECqAeFwbECqAfrpbECqAfKqbEC0gguCIBBEAEYXjICggI6D4BCgMCAgICAgIACqoCAGEjZoNI1UBRYkJGPxrXUlwNgAZoJGmh0dHBzOi8vY291cnNpdi5pby9keW5hbWljsQnpCOmiblbBt8gJAJgLAboLNwgDEAUYFiAIKAEwHEABSABYTmAAaABwAYgBAJgBAaIBCAoAqAIB2AIC2AEBgAIBiAIJugMCc2nQCxKiDBxiFQoTY29tLmNvdXJzaXYuY291cnNpdngAiAEA0gwCEAHaDCUKChDQy8uG3f_eiBoSAgEDGg0YieKw3log9bWL1O0FQAFKAhAfmg0BEqoNAklOyA0B0g3LAWh0dHBzOi8vY291cnNpdi5pby9keW5hbWljP3ByY19pZD0xMTA0JnV0bV9zb3VyY2U9Z29vZ2xlJnV0bV9tZWRpdW09Y3BjJnV0bV9jYW1wYWlnbj0yNDM1NzA4NTEzNCZ1dG1fYWRncm91cGlkPSZ1dG1fYWQ9JnV0bV90eXBlPXBtYXgmdXRtX2FjYz0xMzA4MTQzMjkxJnV0bV9hbGVuPTEmZ2FkX3NvdXJjZT0yJmdhZF9jYW1wYWlnbmlkPTI0MzU3MTIyMzEzsA6vy-yXGbgT____________AbAUA8AVgYCAQNAVAdgVAZgWAeIWAggBgBcBihcYCAMYASABKAEwATgBQAFIAVABWAFgAmgBoBcBqRe85lnYbC9kQboXBigAMAA4AdAYAfAYAcIZAggB&ase=2&gclid=EAIaIQobChMIrKePxrXUlwMV_DZUCR3nxwU7EAEYASAAEgLh-_D_BwE&num=1&cid=CAASqwHkaJMhbiE7R4naRqbDKKmKsgQhd5H443Efw2nbDi-fZDzvvLXcVMtvqoW4T1OgnCQdDL3xImhPkV8xcE0hIQ2EaeVjaDs2CmQsz4C5wrv-W9OT5JFxjsBXwpDP5jx-hXunHdoB0RZuu90QVSar_JOaag5YKvRGWU4dUOmjkp1CNc93LMVa_L1iMScIWunmCve5volu_CNmh-yz6fbjHpqZRaXnW6acMBGPQ5o&sig=AOD64_3KJFkjJmpEePbXdKUk-6gaWZxeyA&ms=%5BCLICK_MS%5D&nb=0&nx=%5BNX%5D&ny=%5BNY%5D&dim=%5BDIM%5D
+              - link "Build AI skills that in Global Learning Platform" [ref=f2e119]:
+                - /url: https://www.googleadservices.com/pagead/aclk?sa=L&ai=CxTCYMpHdaqzGCvzt0PoP54-X2APops21igHpxv2jrxZkEAEgAGDlgoCApA6CARdjYS1wdWItNjIxOTgxMTc0NzA0OTM3MaABoLuEliqpAhS-B8w1y7I-qAMEyAMKqgSfAk_QbsOTk7etYCnI1YoqkxXegS_xIgbW8Sqe-ngOP0dVjxJMMbHhUg0i61mZwcFhhZ22y6BsRqqOrEDNqD8OR6UbFtxJRY6R42Ax5qHorEG_7taGVTVx8LC412JOg8ZhDXNKWcKKnhO-fr2wm5LAJPFrIG_QZJRVL8Hprr1pvwx-dN1dCo5Jtgtrk5G6yw-GtD0C6T6ft08D31v6-exLT53yxc6svkVRuc9SlhGImbIl6rOeeuXkz32w3yjj2lkRfaCoySN4xFufMsKjgqq44923zKjkyrTN2wEpGXdtT6GKAkWpAOQbS9DBq9FTIs0S4vo0CNXS72RJRId4yDzJJTzEd-lPBfgWKACrQrBYFJMktdNepdU4afgwvQvsK3PWiAWJ4rDeWpIFCAgTeJ6HuqYFoAakAYAHoPPU9QSQBwSoB-rusQKoB6XPsQKoB-edsQKoB-idsQKoB_nTsQKoB8nasQKoB6ngsQKoB6jSG6gHsdwbqAewm7ECqAeusbECqAf9srECqAfIz7ECqAfJz7ECqAf81bECqAf71bECqAeM1rECqAeL1rECqAea4rECqAeb4rECqAe86rECqAf8r7ECqAe-2bECqAe3obECqAfVqbECqAfn2rECqAfetbECqAfqsbECqAe-t7ECqAeZtbECqAeFwbECqAfrpbECqAfKqbEC0gguCIBBEAEYXjICggI6D4BCgMCAgICAgIACqoCAGEjZoNI1UBRYkJGPxrXUlwNgAZoJGmh0dHBzOi8vY291cnNpdi5pby9keW5hbWljsQnpCOmiblbBt8gJAJgLAboLNwgDEAUYFiAIKAEwHEABSABYTmAAaABwAYgBAJgBAaIBCAoAqAIB2AIC2AEBgAIBiAIJugMCc2nQCxKiDBxiFQoTY29tLmNvdXJzaXYuY291cnNpdngAiAEA0gwCEAHaDCUKChDQy8uG3f_eiBoSAgEDGg0YieKw3log9bWL1O0FQAFKAhAfmg0BEqoNAklOyA0B0g3LAWh0dHBzOi8vY291cnNpdi5pby9keW5hbWljP3ByY19pZD0xMTA0JnV0bV9zb3VyY2U9Z29vZ2xlJnV0bV9tZWRpdW09Y3BjJnV0bV9jYW1wYWlnbj0yNDM1NzA4NTEzNCZ1dG1fYWRncm91cGlkPSZ1dG1fYWQ9JnV0bV90eXBlPXBtYXgmdXRtX2FjYz0xMzA4MTQzMjkxJnV0bV9hbGVuPTEmZ2FkX3NvdXJjZT0yJmdhZF9jYW1wYWlnbmlkPTI0MzU3MTIyMzEzsA6vy-yXGbgT____________AbAUA8AVgYCAQNAVAdgVAZgWAeIWAggBgBcBihcYCAMYASABKAEwATgBQAFIAVABWAFgAmgBoBcBqRe85lnYbC9kQboXBigAMAA4AdAYAfAYAcIZAggB&ase=2&gclid=EAIaIQobChMIrKePxrXUlwMV_DZUCR3nxwU7EAEYASAAEgLh-_D_BwE&num=1&cid=CAASqwHkaJMhbiE7R4naRqbDKKmKsgQhd5H443Efw2nbDi-fZDzvvLXcVMtvqoW4T1OgnCQdDL3xImhPkV8xcE0hIQ2EaeVjaDs2CmQsz4C5wrv-W9OT5JFxjsBXwpDP5jx-hXunHdoB0RZuu90QVSar_JOaag5YKvRGWU4dUOmjkp1CNc93LMVa_L1iMScIWunmCve5volu_CNmh-yz6fbjHpqZRaXnW6acMBGPQ5o&sig=AOD64_3KJFkjJmpEePbXdKUk-6gaWZxeyA&ms=%5BCLICK_MS%5D&nb=7&nx=%5BNX%5D&ny=%5BNY%5D&dim=%5BDIM%5D
+              - generic [ref=f2e120]:
+                - generic [ref=f2e122]:
+                  - generic [ref=f2e123]: Sponsored
+                  - text: ·
+                - generic [ref=f2e124]: Coursiv
+            - button "My Ad Center" [ref=f2e128]
+          - generic [ref=f2e133] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e134]:
+              - /url: /watch?v=7wnove7K-ZQ&list=PLu0W_9lII9agwh1XjRt242xIpHhPT2llg
+              - generic [ref=f2e136]: 100 lessons
+            - generic [ref=f2e149]:
+              - 'heading "Python for Beginners (Full Course) | #100DaysOfCode Programming Tutorial in Hindi" [level=3] [ref=f2e150]':
+                - 'link "Python for Beginners (Full Course) | #100DaysOfCode Programming Tutorial in Hindi" [ref=f2e151]':
+                  - /url: /watch?v=7wnove7K-ZQ&list=PLu0W_9lII9agwh1XjRt242xIpHhPT2llg
+              - generic [ref=f2e153]:
+                - group [ref=f2e154]:
+                  - link "CodeWithHarry" [ref=f2e157]:
+                    - /url: /@CodeWithHarry
+                  - generic "Verified" [ref=f2e158]
+                  - link "Course" [ref=f2e161]:
+                    - /url: /@CodeWithHarry
+                - group [ref=f2e162]
+                - group [ref=f2e163]:
+                  - 'link "Introduction to Programming & Python | Python Tutorial - Day #1 · 11:50" [ref=f2e165]':
+                    - /url: /watch?v=7wnove7K-ZQ&list=PLu0W_9lII9agwh1XjRt242xIpHhPT2llg
+                - group [ref=f2e166]:
+                  - 'link "Some Amazing Python Programs - The Power of Python | Python Tutorial - Day #2 · 8:38" [ref=f2e168]':
+                    - /url: /watch?v=Tto8TS-fJQU&list=PLu0W_9lII9agwh1XjRt242xIpHhPT2llg
+                - group [ref=f2e169]:
+                  - link "View full course" [ref=f2e172]:
+                    - /url: /playlist?list=PLu0W_9lII9agwh1XjRt242xIpHhPT2llg
+                - group [ref=f2e173]:
+                  - generic [ref=f2e174]: Python is one of the most demanded programming languages in the job market. Surprisingly, it is equally easy to learn and master Python. This python tutorial for absolute beginners in Hindi series will focus on teaching you python concepts from the ground up, to an advanced level. With this 100-day challenge now and you will be able to get a job easily. This 100-day series is for all those people who want to build a career in the IT industry. This video series starts with Python basics and then moves toward advanced Python. Python concepts are taught in depth with exercises and with handwritten notes. This Latest Python course covers Python programming in Hindi and starts by giving a brief introduction to Python to a beginner and ends with advanced-level Python topics like Object Oriented Programming, Numpy, making it a complete Python course in Hindi. Like the other courses at CodeWithHarry, I will make this Python course as a full course with handwritten notes and beginner-friendly Python exercises and examples. This Python course is made to keep learning Python in 2023 into account. All the topics related to Python will be covered in easy-to-understand Hindi in this course. We will start with an introduction to Python, variables in Python, Conditional Expressions in Python, Loops, Arrays, etc. Watching the Python Hindi course is a straightforward way to learn Python in Hindi. These tutorials are made keeping Hindi coding community in mind. Each Python lesson in this course for beginners comes with source code and handwritten notes. Python Course in Hindi was one of the most requested courses on this channel and now the wait for you to learn Python for free and with exercises and handwritten notes is over. I wish you the best in your Python learning journey through these CodeWithHarry 100 Day of Code Challenge! Learning Python in Hindi for free is now easier than ever! Let's commit our 100 days of code to python! Best Of Luck!
+          - generic [ref=f2e176] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e177]:
+              - /url: /watch?v=t2_Q2BRzeEE&list=PLGjplNEQ1it8-0CmoljS5yeV-GlKSUEt0
+              - generic [ref=f2e179]: 9 lessons
+            - generic [ref=f2e192]:
+              - heading "Python Language Full Course (2026)" [level=3] [ref=f2e193]:
+                - link "Python Language Full Course (2026)" [ref=f2e194]:
+                  - /url: /watch?v=t2_Q2BRzeEE&list=PLGjplNEQ1it8-0CmoljS5yeV-GlKSUEt0
+              - generic [ref=f2e196]:
+                - group [ref=f2e197]:
+                  - link "Shradha Khapra" [ref=f2e200]:
+                    - /url: /@shradhaKD
+                  - link "Course" [ref=f2e203]:
+                    - /url: /@shradhaKD
+                - group [ref=f2e204]
+                - group [ref=f2e205]:
+                  - link "Python Full Course❤️ | Variables & Data Types | Lecture 1 · 1:22:19" [ref=f2e207]:
+                    - /url: /watch?v=t2_Q2BRzeEE&list=PLGjplNEQ1it8-0CmoljS5yeV-GlKSUEt0
+                - group [ref=f2e208]:
+                  - 'link "Lecture 2 : Strings & Conditional Statements | Python Full Course · 55:41" [ref=f2e210]':
+                    - /url: /watch?v=lIId8IDP6TU&list=PLGjplNEQ1it8-0CmoljS5yeV-GlKSUEt0
+                - group [ref=f2e211]:
+                  - link "View full course" [ref=f2e214]:
+                    - /url: /playlist?list=PLGjplNEQ1it8-0CmoljS5yeV-GlKSUEt0
+                - group [ref=f2e215]:
+                  - generic [ref=f2e216]: "Download Python Notes here: https://dsa.apnacollege.in/studymaterial/python"
+          - generic [ref=f2e229] [cursor=pointer]:
+            - generic [ref=f2e230]:
+              - link "Organize with Mind Maps" [ref=f2e233]:
+                - /url: https://www.googleadservices.com/pagead/aclk?sa=L&ai=CixMRMpHdaqzGCvzt0PoP54-X2AOc8fKxigGtg9qjhhZkEAIgAGDlgoCApA6CARdjYS1wdWItNjIxOTgxMTc0NzA0OTM3MaABx5XBvz6oAwTIAwqqBK4CT9AI_5mTt61gKcjViiqTFd6BL_EiBtbxKp76eA4_R1WPEkwxseFSDSLrWZnBwWGFnbbLoGxGqo6sQM2oPw5HpRsW3ElFjpHjYDHmoeisQb_u1oZVNXHwsLjXYk6DxmENc0pZwoqeE75-vbCbksAk8Wsgb9BklFUvwemuvWm_DH503V0Kjkm2C2uTkbrLD4a0PQLpPp-3TwPfW_r57EtPnfLFzqy-RVG5z1KWEYiZsiXqs5565eTPfbDfKOPaWRF9oKjJI3jEW58ywqOCqrjj3bfMqOTKtM3bASkZd21PoYoCRakAk1Ztpvyr0RQDyRr--jRX8eCRZElEh3jZPPsCRZx-6UBzzA0oKLSeUcQntzVsF8s1_u7bWbmWn2T8o_RrXqVQgv8J2HIV6ez5leiIBeS_v8NZkgUICBN42aa-rhmgBqQBgAfHzZGfGZAHBKgH6u6xAqgHpc-xAqgH552xAqgH6J2xAqgH-dOxAqgHydqxAqgHqeCxAqgHqNIbqAex3BuoB7CbsQKoB66xsQKoB_2ysQKoB8jPsQKoB8nPsQKoB_zVsQKoB_vVsQKoB4zWsQKoB4vWsQKoB5risQKoB5visQKoB7zqsQKoB_yvsQKoB77ZsQKoB7ehsQKoB9WpsQKoB-fasQKoB961sQKoB-qxsQKoB763sQKoB5m1sQKoB4XBsQKoB-ulsQKoB8qpsQLSCC4IgEEQARheMgKCAjoPgEKAwICAgICAgAKqgIAYSNmg0jVQFFiQkY_GtdSXA2ABmgkYaHR0cHM6Ly9ub3RlYm9vay5nb29nbGUvsQl5udVmTpy3-sgJAJgLAboLNwgDEAUYFiAIKAEwHEABSABYTmAAaABwAYgBAJgBAaIBCAoAqAIB2AIC2AEBgAIBiAIFugMCc2nQCxKiDFBiFwoVY29tLmdvb2dsZS5Ob3RlYm9va0xNajAKLmNvbS5nb29nbGUuYW5kcm9pZC5hcHBzLmxhYnMubGFuZ3VhZ2UudGFpbHdpbmR4AIgBANIMAhAB2gwlCgoQ4NuIs4XK-vBKEgIBAxoNGOS_v8NZIJqW8qzrBUABSgIQH5oNARKqDQJJTsgNAdINQGh0dHBzOi8vbm90ZWJvb2suZ29vZ2xlLz9nYWRfc291cmNlPTImZ2FkX2NhbXBhaWduaWQ9MjQwMzIzMDUxMjSwDtrDq48ZuBP___________8BsBQDwBWBgIBA0BUB2BUBmBYB4hYCCAGAFwGKFxgIAxgBIAEoATABOAFAAUgBUAFYAWACaAGgFwGpF0DZmv5MavTXuhcGKAAwADgB0BgB8BgBwhkCCAE&ase=2&gclid=EAIaIQobChMIrKePxrXUlwMV_DZUCR3nxwU7EAEYAiAAEgIAh_D_BwE&num=2&cid=CAASqwHkaJMhbiE7R4naRqbDKKmKsgQhd5H443Efw2nbDi-fZDzvvLXcVMtvqoW4T1OgnCQdDL3xImhPkV8xcE0hIQ2EaeVjaDs2CmQsz4C5wrv-W9OT5JFxjsBXwpDP5jx-hXunHdoB0RZuu90QVSar_JOaag5YKvRGWU4dUOmjkp1CNc93LMVa_L1iMScIWunmCve5volu_CNmh-yz6fbjHpqZRaXnW6acMBGPQ5o&sig=AOD64_02knDE_WJuW54IAewYk7idkE8YMQ&ms=%5BCLICK_MS%5D&nb=0&nx=%5BNX%5D&ny=%5BNY%5D&dim=%5BDIM%5D
+              - link "Mind Maps make connections between different sources and simplify your studying" [ref=f2e236]:
+                - /url: https://www.googleadservices.com/pagead/aclk?sa=L&ai=CixMRMpHdaqzGCvzt0PoP54-X2AOc8fKxigGtg9qjhhZkEAIgAGDlgoCApA6CARdjYS1wdWItNjIxOTgxMTc0NzA0OTM3MaABx5XBvz6oAwTIAwqqBK4CT9AI_5mTt61gKcjViiqTFd6BL_EiBtbxKp76eA4_R1WPEkwxseFSDSLrWZnBwWGFnbbLoGxGqo6sQM2oPw5HpRsW3ElFjpHjYDHmoeisQb_u1oZVNXHwsLjXYk6DxmENc0pZwoqeE75-vbCbksAk8Wsgb9BklFUvwemuvWm_DH503V0Kjkm2C2uTkbrLD4a0PQLpPp-3TwPfW_r57EtPnfLFzqy-RVG5z1KWEYiZsiXqs5565eTPfbDfKOPaWRF9oKjJI3jEW58ywqOCqrjj3bfMqOTKtM3bASkZd21PoYoCRakAk1Ztpvyr0RQDyRr--jRX8eCRZElEh3jZPPsCRZx-6UBzzA0oKLSeUcQntzVsF8s1_u7bWbmWn2T8o_RrXqVQgv8J2HIV6ez5leiIBeS_v8NZkgUICBN42aa-rhmgBqQBgAfHzZGfGZAHBKgH6u6xAqgHpc-xAqgH552xAqgH6J2xAqgH-dOxAqgHydqxAqgHqeCxAqgHqNIbqAex3BuoB7CbsQKoB66xsQKoB_2ysQKoB8jPsQKoB8nPsQKoB_zVsQKoB_vVsQKoB4zWsQKoB4vWsQKoB5risQKoB5visQKoB7zqsQKoB_yvsQKoB77ZsQKoB7ehsQKoB9WpsQKoB-fasQKoB961sQKoB-qxsQKoB763sQKoB5m1sQKoB4XBsQKoB-ulsQKoB8qpsQLSCC4IgEEQARheMgKCAjoPgEKAwICAgICAgAKqgIAYSNmg0jVQFFiQkY_GtdSXA2ABmgkYaHR0cHM6Ly9ub3RlYm9vay5nb29nbGUvsQl5udVmTpy3-sgJAJgLAboLNwgDEAUYFiAIKAEwHEABSABYTmAAaABwAYgBAJgBAaIBCAoAqAIB2AIC2AEBgAIBiAIFugMCc2nQCxKiDFBiFwoVY29tLmdvb2dsZS5Ob3RlYm9va0xNajAKLmNvbS5nb29nbGUuYW5kcm9pZC5hcHBzLmxhYnMubGFuZ3VhZ2UudGFpbHdpbmR4AIgBANIMAhAB2gwlCgoQ4NuIs4XK-vBKEgIBAxoNGOS_v8NZIJqW8qzrBUABSgIQH5oNARKqDQJJTsgNAdINQGh0dHBzOi8vbm90ZWJvb2suZ29vZ2xlLz9nYWRfc291cmNlPTImZ2FkX2NhbXBhaWduaWQ9MjQwMzIzMDUxMjSwDtrDq48ZuBP___________8BsBQDwBWBgIBA0BUB2BUBmBYB4hYCCAGAFwGKFxgIAxgBIAEoATABOAFAAUgBUAFYAWACaAGgFwGpF0DZmv5MavTXuhcGKAAwADgB0BgB8BgBwhkCCAE&ase=2&gclid=EAIaIQobChMIrKePxrXUlwMV_DZUCR3nxwU7EAEYAiAAEgIAh_D_BwE&num=2&cid=CAASqwHkaJMhbiE7R4naRqbDKKmKsgQhd5H443Efw2nbDi-fZDzvvLXcVMtvqoW4T1OgnCQdDL3xImhPkV8xcE0hIQ2EaeVjaDs2CmQsz4C5wrv-W9OT5JFxjsBXwpDP5jx-hXunHdoB0RZuu90QVSar_JOaag5YKvRGWU4dUOmjkp1CNc93LMVa_L1iMScIWunmCve5volu_CNmh-yz6fbjHpqZRaXnW6acMBGPQ5o&sig=AOD64_02knDE_WJuW54IAewYk7idkE8YMQ&ms=%5BCLICK_MS%5D&nb=7&nx=%5BNX%5D&ny=%5BNY%5D&dim=%5BDIM%5D
+              - generic [ref=f2e237]:
+                - generic [ref=f2e239]:
+                  - generic [ref=f2e240]: Sponsored
+                  - text: ·
+                - generic [ref=f2e241]: Gemini Notebook
+            - button "My Ad Center" [ref=f2e245]
+          - generic [ref=f2e250] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e251]:
+              - /url: /watch?v=YZkyL-f-YXY&list=PLsyeobzWxl7omDoEYrrf3oXvXxa6MPgek
+              - generic [ref=f2e253]: 54 videos
+            - generic [ref=f2e266]:
+              - heading "Python Tutorial 2026 | Complete Python Course (Beginner to Advanced) | Telusko" [level=3] [ref=f2e267]:
+                - link "Python Tutorial 2026 | Complete Python Course (Beginner to Advanced) | Telusko" [ref=f2e268]:
+                  - /url: /watch?v=YZkyL-f-YXY&list=PLsyeobzWxl7omDoEYrrf3oXvXxa6MPgek
+              - generic [ref=f2e270]:
+                - group [ref=f2e271]:
+                  - link "Telusko" [ref=f2e274]:
+                    - /url: /@Telusko
+                  - generic "Verified" [ref=f2e275]
+                  - link "Playlist" [ref=f2e278]:
+                    - /url: /@Telusko
+                - group [ref=f2e279]
+                - group [ref=f2e280]:
+                  - link "Python Tutorial 2026 · 5:21" [ref=f2e282]:
+                    - /url: /watch?v=YZkyL-f-YXY&list=PLsyeobzWxl7omDoEYrrf3oXvXxa6MPgek
+                - group [ref=f2e283]:
+                  - link "First Code in Python | 2 · 4:00" [ref=f2e285]:
+                    - /url: /watch?v=koL06y7HpKo&list=PLsyeobzWxl7omDoEYrrf3oXvXxa6MPgek
+                - group [ref=f2e286]:
+                  - link "View full playlist" [ref=f2e289]:
+                    - /url: /playlist?list=PLsyeobzWxl7omDoEYrrf3oXvXxa6MPgek
+                - group [ref=f2e290]:
+                  - generic [ref=f2e291]: "Welcome to the Python Tutorial 2026 playlist — a complete step-by-step Python programming course designed for absolute beginners to advanced learners. This series starts from installation and basics, and gradually takes you to functions, loops, recursion, modules, decorators, and full OOP (Object-Oriented Programming) with practical explanation. If you want to build a strong Python foundation for Web Development, Automation, Data Science, AI/ML, or interviews — follow this playlist in order. 🔹What You’ll Learn in This Python Course: ✅ Python Installation & Setup (Windows/Mac/Linux basics) ✅ Writing Your First Python Program ✅ Python IDEs + IDLE + Number Operations ✅ Strings (Basics + Advanced) ✅ List, Tuple, Set, Dictionary (Core Collections) ✅ Variables, Data Types, Operators ✅ User Input using input() ✅ Conditions: if, else, elif, match-case ✅ Loops: while, for, break, continue ✅ Functions, Arguments, Local vs Global Variables ✅ Arrays + Array Operations ✅ Recursion + Factorial Programs ✅ Lambda + Higher Order Functions ✅ filter(), map(), reduce() ✅ Inner Functions + Decorators ✅ Modules & Packages + __name__ ✅ OOP in Python (Classes, Objects, Constructors, Methods) ✅ Inheritance + super() + MRO ✅ Polymorphism + Duck Typing ✅ Operator Overloading + Method Overriding 🧠 Full Playlist Course Outline (Video-wise) ▶️ Basics & Setup 1. Python Tutorial 2026 (Intro) 2. First Code in Python 3. Python Setup 4. IDEs Installation 5. Python IDLE + Number Operations ------------------------------------------------------------------------- ▶️ Strings & Collections 6. Working with String 7. More on String 8. List in Python 9. Tuple in List 10. Set in Python 11. Dictionary in Python -------------------------------------------------------------------------- ▶️ Core Fundamentals 12. Variable Storage 13. Data Types 14. Operators 15. Introduction to Functions 16. Working with Math Module 17. Swapping of Variables 18. User Input (input()) -------------------------------------------------------------------------- ▶️ Control Flow & Loops 19. if in Python 20. else + Debugging 21. Nested if 22. elif 23. match-case 24. While Loop 25. For Loop 26. Break & Continue -------------------------------------------------------------------------- ▶️ Functions, Arrays, Recursion 27. Array in Python 28. Array Functions 29. Arguments in Function 30. Global vs Local Variables 31. Factorial Program 32. Recursion 33. Factorial using Recursion -------------------------------------------------------------------------- ▶️ Functional Programming Concepts 34. Higher Order Function 35. Lambda (Anonymous Function) 36. Filter Function 37. Map Reduce Function 38. Inner Function 39. Decorators -------------------------------------------------------------------------- ▶️ Modules + OOP 40. Modules & Packages 41. Special Variable __name__ 42. OOP Introduction 43. Class and Object 44. __init__ Method 45. Constructor using __new__ 46. Types of Methods -------------------------------------------------------------------------- ▶️ Advanced OOP 47. Inheritance + MRO 48. __init__ and super() with Inheritance 49. Polymorphism + Duck Typing 50. Operator Overloading 51. Method Overriding -------------------------------------------------------------------------- 🎯 Who This Playlist is For ✅ Beginners starting Python from scratch ✅ Students preparing for exams / interviews ✅ Anyone learning Python for AI, ML, Data Science, Web Dev, Automation ✅ Developers switching to Python and strengthening fundamentals Support the Channel If this playlist helps you, please like, share, comment, and subscribe to more tutorials. #python #pythonprogramming #learnpython #pythontutorial #oop #coding #telusko #programming"
+          - generic [ref=f2e293]:
+            - link [aria-hidden] [ref=f2e295] [cursor=pointer]:
+              - /url: /watch?v=UrsmFxEIp5k&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e297] [cursor=pointer]:
+              - generic [ref=f2e298]:
+                - generic [ref=f2e299]:
+                  - heading [level=3] [ref=f2e300]:
+                    - link "Python Tutorial For Beginners in Hindi | Complete Python Course 🔥 10 hours, 53 minutes" [ref=f2e301]:
+                      - /url: /watch?v=UrsmFxEIp5k&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Python Tutorial For Beginners in Hindi | Complete Python Course 🔥
+                  - button "Action menu" [ref=f2e476]
+                - generic [ref=f2e304]:
+                  - generic [ref=f2e305]: 25M
+                  - generic [ref=f2e306]: •2y ago
+              - generic [ref=f2e307]:
+                - link "Go to channel CodeWithHarry" [ref=f2e308]:
+                  - /url: /@CodeWithHarry
+                - generic [ref=f2e309]:
+                  - link "CodeWithHarry" [ref=f2e313]:
+                    - /url: /@CodeWithHarry
+                  - img "Verified" [ref=f2e318]
+              - generic [ref=f2e320]:
+                - generic [ref=f2e321]: Exciting News! I've just launched my Data Science Course – and it's now in Early Bird Access! If you loved this Python course, ...
+                - tooltip "tooltip"
+              - img "Closed captions" [ref=f2e326]:
+                - generic [aria-hidden] [ref=f2e327]: CC
+              - generic [ref=f2e330]:
+                - generic [ref=f2e331]:
+                  - generic [ref=f2e334]: 33 chapters
+                  - button [ref=f2e336]
+                - button "More" [ref=f2e341]
+          - generic [ref=f2e346] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e347]:
+              - /url: /watch?v=OZIRAavoGng&list=PLjVLYmrlmjGcQfNj_SLlLV4Ytf39f8BF7
+              - generic [ref=f2e349]: 91 lessons
+            - generic [ref=f2e362]:
+              - heading "Complete Python Tutorial for Beginners to Advanced in Hindi 🔥" [level=3] [ref=f2e363]:
+                - link "Complete Python Tutorial for Beginners to Advanced in Hindi 🔥" [ref=f2e364]:
+                  - /url: /watch?v=OZIRAavoGng&list=PLjVLYmrlmjGcQfNj_SLlLV4Ytf39f8BF7
+              - generic [ref=f2e366]:
+                - group [ref=f2e367]:
+                  - link "WsCube Tech" [ref=f2e370]:
+                    - /url: /@wscubetech
+                  - generic "Verified" [ref=f2e371]
+                  - link "Playlist" [ref=f2e374]:
+                    - /url: /@wscubetech
+                - group [ref=f2e375]
+                - group [ref=f2e376]:
+                  - link "What is Python | Python Programming | Complete Introduction to Python for Beginners · 12:49" [ref=f2e378]:
+                    - /url: /watch?v=OZIRAavoGng&list=PLjVLYmrlmjGcQfNj_SLlLV4Ytf39f8BF7
+                - group [ref=f2e379]:
+                  - link "Download & Instalation of Python on Windows | Python for Beginners · 7:39" [ref=f2e381]:
+                    - /url: /watch?v=fS1Lh5TwWN8&list=PLjVLYmrlmjGcQfNj_SLlLV4Ytf39f8BF7
+                - group [ref=f2e382]:
+                  - link "View full playlist" [ref=f2e385]:
+                    - /url: /playlist?list=PLjVLYmrlmjGcQfNj_SLlLV4Ytf39f8BF7
+                - group [ref=f2e386]:
+                  - generic [ref=f2e387]: Learn python programming in a short period with this python crash course.🔥 Python is one of the most used programming languages in the industry. With this python tutorial for beginners, learn python for beginners to pro. We have explained everything from what is a python to how to learn python just with this python full course. Topics that we have covered in this python in Hindi tutorial - 👉 Introduction to python and installation of python 👉 Creating the “Hello World” using python print function 👉 Creating and using variables in python 👉 String concentration in python 👉 Various operators in python (arithmetic, assignment, comparison, logical, membership, identity, bitwise operators) 👉 Data types in a python programming language 👉 User input and typecasting in python programming 👉 Various conditional statements 👉 Building a simple calculator in python 👉 For and while loop in python 👉 String indexing and string slicing 👉 String iteration in python 👉 Multiple functions and lists in python programming 👉 Python program to convert string to a list 👉 Introduction to the dictionary in python and dictionary functions 👉 Tuple, sets, functions in python 👉 Math, random, and DateTime module in python 👉 Random number guessing game and rock, paper, scissors game 👉 JSON and pickle module 👉 Object-oriented programming 👉 Getter and setter method 👉 Polymorphism and inheritance in python 👉 Method overloading and method overriding in python 👉 Bike rental system 👉 Python errors and exception handling 👉 Python SQLite 👉 SQLite queries 👉 Creating MySQL data types 👉 MySQL operations and various functions and operators With this python programming tutorial, you will get full python training that will help you get skilled. Our free python tutorial will prove to be the best python course for you.
+          - generic [ref=f2e488] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e489]:
+              - /url: /watch?v=QXeEoD0pB3E&list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3
+              - generic [ref=f2e491]: 124 lessons
+            - generic [ref=f2e506]:
+              - heading "Python for Beginners (Full Course) | Programming Tutorial" [level=3] [ref=f2e507]:
+                - link "Python for Beginners (Full Course) | Programming Tutorial" [ref=f2e508]:
+                  - /url: /watch?v=QXeEoD0pB3E&list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3
+              - generic [ref=f2e510]:
+                - group [ref=f2e511]:
+                  - link "Telusko" [ref=f2e514]:
+                    - /url: /@Telusko
+                  - generic "Verified" [ref=f2e515]
+                  - link "Course" [ref=f2e520]:
+                    - /url: /@Telusko
+                - group [ref=f2e521]
+                - group [ref=f2e522]:
+                  - link "#0 Python for Beginners | Programming Tutorial · 1:06" [ref=f2e524]:
+                    - /url: /watch?v=QXeEoD0pB3E&list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3
+                - group [ref=f2e525]:
+                  - link "#1 Python Tutorial for Beginners | Introduction to Python · 4:13" [ref=f2e527]:
+                    - /url: /watch?v=hEgO047GxaQ&list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3
+                - group [ref=f2e528]:
+                  - link "View full course" [ref=f2e531]:
+                    - /url: /playlist?list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3
+                - group [ref=f2e532]:
+                  - generic [ref=f2e533]: Python Tutorial, Easy Python tutorial for beginner, learn Python Programming, learn python programming with example and syntax. Download python, install python, using python IDE, IDLE, Pycharm IDE, notepad, getting started with python, variables, functions, object, list in python, set in python, help in python, data types, operators, math function, run, debug python code, conditional statement, array, matrix in python, python by navin reddy
+          - generic [ref=f2e535] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e536]:
+              - /url: /watch?v=6i3EGqOBRiU&list=PLdo5W4Nhv31bZSiqiOL5ta39vSnBxpOPT
+              - generic [ref=f2e538]: 126 lessons
+            - generic [ref=f2e553]:
+              - heading "Python Full Course" [level=3] [ref=f2e554]:
+                - link "Python Full Course" [ref=f2e555]:
+                  - /url: /watch?v=6i3EGqOBRiU&list=PLdo5W4Nhv31bZSiqiOL5ta39vSnBxpOPT
+              - generic [ref=f2e557]:
+                - group [ref=f2e558]:
+                  - link "Jenny's Lectures CS IT" [ref=f2e561]:
+                    - /url: /@JennyslecturesCSIT
+                  - generic "Verified" [ref=f2e562]
+                  - link "Course" [ref=f2e567]:
+                    - /url: /@JennyslecturesCSIT
+                - group [ref=f2e568]
+                - group [ref=f2e569]:
+                  - link "Introduction to Python Course | Python for beginners · 3:34" [ref=f2e571]:
+                    - /url: /watch?v=6i3EGqOBRiU&list=PLdo5W4Nhv31bZSiqiOL5ta39vSnBxpOPT&pp=0gcJCRcF0aJEHMZM
+                - group [ref=f2e572]:
+                  - 'link "Introduction to Python Programming | Python for Beginners #lec1 · 11:14" [ref=f2e574]':
+                    - /url: /watch?v=DInMru2Eq6E&list=PLdo5W4Nhv31bZSiqiOL5ta39vSnBxpOPT
+                - group [ref=f2e575]:
+                  - link "View full course" [ref=f2e578]:
+                    - /url: /playlist?list=PLdo5W4Nhv31bZSiqiOL5ta39vSnBxpOPT
+          - generic [ref=f2e580] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e581]:
+              - /url: /watch?v=YYXdXT2l-Gg&list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e583]: 158 lessons
+            - generic [ref=f2e598]:
+              - heading "Python Tutorials" [level=3] [ref=f2e599]:
+                - link "Python Tutorials" [ref=f2e600]:
+                  - /url: /watch?v=YYXdXT2l-Gg&list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e602]:
+                - group [ref=f2e603]:
+                  - link "Corey Schafer" [ref=f2e606]:
+                    - /url: /@coreyms
+                  - generic "Verified" [ref=f2e607]
+                  - link "Course" [ref=f2e612]:
+                    - /url: /@coreyms
+                - group [ref=f2e613]
+                - group [ref=f2e614]:
+                  - 'link "Python Tutorial for Beginners 1: Install and Setup for Mac and Windows · 15:29" [ref=f2e616]':
+                    - /url: /watch?v=YYXdXT2l-Gg&list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU
+                - group [ref=f2e617]:
+                  - 'link "Python Tutorial for Beginners 2: Strings - Working with Textual Data · 21:12" [ref=f2e619]':
+                    - /url: /watch?v=k9TUPpGqYTo&list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU
+                - group [ref=f2e620]:
+                  - link "View full course" [ref=f2e623]:
+                    - /url: /playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU
+                - group [ref=f2e624]:
+                  - generic [ref=f2e625]: Python Tutorials. An in-depth look at the Python programming language. Learn about Python development, tips and tricks, walkthroughs, and best practices.
+          - generic [ref=f2e627] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e628]:
+              - /url: /watch?v=eWRfhZUzrAc&list=PLWKjhJtqVAbnqBxcdjVGgT3uVR10bzTEB&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e630]: 12 videos
+            - generic [ref=f2e645]:
+              - heading "Python Tutorials" [level=3] [ref=f2e646]:
+                - link "Python Tutorials" [ref=f2e647]:
+                  - /url: /watch?v=eWRfhZUzrAc&list=PLWKjhJtqVAbnqBxcdjVGgT3uVR10bzTEB&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e649]:
+                - group [ref=f2e650]:
+                  - link "freeCodeCamp.org" [ref=f2e653]:
+                    - /url: /@freecodecamp
+                  - generic "Verified" [ref=f2e654]
+                  - link "Playlist" [ref=f2e659]:
+                    - /url: /@freecodecamp
+                - group [ref=f2e660]
+                - group [ref=f2e661]:
+                  - link "Python for Beginners – Full Course [Programming Tutorial] · 4:40:00" [ref=f2e663]:
+                    - /url: /watch?v=eWRfhZUzrAc&list=PLWKjhJtqVAbnqBxcdjVGgT3uVR10bzTEB
+                - group [ref=f2e664]:
+                  - link "Intermediate Python Programming Course · 5:55:47" [ref=f2e666]:
+                    - /url: /watch?v=HGOBQPFzWKo&list=PLWKjhJtqVAbnqBxcdjVGgT3uVR10bzTEB
+                - group [ref=f2e667]:
+                  - link "View full playlist" [ref=f2e670]:
+                    - /url: /playlist?list=PLWKjhJtqVAbnqBxcdjVGgT3uVR10bzTEB
+                - group [ref=f2e671]:
+                  - generic [ref=f2e672]: A collection of Python tutorials.
+          - generic [ref=f2e674]:
+            - link [aria-hidden] [ref=f2e676] [cursor=pointer]:
+              - /url: /watch?v=ERCMXc8x7mc&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e678] [cursor=pointer]:
+              - generic [ref=f2e679]:
+                - generic [ref=f2e680]:
+                  - heading [level=3] [ref=f2e681]:
+                    - link "Python Tutorial for Beginners - Full Course (with Notes & Practice Questions) 10 hours, 24 minutes" [ref=f2e682]:
+                      - /url: /watch?v=ERCMXc8x7mc&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Python Tutorial for Beginners - Full Course (with Notes & Practice Questions)
+                  - button "Action menu" [ref=f2e686]
+                - generic [ref=f2e692]:
+                  - generic [ref=f2e693]: 14M
+                  - generic [ref=f2e694]: •2y ago
+              - generic [ref=f2e695]:
+                - link "Go to channel Apna College" [ref=f2e696]:
+                  - /url: /@ApnaCollegeOfficial
+                - generic [ref=f2e697]:
+                  - link "Apna College" [ref=f2e701]:
+                    - /url: /@ApnaCollegeOfficial
+                  - img "Verified" [ref=f2e706]
+              - generic [ref=f2e710]:
+                - text: Complete AI/ML Job Ready Batch :https://www.apnacollege.in/course/prime-ai Batch starting from 15th Nov 2025 ...
+                - tooltip "tooltip"
+              - generic [ref=f2e713]:
+                - generic [ref=f2e714]:
+                  - generic [ref=f2e717]: 11 chapters
+                  - button "Introduction | Variables and Data Types | Strings and conditional statements | Lists and Tuples | Dictionary and Set | Loops | Functions and Recursion | File Input and Output | OOPS Part 1 | OOPS Part 2 | Mini Project" [ref=f2e719]
+                - button "More" [ref=f2e724]
+          - generic [ref=f2e729] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e730]:
+              - /url: /watch?v=Sg4GMVMdOPo&list=PLZPZq0r_RZOOkUQbat8LyQii36cJf2SWT&pp=0gcJCR4Ga94AFGB0
+              - generic [ref=f2e732]: 93 videos
+            - generic [ref=f2e747]:
+              - heading "Python tutorial for beginners 🐍" [level=3] [ref=f2e748]:
+                - link "Python tutorial for beginners 🐍" [ref=f2e749]:
+                  - /url: /watch?v=Sg4GMVMdOPo&list=PLZPZq0r_RZOOkUQbat8LyQii36cJf2SWT&pp=0gcJCR4Ga94AFGB0
+              - generic [ref=f2e751]:
+                - group [ref=f2e752]:
+                  - link "Bro Code" [ref=f2e755]:
+                    - /url: /@BroCodez
+                  - generic "Verified" [ref=f2e756]
+                  - link "Playlist" [ref=f2e761]:
+                    - /url: /@BroCodez
+                - group [ref=f2e762]
+                - group [ref=f2e763]:
+                  - link "Start coding with PYTHON in 5 minutes! 🐍 · 5:50" [ref=f2e765]:
+                    - /url: /watch?v=Sg4GMVMdOPo&list=PLZPZq0r_RZOOkUQbat8LyQii36cJf2SWT
+                - group [ref=f2e766]:
+                  - link "Learn Python VARIABLES in 10 minutes! ❎ · 10:16" [ref=f2e768]:
+                    - /url: /watch?v=7IoQ5BGkTJo&list=PLZPZq0r_RZOOkUQbat8LyQii36cJf2SWT&pp=0gcJCRcF0aJEHMZM
+                - group [ref=f2e769]:
+                  - link "View full playlist" [ref=f2e772]:
+                    - /url: /playlist?list=PLZPZq0r_RZOOkUQbat8LyQii36cJf2SWT
+                - group [ref=f2e773]:
+                  - generic [ref=f2e774]: Learn to code using Python 🐍
+          - generic [ref=f2e776]:
+            - link [aria-hidden] [ref=f2e778] [cursor=pointer]:
+              - /url: /watch?v=q3AuP01daL4&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e780] [cursor=pointer]:
+              - generic [ref=f2e781]:
+                - generic [ref=f2e782]:
+                  - heading [level=3] [ref=f2e783]:
+                    - link "Python Full Course for Beginners 2 hours, 2 minutes" [ref=f2e784]:
+                      - /url: /watch?v=q3AuP01daL4&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Python Full Course for Beginners
+                  - button "Action menu" [ref=f2e788]
+                - generic [ref=f2e794]:
+                  - generic [ref=f2e795]: 1.8M
+                  - generic [ref=f2e796]: •2mo ago
+              - generic [ref=f2e797]:
+                - link "Go to channel Apna College" [ref=f2e798]:
+                  - /url: /@ApnaCollegeOfficial
+                - generic [ref=f2e799]:
+                  - link "Apna College" [ref=f2e803]:
+                    - /url: /@ApnaCollegeOfficial
+                  - img "Verified" [ref=f2e808]
+              - generic [ref=f2e812]:
+                - generic [ref=f2e813]: "Get Placement Ready & learn from the best No.1 Online Tech Placement Batches : https://linktr.ee/apnacollege.in Python Notes ..."
+                - tooltip "tooltip"
+              - generic [ref=f2e816]:
+                - generic [ref=f2e817]:
+                  - generic [ref=f2e820]: 15 chapters
+                  - 'button "Intro | Setup & Installation | Printing & Variables | Data Types | Input & Comments | Type Conversion | String Operations | Logical Operators | Conditional Statements (If-Else) | Mini Project: Calculator | Loops (Range, For, While) | Loop Control (Break/Continue) | Data Types (List, Tuple, Set, Dictionary) | Functions | Mini Project: Guess the Number" [ref=f2e822]'
+                - button "More" [ref=f2e827]
+          - generic [ref=f2e832]:
+            - link [aria-hidden] [ref=f2e834] [cursor=pointer]:
+              - /url: /watch?v=rfscVS0vtbw&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e836] [cursor=pointer]:
+              - generic [ref=f2e837]:
+                - generic [ref=f2e838]:
+                  - heading [level=3] [ref=f2e839]:
+                    - link "Learn Python - Full Course for Beginners [Tutorial] 4 hours, 26 minutes" [ref=f2e840]:
+                      - /url: /watch?v=rfscVS0vtbw&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Learn Python - Full Course for Beginners [Tutorial]
+                  - button "Action menu" [ref=f2e844]
+                - generic [ref=f2e850]:
+                  - generic [ref=f2e851]: 49M
+                  - generic [ref=f2e852]: •8y ago
+              - generic [ref=f2e853]:
+                - link "Go to channel freeCodeCamp.org" [ref=f2e854]:
+                  - /url: /@freecodecamp
+                - generic [ref=f2e855]:
+                  - link "freeCodeCamp.org" [ref=f2e859]:
+                    - /url: /@freecodecamp
+                  - img "Verified" [ref=f2e864]
+              - generic [ref=f2e868]:
+                - generic [ref=f2e869]: This course will give you a full introduction into all of the core concepts in python. Follow along with the videos and you'll be a ...
+                - tooltip "tooltip"
+              - img "Closed captions" [ref=f2e874]:
+                - generic [aria-hidden] [ref=f2e875]: CC
+              - generic [ref=f2e878]:
+                - generic [ref=f2e879]:
+                  - generic [ref=f2e882]: 35 chapters
+                  - button "Introduction | Installing Python & PyCharm | Setup & Hello World | Drawing a Shape | Variables & Data Types | Working With Strings | Working With Numbers | Getting Input From Users | Building a Basic Calculator | Mad Libs Game | Lists | List Functions | Tuples | Functions | Return Statement | If Statements | If Statements & Comparisons | Building a better Calculator | Dictionaries | While Loop | Building a Guessing Game | For Loops | Exponent Function | 2D Lists & Nested Loops | Building a Translator | Comments | Try / Except | Reading Files | Writing to Files | Modules & Pip | Classes & Objects | Building a Multiple Choice Quiz | Object Functions | Inheritance | Python Interpreter" [ref=f2e884]
+                - button "More" [ref=f2e889]
+          - generic [ref=f2e894] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e895]:
+              - /url: /watch?v=_uQrJ0TkZlc&list=PLTjRvDozrdlxj5wgH4qkvwSOdHLOCx10f
+              - generic [ref=f2e897]: 23 videos
+            - generic [ref=f2e912]:
+              - heading "Python Tutorials" [level=3] [ref=f2e913]:
+                - link "Python Tutorials" [ref=f2e914]:
+                  - /url: /watch?v=_uQrJ0TkZlc&list=PLTjRvDozrdlxj5wgH4qkvwSOdHLOCx10f
+              - generic [ref=f2e916]:
+                - group [ref=f2e917]:
+                  - link "Programming with Mosh" [ref=f2e920]:
+                    - /url: /@programmingwithmosh
+                  - generic "Verified" [ref=f2e921]
+                  - link "Playlist" [ref=f2e926]:
+                    - /url: /@programmingwithmosh
+                - group [ref=f2e927]
+                - group [ref=f2e928]:
+                  - link "Python Full Course for Beginners · 6:14:07" [ref=f2e930]:
+                    - /url: /watch?v=_uQrJ0TkZlc&list=PLTjRvDozrdlxj5wgH4qkvwSOdHLOCx10f
+                - group [ref=f2e931]:
+                  - link "Learn Python Programming - Python Course · 1:48:05" [ref=f2e933]:
+                    - /url: /watch?v=f79MRyMsjrQ&list=PLTjRvDozrdlxj5wgH4qkvwSOdHLOCx10f
+                - group [ref=f2e934]:
+                  - link "View full playlist" [ref=f2e937]:
+                    - /url: /playlist?list=PLTjRvDozrdlxj5wgH4qkvwSOdHLOCx10f
+          - generic [ref=f2e939] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e940]:
+              - /url: /watch?v=Ri1Lgdew8Ds&list=PLNMnAEqLBwmpR8JDBOEl0jrzmH1vPnO7v
+              - generic [ref=f2e942]: 91 lessons
+            - generic [ref=f2e957]:
+              - heading "Python Bangla Tutorial 2023" [level=3] [ref=f2e958]:
+                - link "Python Bangla Tutorial 2023" [ref=f2e959]:
+                  - /url: /watch?v=Ri1Lgdew8Ds&list=PLNMnAEqLBwmpR8JDBOEl0jrzmH1vPnO7v
+              - generic [ref=f2e961]:
+                - group [ref=f2e962]:
+                  - link "Hablu Programmer" [ref=f2e965]:
+                    - /url: /@HabluProgrammer
+                  - generic "Verified" [ref=f2e966]
+                  - link "Course" [ref=f2e971]:
+                    - /url: /@HabluProgrammer
+                - group [ref=f2e972]
+                - group [ref=f2e973]:
+                  - link "Python Full Course Bangla Tutorial for beginners Outline [20 Projects] @StudyMart · 18:27" [ref=f2e975]:
+                    - /url: /watch?v=Ri1Lgdew8Ds&list=PLNMnAEqLBwmpR8JDBOEl0jrzmH1vPnO7v
+                - group [ref=f2e976]:
+                  - link "#1 Python Environment Setup Bangla Tutorial 2023 · 10:40" [ref=f2e978]:
+                    - /url: /watch?v=31QmsNeiDKI&list=PLNMnAEqLBwmpR8JDBOEl0jrzmH1vPnO7v
+                - group [ref=f2e979]:
+                  - link "View full course" [ref=f2e982]:
+                    - /url: /playlist?list=PLNMnAEqLBwmpR8JDBOEl0jrzmH1vPnO7v
+                - group [ref=f2e983]:
+                  - generic [ref=f2e984]: "Python Bangla Tutorial 2023, Python Full Course, Learn Python In This Playlist You Will Learn Python Latest Course From Basic to Advanced #python #bangla #tutorial Python is a high-level, general-purpose programming language. Its design philosophy emphasizes code readability with the use of significant indentation via the off-side rule. Python is dynamically typed and garbage-collected. This Python Course Absolutely For beginners, Python, Python Tutorial, Python Bangla Tutorial, Learn Python ,Python Freecodecamp, code with harry, anisul islam, hablu programmer, programming, #python #course. This Course Will Be The 101 Days Challenge For Learn Python Basic To Advance. Thank You ❤"
+          - generic [ref=f2e986]:
+            - link [aria-hidden] [ref=f2e988] [cursor=pointer]:
+              - /url: /watch?v=_uQrJ0TkZlc&t=109s&pp=ygUQUHl0aG9uIHR1dG9yaWFsc9IHCQksDAGHKiGM7w%3D%3D
+            - generic [ref=f2e990] [cursor=pointer]:
+              - generic [ref=f2e991]:
+                - generic [ref=f2e992]:
+                  - heading [level=3] [ref=f2e993]:
+                    - link "Python Full Course for Beginners 6 hours, 14 minutes" [ref=f2e994]:
+                      - /url: /watch?v=_uQrJ0TkZlc&t=109s&pp=ygUQUHl0aG9uIHR1dG9yaWFsc9IHCQksDAGHKiGM7w%3D%3D
+                      - text: Python Full Course for Beginners
+                  - button "Action menu" [ref=f2e998]
+                - generic [ref=f2e1004]:
+                  - generic [ref=f2e1005]: 49M
+                  - generic [ref=f2e1006]: •7y ago
+              - generic [ref=f2e1007]:
+                - link "Go to channel Programming with Mosh" [ref=f2e1008]:
+                  - /url: /@programmingwithmosh
+                - generic [ref=f2e1009]:
+                  - link "Programming with Mosh" [ref=f2e1013]:
+                    - /url: /@programmingwithmosh
+                  - img "Verified" [ref=f2e1018]
+              - generic [ref=f2e1022]:
+                - generic [ref=f2e1023]: Learn Python for AI, machine learning, and web development with this beginner-friendly course! Get 6 months of PyCharm ...
+                - tooltip "tooltip"
+              - img "Closed captions" [ref=f2e1028]:
+                - generic [aria-hidden] [ref=f2e1029]: CC
+              - generic [ref=f2e1032]:
+                - generic [ref=f2e1033]:
+                  - generic [ref=f2e1036]: Matching chapter
+                  - button "1:49 Installing Python 3" [ref=f2e1038]
+                - button "More" [ref=f2e1043]
+          - generic [ref=f2e1048]:
+            - link [aria-hidden] [ref=f2e1050] [cursor=pointer]:
+              - /url: /watch?v=_aWbUudZ5Yo&pp=ygUQUHl0aG9uIHR1dG9yaWFsc9IHCQksDAGHKiGM7w%3D%3D
+            - generic [ref=f2e1052] [cursor=pointer]:
+              - generic [ref=f2e1053]:
+                - generic [ref=f2e1054]:
+                  - heading [level=3] [ref=f2e1055]:
+                    - link "Python Full Course for Beginners to Advanced | 12 Hours Complete Tutorial + Python Book 11 hours, 35 minutes" [ref=f2e1056]:
+                      - /url: /watch?v=_aWbUudZ5Yo&pp=ygUQUHl0aG9uIHR1dG9yaWFsc9IHCQksDAGHKiGM7w%3D%3D
+                      - text: Python Full Course for Beginners to Advanced | 12 Hours Complete Tutorial + Python Book
+                  - button "Action menu" [ref=f2e1060]
+                - generic [ref=f2e1066]:
+                  - generic [ref=f2e1067]: 1.6M
+                  - generic [ref=f2e1068]: •1y ago
+              - generic [ref=f2e1069]:
+                - link "Go to channel Sheryians AI School" [ref=f2e1070]:
+                  - /url: /@SheryiansAI
+                - generic [ref=f2e1071]:
+                  - link "Sheryians AI School" [ref=f2e1075]:
+                    - /url: /@SheryiansAI
+                  - img "Verified" [ref=f2e1080]
+              - generic [ref=f2e1084]:
+                - generic [ref=f2e1085]: Learn Python from absolute zero to advanced level in one complete 12-hour course, beginner-friendly, project-based, with FREE ...
+                - tooltip "tooltip"
+              - img "4K" [ref=f2e1090]:
+                - generic [aria-hidden] [ref=f2e1091]: 4K
+              - generic [ref=f2e1094]:
+                - generic [ref=f2e1095]:
+                  - generic [ref=f2e1098]: 26 chapters
+                  - button "Introduction & course overview | Python history & origin | How Python works internally | Installation & VS Code setup | Comments & variables | Data types in Python | Strings & type conversion | Input & output in Python | Operators in Python (all types) | If-Else & conditional statements | Loops concept in Python | For loop questions & practice | While loop questions & mini game | Functions in Python | Data structures overview | Lists in Python | Tuples in Python | Sets in Python | Dictionaries in Python | Exception handling | File handling basics | File handling project | Object Oriented Programming (OOP) | Advanced Python concepts | OOPs project — Bank Management System | Outro & next steps" [ref=f2e1100]
+                - button "More" [ref=f2e1105]
+          - generic [ref=f2e1110]:
+            - link [aria-hidden] [ref=f2e1112] [cursor=pointer]:
+              - /url: /watch?v=t8pPdKYpowI&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e1114] [cursor=pointer]:
+              - generic [ref=f2e1115]:
+                - generic [ref=f2e1116]:
+                  - heading [level=3] [ref=f2e1117]:
+                    - link "Python Tutorial for Beginners - Learn Python in 5 Hours [FULL COURSE] 5 hours, 31 minutes" [ref=f2e1118]:
+                      - /url: /watch?v=t8pPdKYpowI&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Python Tutorial for Beginners - Learn Python in 5 Hours [FULL COURSE]
+                  - button "Action menu" [ref=f2e1122]
+                - generic [ref=f2e1128]:
+                  - generic [ref=f2e1129]: 6.9M
+                  - generic [ref=f2e1130]: •5y ago
+              - generic [ref=f2e1131]:
+                - link "Go to channel TechWorld with Nana" [ref=f2e1132]:
+                  - /url: /@TechWorldwithNana
+                - link "TechWorld with Nana" [ref=f2e1137]:
+                  - /url: /@TechWorldwithNana
+              - generic [ref=f2e1138]:
+                - text: "Grab your free IT Fundamentals Roadmap: https://bit.ly/3GV5Noy Hands-On course to learn the complete SDLC - from code to ..."
+                - tooltip "tooltip"
+              - img "Beginner" [ref=f2e1143]:
+                - generic [aria-hidden] [ref=f2e1144]: Beginner
+              - generic [ref=f2e1147]:
+                - generic [ref=f2e1148]:
+                  - generic [ref=f2e1151]: 26 chapters
+                  - 'button "Course Intro & Course Overview | Introduction to Python | Installation and Local Setup with PyCharm | Write our first Python program | Python IDE vs simple File Editor | Strings and Number Data Types | Variables in Python | Encapsulate Logic with Functions | Scope | Accepting User Input | Conditionals (if / else) and Boolean Data Type | Error Handling with Try / Except | While Loops | Lists and For Loops | Thanks JetBrains! | Comments in Python | Sets | Built-In Functions | Dictionary Data Type | Modularize your project with Modules | Project: Countdown App | Packages, PyPI and pip | Project: Automation with Python (Working with Spreadsheets) | Object Oriented Programming: Classes and Objects | Project: API Request to GitLab | Wrap Up" [ref=f2e1153]'
+                - button "More" [ref=f2e1158]
+          - generic [ref=f2e1163]:
+            - link [aria-hidden] [ref=f2e1165] [cursor=pointer]:
+              - /url: /watch?v=K5KVEU3aaeQ&t=56s&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+            - generic [ref=f2e1167] [cursor=pointer]:
+              - generic [ref=f2e1168]:
+                - generic [ref=f2e1169]:
+                  - heading [level=3] [ref=f2e1170]:
+                    - link "Python Full Course for Beginners 2 hours, 2 minutes" [ref=f2e1171]:
+                      - /url: /watch?v=K5KVEU3aaeQ&t=56s&pp=ygUQUHl0aG9uIHR1dG9yaWFscw%3D%3D
+                      - text: Python Full Course for Beginners
+                  - button "Action menu" [ref=f2e1175]
+                - generic [ref=f2e1181]:
+                  - generic [ref=f2e1182]: 7.9M
+                  - generic [ref=f2e1183]: •1y ago
+              - generic [ref=f2e1184]:
+                - link "Go to channel Programming with Mosh" [ref=f2e1185]:
+                  - /url: /@programmingwithmosh
+                - generic [ref=f2e1186]:
+                  - link "Programming with Mosh" [ref=f2e1190]:
+                    - /url: /@programmingwithmosh
+                  - img "Verified" [ref=f2e1195]
+              - generic [ref=f2e1199]:
+                - generic [ref=f2e1200]: Master Python from scratch No fluff—just clear, practical coding skills to kickstart your journey! Want to dive deeper? - Check ...
+                - tooltip "tooltip"
+              - generic [ref=f2e1203]:
+                - generic [ref=f2e1204]:
+                  - generic [ref=f2e1207]: Matching chapter
+                  - button "0:56 What is Python?" [ref=f2e1209]
+                - button "More" [ref=f2e1214]
+          - generic [ref=f2e1219] [cursor=pointer]:
+            - link [aria-hidden] [ref=f2e1220]:
+              - /url: /watch?v=UBZs0-gUZsU&list=PLVnJhHoKgEmpbmB-Lrb2m4wwq5IPgLHnG&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e1222]: 18 lessons
+            - generic [ref=f2e1237]:
+              - heading "Python Tutorial Series (Filipino | Tagalog | For Complete Beginners)" [level=3] [ref=f2e1238]:
+                - link "Python Tutorial Series (Filipino | Tagalog | For Complete Beginners)" [ref=f2e1239]:
+                  - /url: /watch?v=UBZs0-gUZsU&list=PLVnJhHoKgEmpbmB-Lrb2m4wwq5IPgLHnG&pp=0gcJCVMDOCosWNin
+              - generic [ref=f2e1241]:
+                - group [ref=f2e1242]:
+                  - link "SDPT Solutions" [ref=f2e1245]:
+                    - /url: /@SDPTSolutions
+                  - generic "Verified" [ref=f2e1246]
+                  - link "Course" [ref=f2e1251]:
+                    - /url: /@SDPTSolutions
+                - group [ref=f2e1252]
+                - group [ref=f2e1253]:
+                  - 'link "Python Tutorial #1: IDE & Hello World | Installing Python & Pycharm | print() | Tagalog | Filipino · 13:37" [ref=f2e1255]':
+                    - /url: /watch?v=UBZs0-gUZsU&list=PLVnJhHoKgEmpbmB-Lrb2m4wwq5IPgLHnG&pp=0gcJCRcF0aJEHMZM
+                - group [ref=f2e1256]:
+                  - 'link "Python Tutorial #2: Variables, Datatypes & Input | Arithmetic | Casting Data | Tagalog | Filipino · 25:23" [ref=f2e1258]':
+                    - /url: /watch?v=uVO_bElzTbI&list=PLVnJhHoKgEmpbmB-Lrb2m4wwq5IPgLHnG
+                - group [ref=f2e1259]:
+                  - link "View full course" [ref=f2e1262]:
+                    - /url: /playlist?list=PLVnJhHoKgEmpbmB-Lrb2m4wwq5IPgLHnG
+    - text: •

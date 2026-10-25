@@ -20,7 +20,7 @@ function Shell(): React.JSX.Element {
   return (
     <>
       <AsciiField />
-      <div className="relative z-200 flex min-h-dvh flex-col font-sans">
+      <div className="relative z-200 flex h-dvh flex-col overflow-hidden font-sans">
         {page === "home" && (
           <>
             <Stage />
@@ -28,7 +28,7 @@ function Shell(): React.JSX.Element {
           </>
         )}
         <Dock page={page} onPage={setPage} live={voice.status === "live"} />
-        <main className="mx-auto flex h-dvh min-h-0 w-full max-w-[880px] flex-1 flex-col gap-6 px-6 py-8 max-[720px]:px-4">
+        <main className="mx-auto flex min-h-0 w-full max-w-[880px] flex-1 flex-col gap-6 px-6 py-8 max-[720px]:px-4">
           {page === "inbox" && <Inbox />}
           {page === "tasks" && <Tasks />}
           {page === "plugins" && <Plugins />}

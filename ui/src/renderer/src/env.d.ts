@@ -5,6 +5,7 @@ type ServerStatus = {
   text: string
   steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[]
   log?: string
+  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[] }[]
 }
 
 declare global {
@@ -12,6 +13,7 @@ declare global {
     miles?: {
       platform: string
       serverStatus: () => Promise<ServerStatus>
+      review: (decision: { approve: string[] }) => Promise<void>
       onServerStatus: (callback: (status: ServerStatus) => void) => () => void
     }
   }

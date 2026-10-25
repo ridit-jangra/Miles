@@ -68,7 +68,10 @@ export function ScrollArea(props: { className?: string; children: React.ReactNod
       {thumb.visible && (
         <div
           onPointerDown={onTrackDown}
-          className="absolute top-0 right-0 bottom-0 w-2 border-l border-line bg-surface "
+          className={cn(
+            "absolute top-0 right-0 bottom-0 w-2 opacity-0 transition-opacity duration-150 group-hover/scroll:opacity-100",
+            active && "opacity-100",
+          )}
         >
           <div
             onPointerDown={onThumbDown}
@@ -77,7 +80,7 @@ export function ScrollArea(props: { className?: string; children: React.ReactNod
             onPointerCancel={onThumbUp}
             style={{ transform: `translateY(${thumb.top}px)`, height: thumb.height }}
             className={cn(
-              "absolute inset-x-0 top-0 cursor-grab touch-none bg-edge transition-colors duration-120 hover:bg-ink-mid",
+              "absolute inset-x-0 top-0 cursor-grab touch-none rounded-full bg-edge transition-colors duration-120 hover:bg-ink-mid",
               active && "cursor-grabbing bg-ink",
             )}
           />

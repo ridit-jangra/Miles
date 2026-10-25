@@ -25,7 +25,7 @@ export function Panel(props: {
   className?: string
 }): React.JSX.Element {
   return (
-    <section className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-control border border-line bg-panel text-ink backdrop-blur-xl", props.className)}>
+    <section className={cn("relative flex max-h-screen min-h-0 flex-1 flex-col overflow-hidden rounded-control border border-line bg-panel text-ink backdrop-blur-xl", props.className)}>
       <header className="flex items-center gap-3 border-b border-edge px-4 py-3.5">
         <h2 className="m-0 font-display text-[27px] leading-none font-semibold">{props.title}</h2>
         {props.note && <span className="ml-auto font-mono text-note text-ink-dim">{props.note}</span>}

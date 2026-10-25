@@ -5,11 +5,13 @@ export type ServerStatus = {
   text: string;
   steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
   log?: string;
+  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[] }[];
 };
 
 contextBridge.exposeInMainWorld("miles", {
   platform: process.platform,
   serverStatus: (): Promise<ServerStatus> => ipcRenderer.invoke("server:status"),
+  review: (decision: { approve: string[] }): Promise<void> => ipcRenderer.invoke("server:review", decision),
   onServerStatus: (callback: (status: ServerStatus) => void): (() => void) => {
     const handler = (_event: unknown, status: ServerStatus): void => callback(status);
     ipcRenderer.on("server:status", handler);

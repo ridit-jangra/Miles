@@ -1,3 +1,5 @@
+import os
+
 from pydantic import BaseModel, model_validator
 
 
@@ -13,4 +15,5 @@ class McpServer(BaseModel):
     def check_command_url(self):
         if (self.command is None) == (self.url is None):
             raise ValueError("Set exactly one of 'command' or 'url'")
+        self.args = [os.path.expanduser(os.path.expandvars(a)) for a in self.args]
         return self

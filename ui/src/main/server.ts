@@ -30,7 +30,16 @@ export type BootStep = {
   fraction: number
 }
 
-export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string }
+export type ReviewItem = {
+  name: string
+  state: "new" | "changed"
+  description: string
+  permissions: string[]
+  dependencies: string[]
+  servers: { name: string; run: string }[]
+}
+
+export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string; review?: ReviewItem[] }
 
 const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g
 const TQDM = /\d+%\||it\/s\]|B\/s/
@@ -41,6 +50,7 @@ export async function startServer(
   onStatus?: (update: StatusUpdate) => void
 ): Promise<"reused" | "started"> {
   const steps = new Map<string, BootStep>()
+  let review: ReviewItem[] | undefined
   if (await isUp()) return "reused"
 
   log = createWriteStream(logPath, { flags: "a" })
@@ -53,7 +63,8 @@ export async function startServer(
 
   let booting = true
   const emit = (text = "") =>
-    booting && onStatus?.({ text, steps: steps.size ? [...steps.values()] : undefined, log: tail[tail.length - 1] })
+    booting &&
+    onStatus?.({ text, steps: steps.size ? [...steps.values()] : undefined, log: tail[tail.length - 1], review })
 
   const listen = (stream: NodeJS.ReadableStream | null) => {
     let partial = ""
@@ -66,6 +77,12 @@ export async function startServer(
           const [id, label, state, fraction] = line.slice(11).split("|")
           steps.set(id, { id, label, state: state as BootStep["state"], fraction: Number(fraction) })
           emit()
+        } else if (line.startsWith("MILES_REVIEW ")) {
+          try {
+            const items = JSON.parse(line.slice(13)) as ReviewItem[]
+            review = items.length ? items : undefined
+            emit()
+          } catch {}
         } else if (!TQDM.test(line)) {
           tail.push(line)
         }
@@ -94,11 +111,15 @@ export async function startServer(
       throw new Error("The server stopped while starting.")
     }
     const seconds = Math.round((Date.now() - began) / 1000)
-    if (steps.size === 0) emit(`Starting Miles… ${seconds}s`)
+    if (steps.size === 0 && !review) emit(`Starting Miles… ${seconds}s`)
     await sleep(1000)
   }
   booting = false
   throw new Error("The server did not become ready in 15 minutes.")
+}
+
+export function sendToServer(message: object): void {
+  child?.stdin?.write(JSON.stringify(message) + "\n")
 }
 
 export async function stopServer(): Promise<void> {

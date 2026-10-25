@@ -1,13 +1,14 @@
 import { app, BrowserWindow, ipcMain, session } from "electron";
 import { join } from "node:path";
 
-import { lastLogLines, startServer, stopServer } from "./server";
+import { lastLogLines, sendToServer, startServer, stopServer } from "./server";
 
 type ServerStatus = {
   state: "starting" | "ready" | "error";
   text: string;
   steps?: { id: string; label: string; state: "pending" | "active" | "done"; fraction: number }[];
   log?: string;
+  review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[] }[];
 };
 
 let status: ServerStatus = { state: "starting", text: "Starting Miles…" };
@@ -47,6 +48,10 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle("server:status", () => status);
+  ipcMain.handle("server:review", (_event, decision: { approve: string[] }) => {
+    sendToServer(decision);
+    setStatus({ ...status, review: undefined });
+  });
   loadApp(createWindow());
 
   try {

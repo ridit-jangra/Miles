@@ -9,7 +9,7 @@ from miles.config import Config
 from miles.confirm.confirmer import Confirmer
 from miles.env import PLUGIN_DIRS
 from miles.mcp.parse import parse_mcp_servers
-from miles.plugins import deps
+from miles.plugins import deps, trust
 from miles.plugins.api import PluginBundle, PluginContext
 from miles.tools.registry import TOOLS
 from miles.watchers.notifier import Notifier
@@ -22,7 +22,7 @@ def plugin_folders(dirs: list[Path] = PLUGIN_DIRS) -> list[Path]:
     for dir in dirs:
         if not dir.is_dir():
             continue
-        for folder in sorted(p for p in dir.iterdir() if p.is_dir()):
+        for folder in sorted(p for p in dir.iterdir() if p.is_dir() and (p / "plugin.toml").exists() and (p / "plugin.py").exists()):
             if folder.name in seen:
                 logger.error(f"Plugin folder {folder} clashes with an earlier {folder.name!r}, skipping it")
                 continue
@@ -61,6 +61,9 @@ def load_plugins(
         manifest, entry = folder / "plugin.toml", folder / "plugin.py"
         agents_dir = folder / "agents"
         if not manifest.exists() or not entry.exists():
+            continue
+        if not trust.trusted(folder):
+            logger.warning(f"Plugin {folder.name} isn't approved, skipping it")
             continue
         try:
             meta = tomllib.loads(manifest.read_text())
