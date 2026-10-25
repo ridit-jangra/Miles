@@ -5,6 +5,7 @@ import { installLauncher } from "./desktop";
 import { ensureCurrent, ensureInstalled, installed, type InstallUI } from "./install";
 import { isManaged, serverRoot } from "./paths";
 import { type BootStep, lastLogLines, sendToServer, startServer, stopServer } from "./server";
+import { planUninstall, runUninstall } from "./uninstall";
 import { downloadAppUpdate, findAppUpdate, installAppUpdate, updatesEnabled } from "./update";
 
 type ServerStatus = {
@@ -15,6 +16,7 @@ type ServerStatus = {
   title?: string;
   intro?: string;
   notice?: string;
+  form?: { fields: { name: string; label: string; provider: string; secret: boolean }[]; error: string | null };
   review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[];
 };
 
@@ -117,9 +119,54 @@ async function checkForUpdatesNow(): Promise<void> {
   }
 }
 
+async function uninstallNow(): Promise<void> {
+  if (!isManaged(app)) {
+    await dialog.showMessageBox({ message: "This copy of Miles isn't managed by the app, so there is nothing for it to uninstall." });
+    return;
+  }
+  const first = await dialog.showMessageBox({
+    type: "warning",
+    title: "Uninstall Miles",
+    message: "Uninstall Miles?",
+    detail: "You can remove just the program and keep your memories, settings, keys and plugins, or remove everything.",
+    buttons: ["Cancel", "Remove the program, keep my data", "Remove everything"],
+    defaultId: 0,
+    cancelId: 0,
+    checkboxLabel: "Also delete the downloaded speech models",
+  });
+  if (first.response === 0) return;
+  const mode = first.response === 2 ? "everything" : "program";
+  const plan = planUninstall(mode, first.checkboxChecked, app.getPath("userData"));
+  if (plan.problem) {
+    await dialog.showMessageBox({ type: "error", message: plan.problem });
+    return;
+  }
+  if (mode === "everything") {
+    const sure = await dialog.showMessageBox({
+      type: "warning",
+      message: "Delete everything?",
+      detail: `This permanently deletes your memories, settings, API keys and plugins:\n\n${plan.remove.join("\n")}`,
+      buttons: ["Cancel", "Delete everything"],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (sure.response === 0) return;
+  }
+  installSteps.clear();
+  setStatus({ state: "starting", text: "", title: "Uninstalling Miles" });
+  await stopServer();
+  const failed = runUninstall(plan);
+  const file = process.env.APPIMAGE ? `\n\nYou can now delete the app file itself:\n${process.env.APPIMAGE}` : "";
+  await dialog.showMessageBox({
+    message: failed.length ? "Miles was mostly removed" : "Miles was removed",
+    detail: (failed.length ? `Couldn't remove: ${failed.join(", ")}.` : "") + file,
+  });
+  app.quit();
+}
+
 function setupMenu(): void {
   const template: MenuItemConstructorOptions[] = [
-    { label: "Miles", submenu: [{ label: "Check for updates…", click: () => void checkForUpdatesNow() }, { type: "separator" }, { role: "quit" }] },
+    { label: "Miles", submenu: [{ label: "Check for updates…", click: () => void checkForUpdatesNow() }, { label: "Uninstall Miles…", click: () => void uninstallNow() }, { type: "separator" }, { role: "quit" }] },
     { role: "editMenu" },
     { role: "viewMenu" },
     { role: "windowMenu" },
@@ -196,6 +243,10 @@ app.whenReady().then(async () => {
       sendToServer(decision);
     }
     setStatus({ ...status, review: undefined, intro: undefined });
+  });
+  ipcMain.handle("server:answer", (_event, values: Record<string, string> | null) => {
+    sendToServer({ answer: values });
+    setStatus({ ...status, form: undefined });
   });
   ipcMain.handle("server:ack", () => {
     if (acknowledging) {

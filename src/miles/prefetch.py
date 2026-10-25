@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 
 from miles import commands
 from miles.config import ProviderSettings, load_config
+from miles.keys import ensure_keys
 from miles.plugins import deps, trust
 from miles.plugins.loader import plugin_folders
 from miles.providers import STT, TTS, build_stt, build_tts
@@ -156,6 +157,7 @@ def plugin_work(config) -> list[tuple[str, Callable[[], object]]]:
 def download_models() -> None:
     config = load_config()
     review_plugins(config)
+    ensure_keys(config)
     work = plugin_work(config)
     jobs = [("stt", config.stt, STT, build_stt), ("tts", config.tts, TTS, build_tts)]
     for id, cfg, table, _ in jobs:

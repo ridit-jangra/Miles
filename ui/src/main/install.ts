@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
 
-import { toolEnv } from "./paths";
+import { milesHome, toolEnv } from "./paths";
 import { ANSI, type ReviewItem } from "./server";
 
 const DRY = !!process.env.MILES_INSTALL_DRY_RUN
@@ -90,6 +90,42 @@ export function reviewItems(missing: Tool[]): ReviewItem[] {
 }
 
 const REPO = process.env.MILES_REPO_URL || "https://github.com/ridit-jangra/miles"
+const PLUGINS_REPO = process.env.MILES_PLUGINS_REPO_URL || "https://github.com/ridit-jangra/miles-plugins"
+
+export const pluginsDir = (): string => process.env.MILES_PLUGINS_DIR || join(milesHome(), "plugins")
+
+const pluginsMissing = (): boolean => !existsSync(pluginsDir()) || readdirSync(pluginsDir()).length === 0
+
+function pluginsItem(): ReviewItem {
+  return {
+    name: "plugins",
+    state: "new",
+    selected: true,
+    description: "Optional. The official Miles plugins: weather, alarms, a browser, files and more. Each plugin still asks before it runs.",
+    permissions: [],
+    dependencies: [],
+    servers: [{ name: "plugins", run: `git clone ${PLUGINS_REPO} ${pluginsDir()}` }],
+  }
+}
+
+async function clonePlugins(ui: InstallUI): Promise<void> {
+  const label = "Downloading plugins"
+  const dir = pluginsDir()
+  const existed = existsSync(dir)
+  ui.step("plugins-pack", label, "active", 0)
+  mkdirSync(dirname(dir), { recursive: true })
+  const onLine = (line: string): void => {
+    const match = /Receiving objects:\s+(\d+)%/.exec(line)
+    if (match) ui.step("plugins-pack", label, "active", Number(match[1]) / 100)
+    else ui.log(line)
+  }
+  const code = await run("git", ["clone", "--depth", "1", "--progress", PLUGINS_REPO, dir], { onLine }).catch(() => 1)
+  if (code !== 0) {
+    if (!existed) rmSync(dir, { recursive: true, force: true })
+    throw new Error("Couldn't download the plugins.")
+  }
+  ui.step("plugins-pack", label, "done", 1)
+}
 
 export const installed = (root: string): boolean =>
   existsSync(join(root, "src", "miles", "main.py")) && existsSync(join(root, ".venv"))
@@ -158,16 +194,28 @@ export async function ensureInstalled(ui: InstallUI, root: string, version: stri
   const notMiles = !existsSync(join(root, "src", "miles", "main.py")) && existsSync(root) && readdirSync(root).length > 0
   if (notMiles) throw new Error(`${root} already exists and isn't a Miles install. Move it away and try again.`)
   const missing = missingTools()
-  const approved = missing.length ? await ui.ask(reviewItems(missing)) : []
+  const offerPlugins = pluginsMissing()
+  const items = [...reviewItems(missing), ...(offerPlugins ? [pluginsItem()] : [])]
+  const intro = missing.length ? undefined : "Miles can also download its official plugins. Pick what you want."
+  const approved = items.length ? await ui.ask(items, intro) : []
+  const wantPlugins = offerPlugins && approved.includes("plugins")
   const refused = missing.filter((tool) => tool.required && !approved.includes(tool.name))
   if (refused.length) throw new Error(`Miles can't be installed without ${refused.map((t) => t.name).join(" and ")}.`)
   const toInstall = missing.filter((tool) => approved.includes(tool.name))
   for (const tool of toInstall) ui.step(`tool-${tool.name}`, `Installing ${tool.name}`, "pending")
   ui.step("clone", "Downloading Miles", "pending")
   ui.step("sync", "Setting up Python", "pending")
+  if (wantPlugins) ui.step("plugins-pack", "Downloading plugins", "pending")
   for (const tool of toInstall) await installTool(tool, ui)
   await clone(root, version, ui)
   await sync(root, ui)
+  if (wantPlugins) {
+    try {
+      await clonePlugins(ui)
+    } catch (error) {
+      await ui.notice(`${(error as Error).message} Miles will work without them. You can add them later with: git clone ${PLUGINS_REPO} ${pluginsDir()}`)
+    }
+  }
 }
 
 

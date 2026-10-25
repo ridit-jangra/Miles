@@ -109,6 +109,51 @@ function Review({ plugins, intro }: { plugins: ReviewItem[]; intro?: string }): 
   )
 }
 
+type FormRequest = NonNullable<ServerStatus["form"]>
+
+function KeyForm({ form }: { form: FormRequest }): React.JSX.Element {
+  const [values, setValues] = useState<Record<string, string>>({})
+  const filled = form.fields.some((field) => (values[field.name] ?? "").trim())
+
+  return (
+    <form
+      className="flex w-full flex-col gap-4 text-left"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (filled) void window.miles?.answer(values)
+      }}
+    >
+      <p className="m-0 font-mono text-note text-ink-dim">
+        Miles needs a key to reach its online services. It is checked with the provider and saved only on this computer, in ~/.miles/.env.
+      </p>
+      {form.fields.map((field, index) => (
+        <label key={field.name} className="flex flex-col gap-1.5">
+          <span className="text-ui text-ink">{field.label}</span>
+          <input
+            type={field.secret ? "password" : "text"}
+            autoFocus={index === 0}
+            autoComplete="off"
+            spellCheck={false}
+            value={values[field.name] ?? ""}
+            onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+            placeholder={field.name}
+            className="rounded-control border border-line bg-panel px-3 py-2 font-mono text-ui text-ink outline-none placeholder:text-ink-dim focus:border-edge"
+          />
+        </label>
+      ))}
+      {form.error && <p className="m-0 font-mono text-note text-[#f3ccd0]">{form.error} Check it and try again, or skip.</p>}
+      <div className="flex justify-end gap-2.5">
+        <Btn variant="ghost" onClick={() => void window.miles?.answer(null)}>
+          skip
+        </Btn>
+        <Btn variant="primary" disabled={!filled} onClick={() => void window.miles?.answer(values)}>
+          save
+        </Btn>
+      </div>
+    </form>
+  )
+}
+
 function Notice({ text }: { text: string }): React.JSX.Element {
   return (
     <div className="flex w-full flex-col gap-4 text-left">
@@ -129,10 +174,14 @@ export function Loading({ status }: { status: ServerStatus }): React.JSX.Element
     <>
       <AsciiField />
       <div className="fixed inset-0 z-1000 flex flex-col items-center justify-center gap-10 px-6 text-center">
-        <PageTitle>{status.title ?? (status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server")}</PageTitle>
+        <PageTitle>{status.title ?? (status.form ? "One more thing" : status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server")}</PageTitle>
         {status.notice ? (
           <div className="w-full max-w-xl">
             <Notice text={status.notice} />
+          </div>
+        ) : status.form ? (
+          <div className="w-full max-w-xl">
+            <KeyForm key={status.form.fields.map((f) => f.name).join() + (status.form.error ?? "")} form={status.form} />
           </div>
         ) : status.review?.length ? (
           <div className="w-full max-w-xl">

@@ -42,7 +42,9 @@ export type ReviewItem = {
   selected?: boolean
 }
 
-export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string; review?: ReviewItem[] }
+export type FormRequest = { fields: { name: string; label: string; provider: string; secret: boolean }[]; error: string | null }
+
+export type StatusUpdate = { text: string; steps?: BootStep[]; log?: string; review?: ReviewItem[]; form?: FormRequest }
 
 export const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g
 const TQDM = /\d+%\||it\/s\]|B\/s/
@@ -54,6 +56,7 @@ export async function startServer(
 ): Promise<"reused" | "started"> {
   const steps = new Map<string, BootStep>()
   let review: ReviewItem[] | undefined
+  let form: FormRequest | undefined
   if (await isUp()) return "reused"
 
   log = createWriteStream(logPath, { flags: "a" })
@@ -67,7 +70,7 @@ export async function startServer(
   let booting = true
   const emit = (text = "") =>
     booting &&
-    onStatus?.({ text, steps: steps.size ? [...steps.values()] : undefined, log: tail[tail.length - 1], review })
+    onStatus?.({ text, steps: steps.size ? [...steps.values()] : undefined, log: tail[tail.length - 1], review, form })
 
   const listen = (stream: NodeJS.ReadableStream | null) => {
     let partial = ""
@@ -80,6 +83,11 @@ export async function startServer(
           const [id, label, state, fraction] = line.slice(11).split("|")
           steps.set(id, { id, label, state: state as BootStep["state"], fraction: Number(fraction) })
           emit()
+        } else if (line.startsWith("MILES_ASK ")) {
+          try {
+            form = JSON.parse(line.slice(10)) as FormRequest | undefined ?? undefined
+            emit()
+          } catch {}
         } else if (line.startsWith("MILES_REVIEW ")) {
           try {
             const items = JSON.parse(line.slice(13)) as ReviewItem[]
@@ -119,7 +127,7 @@ export async function startServer(
       throw new Error("The server stopped while starting.")
     }
     const seconds = Math.round((Date.now() - began) / 1000)
-    if (steps.size === 0 && !review) emit(`Starting Miles… ${seconds}s`)
+    if (steps.size === 0 && !review && !form) emit(`Starting Miles… ${seconds}s`)
     await sleep(1000)
   }
   booting = false

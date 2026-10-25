@@ -8,6 +8,7 @@ export type ServerStatus = {
   title?: string;
   intro?: string;
   notice?: string;
+  form?: { fields: { name: string; label: string; provider: string; secret: boolean }[]; error: string | null };
   review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[];
 };
 
@@ -16,6 +17,7 @@ contextBridge.exposeInMainWorld("miles", {
   serverStatus: (): Promise<ServerStatus> => ipcRenderer.invoke("server:status"),
   review: (decision: { approve: string[] }): Promise<void> => ipcRenderer.invoke("server:review", decision),
   acknowledge: (): Promise<void> => ipcRenderer.invoke("server:ack"),
+  answer: (values: Record<string, string> | null): Promise<void> => ipcRenderer.invoke("server:answer", values),
   onServerStatus: (callback: (status: ServerStatus) => void): (() => void) => {
     const handler = (_event: unknown, status: ServerStatus): void => callback(status);
     ipcRenderer.on("server:status", handler);
