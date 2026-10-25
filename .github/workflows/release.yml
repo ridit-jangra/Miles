@@ -54,7 +54,9 @@ jobs:
         with:
           draft: false
           generate_release_notes: true
-          files: ui/dist/*.AppImage
+          files: |
+            ui/dist/*.AppImage
+            ui/dist/latest-linux.yml
           body: |
             Download the AppImage, make it executable and run it:
 

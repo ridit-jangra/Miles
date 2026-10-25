@@ -17,3 +17,7 @@ linux:
   category: Utility
   icon: build/icon.png
   synopsis: A voice assistant on your own machine
+publish:
+  provider: github
+  owner: ridit-jangra
+  repo: miles

@@ -13,3 +13,7 @@ export function toolEnv(): NodeJS.ProcessEnv {
   const extra = [join(homedir(), ".local", "bin"), join(homedir(), ".bun", "bin")]
   return {...process.env, PATH: [...extra, process.env.PATH ?? ""].join(delimiter)}
 }
+
+export function isManaged(app: { isPackaged: boolean }): boolean {
+  return !process.env.MILES_ROOT && (app.isPackaged || !!process.env.MILES_FORCE_INSTALL)
+}

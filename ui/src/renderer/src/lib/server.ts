@@ -7,6 +7,7 @@ export type ServerStatus = {
   log?: string
   title?: string
   intro?: string
+  notice?: string
   review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[]
 }
 

@@ -109,6 +109,19 @@ function Review({ plugins, intro }: { plugins: ReviewItem[]; intro?: string }): 
   )
 }
 
+function Notice({ text }: { text: string }): React.JSX.Element {
+  return (
+    <div className="flex w-full flex-col gap-4 text-left">
+      <p className="m-0 font-mono text-ui leading-[1.55] whitespace-pre-wrap text-ink-dim">{text}</p>
+      <div className="flex justify-end">
+        <Btn variant="primary" onClick={() => void window.miles?.acknowledge()}>
+          continue
+        </Btn>
+      </div>
+    </div>
+  )
+}
+
 export function Loading({ status }: { status: ServerStatus }): React.JSX.Element {
   const failed = status.state === "error"
 
@@ -117,7 +130,11 @@ export function Loading({ status }: { status: ServerStatus }): React.JSX.Element
       <AsciiField />
       <div className="fixed inset-0 z-1000 flex flex-col items-center justify-center gap-10 px-6 text-center">
         <PageTitle>{status.title ?? (status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server")}</PageTitle>
-        {status.review?.length ? (
+        {status.notice ? (
+          <div className="w-full max-w-xl">
+            <Notice text={status.notice} />
+          </div>
+        ) : status.review?.length ? (
           <div className="w-full max-w-xl">
             <Review key={status.review.map((p) => p.name).join()} plugins={status.review} intro={status.intro} />
           </div>

@@ -46,7 +46,8 @@ export function packageCommand(packages: string[]): string[] | null {
 export type InstallUI = {
   step(id: string, label: string, state: "pending" | "active" | "done", fraction?: number): void
   log(line: string): void
-  ask(items: ReviewItem[]): Promise<string[]>
+  ask(items: ReviewItem[], intro?: string): Promise<string[]>
+  notice(text: string): Promise<void>
 }
 
 export type Tool = {
@@ -88,7 +89,7 @@ export function reviewItems(missing: Tool[]): ReviewItem[] {
   })
 }
 
-const REPO = "https://github.com/ridit-jangra/miles"
+const REPO = process.env.MILES_REPO_URL || "https://github.com/ridit-jangra/miles"
 
 export const installed = (root: string): boolean =>
   existsSync(join(root, "src", "miles", "main.py")) && existsSync(join(root, ".venv"))
@@ -167,4 +168,89 @@ export async function ensureInstalled(ui: InstallUI, root: string, version: stri
   for (const tool of toInstall) await installTool(tool, ui)
   await clone(root, version, ui)
   await sync(root, ui)
+}
+
+
+export function compareVersions(a: string, b: string): number {
+  const parts = (v: string): number[] => v.replace(/^v/, "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0)
+  const [x, y] = [parts(a), parts(b)]
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const difference = (x[i] ?? 0) - (y[i] ?? 0)
+    if (difference) return difference
+  }
+  return 0
+}
+
+async function git(root: string, args: string[]): Promise<{ code: number; lines: string[] }> {
+  const lines: string[] = []
+  const code = await run("git", args, { cwd: root, onLine: (line) => lines.push(line) }).catch(() => 1)
+  return { code, lines }
+}
+
+export async function cloneVersion(root: string): Promise<string | null> {
+  const { code, lines } = await git(root, ["describe", "--tags", "--exact-match"])
+  return code === 0 && lines[0] ? lines[0].trim() : null
+}
+
+async function updateServer(root: string, tag: string, previous: string | null, ui: InstallUI): Promise<void> {
+  const fetching = `Downloading ${tag}`
+  ui.step("update-fetch", fetching, "active", 0)
+  const onLine = (line: string): void => {
+    const match = /Receiving objects:\s+(\d+)%/.exec(line)
+    if (match) ui.step("update-fetch", fetching, "active", Number(match[1]) / 100)
+    else ui.log(line)
+  }
+  const fetched = await run("git", ["fetch", "--depth", "1", "--progress", "origin", `+refs/tags/${tag}:refs/tags/${tag}`], { cwd: root, onLine }).catch(() => 1)
+  if (fetched !== 0) throw new Error(`Couldn't download ${tag}. Check your internet connection.`)
+  ui.step("update-fetch", fetching, "done", 1)
+
+  ui.step("update-apply", "Applying the update", "active", -1)
+  const switched = await git(root, ["-c", "advice.detachedHead=false", "checkout", "--quiet", tag])
+  if (switched.code !== 0) throw new Error(`Couldn't switch to ${tag}.`)
+  ui.step("update-apply", "Applying the update", "done", 1)
+
+  try {
+    await sync(root, ui)
+  } catch (error) {
+    if (previous) await git(root, ["-c", "advice.detachedHead=false", "checkout", "--quiet", previous])
+    throw error
+  }
+}
+
+export async function ensureCurrent(ui: InstallUI, root: string, version: string): Promise<void> {
+  if (DRY) return ui.log("[dry run] would check that the server matches this app")
+  const wanted = `v${version}`
+  const have = await cloneVersion(root)
+  if (have === wanted) return
+  const label = have ?? "an unknown version"
+
+  if (have && compareVersions(have, wanted) > 0) {
+    return ui.notice(`The server in ${root} is newer (${have}) than this app (${wanted}), so they may not work well together. Update the app to match.`)
+  }
+  if ((await git(root, ["status", "--porcelain", "-uno"])).lines.length) {
+    return ui.notice(`The server in ${root} has changes of its own, so Miles didn't update it from ${label} to ${wanted}.`)
+  }
+
+  const approved = await ui.ask(
+    [
+      {
+        name: "Miles server",
+        state: "changed",
+        selected: true,
+        description: `Update the downloaded server from ${label} to ${wanted}, so it matches this app.`,
+        permissions: [],
+        dependencies: [],
+        servers: [{ name: "update", run: `git fetch ${wanted}, check it out, then run uv sync` }],
+      },
+    ],
+    "This app needs a different server than the one on this computer. Update it now?",
+  )
+  if (!approved.length) {
+    return ui.notice(`Miles will keep running the ${label} server, which doesn't match this app (${wanted}). Some things may not work.`)
+  }
+  try {
+    await updateServer(root, wanted, have, ui)
+  } catch (error) {
+    await ui.notice(`Updating the server failed: ${(error as Error).message}\n\nMiles will start with the ${label} server, which doesn't match this app (${wanted}). Some things may not work.`)
+  }
 }

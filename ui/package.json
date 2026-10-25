@@ -37,5 +37,8 @@
   },
   "author": "Ridit Jangra",
   "homepage": "https://github.com/ridit-jangra/miles",
-  "desktopName": "miles.desktop"
+  "desktopName": "miles.desktop",
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
 }

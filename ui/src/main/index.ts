@@ -1,10 +1,11 @@
-import { app, BrowserWindow, ipcMain, session } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, session, type MenuItemConstructorOptions } from "electron";
 import { join } from "node:path";
 
 import { installLauncher } from "./desktop";
-import { ensureInstalled, installed, type InstallUI } from "./install";
-import { serverRoot } from "./paths";
+import { ensureCurrent, ensureInstalled, installed, type InstallUI } from "./install";
+import { isManaged, serverRoot } from "./paths";
 import { type BootStep, lastLogLines, sendToServer, startServer, stopServer } from "./server";
+import { downloadAppUpdate, findAppUpdate, installAppUpdate, updatesEnabled } from "./update";
 
 type ServerStatus = {
   state: "starting" | "ready" | "error";
@@ -13,6 +14,7 @@ type ServerStatus = {
   log?: string;
   title?: string;
   intro?: string;
+  notice?: string;
   review?: { name: string; state: "new" | "changed"; description: string; permissions: string[]; dependencies: string[]; servers: { name: string; run: string }[]; selected?: boolean }[];
 };
 
@@ -25,10 +27,14 @@ function setStatus(next: ServerStatus): void {
 
 const installSteps = new Map<string, BootStep>();
 let waiting: ((names: string[]) => void) | null = null;
+let acknowledging: (() => void) | null = null;
 
-function installUi(installLog: string[]): InstallUI {
-  const title = "Installing Miles";
+function installUi(installLog: string[]): InstallUI & { setTitle(title: string): void } {
+  let title = "Installing Miles";
   return {
+    setTitle(next) {
+      title = next;
+    },
     step(id, label, state, fraction = 0) {
       installSteps.set(id, { id, label, state, fraction });
       setStatus({ ...status, state: "starting", text: "", title, steps: [...installSteps.values()] });
@@ -37,19 +43,113 @@ function installUi(installLog: string[]): InstallUI {
       installLog.push(line);
       setStatus({ ...status, log: line });
     },
-    ask(items) {
+    ask(items, intro = "Miles needs a few tools to set itself up. Pick what it may install.") {
       return new Promise((resolve) => {
         waiting = resolve;
-        setStatus({
-          ...status,
-          text: "",
-          title,
-          intro: "Miles needs a few tools to set itself up. Pick what it may install.",
-          review: items,
-        });
+        setStatus({ ...status, state: "starting", text: "", title, intro, review: items });
+      });
+    },
+    notice(text) {
+      return new Promise((resolve) => {
+        acknowledging = resolve;
+        setStatus({ ...status, state: "starting", text: "", title, notice: text, review: undefined });
       });
     },
   };
+}
+
+type UpdateResult = "none" | "declined" | "failed" | "restarting";
+
+async function offerAppUpdate(ui: ReturnType<typeof installUi>, serverRunning: boolean, known?: string): Promise<UpdateResult> {
+  const version = known ?? (await findAppUpdate());
+  if (!version) return "none";
+  ui.setTitle("Update available");
+  const approved = await ui.ask(
+    [
+      {
+        name: `Miles ${version}`,
+        state: "new",
+        selected: true,
+        description: `You have ${app.getVersion()}. Miles downloads the new version, restarts, and then updates its server to match.`,
+        permissions: [],
+        dependencies: [],
+        servers: [{ name: "update", run: `download Miles ${version} from GitHub and replace this app` }],
+      },
+    ],
+    "A new version of Miles is available. Update now?",
+  );
+  if (!approved.length) return "declined";
+  const label = `Downloading Miles ${version}`;
+  try {
+    if (serverRunning) await stopServer();
+    ui.step("update", label, "active", 0);
+    await downloadAppUpdate((fraction) => ui.step("update", label, "active", fraction));
+    ui.step("update", label, "done", 1);
+    ui.step("restart", "Restarting Miles", "active", -1);
+    installAppUpdate();
+    return "restarting";
+  } catch (error) {
+    await ui.notice(`The update failed: ${(error as Error).message}\n\nMiles will keep running version ${app.getVersion()}.`);
+    return "failed";
+  }
+}
+
+let checking = false;
+async function checkForUpdatesNow(): Promise<void> {
+  if (checking) return;
+  checking = true;
+  try {
+    if (!updatesEnabled()) {
+      await dialog.showMessageBox({ message: "Updates only work in the installed app." });
+      return;
+    }
+    const version = await findAppUpdate();
+    if (!version) {
+      await dialog.showMessageBox({ message: "Miles is up to date.", detail: `You have version ${app.getVersion()}.` });
+      return;
+    }
+    installSteps.clear();
+    const result = await offerAppUpdate(installUi([]), true, version);
+    if (result === "declined") setStatus({ state: "ready", text: "" });
+    else if (result === "failed") void boot();
+  } finally {
+    checking = false;
+  }
+}
+
+function setupMenu(): void {
+  const template: MenuItemConstructorOptions[] = [
+    { label: "Miles", submenu: [{ label: "Check for updates…", click: () => void checkForUpdatesNow() }, { type: "separator" }, { role: "quit" }] },
+    { role: "editMenu" },
+    { role: "viewMenu" },
+    { role: "windowMenu" },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+async function boot(): Promise<void> {
+  const installLog: string[] = [];
+  try {
+    const root = serverRoot(app);
+    const ui = installUi(installLog);
+    await ensureInstalled(ui, root, app.getVersion());
+    if (isManaged(app)) {
+      if ((await offerAppUpdate(ui, false)) === "restarting") return;
+      ui.setTitle("Updating Miles");
+      await ensureCurrent(ui, root, app.getVersion());
+      installSteps.clear();
+    }
+    if (process.env.MILES_INSTALL_DRY_RUN && !installed(root)) throw new Error("Dry run finished, nothing was installed.");
+    await startServer(
+      root,
+      join(app.getPath("userData"), "server.log"),
+      (update) => setStatus({ state: "starting", ...update }),
+    );
+    setStatus({ state: "ready", text: "" });
+  } catch (error) {
+    const log = lastLogLines() || installLog.slice(-15).join("\n");
+    setStatus({ state: "error", text: `${(error as Error).message}\n\n${log}` });
+  }
 }
 
 function createWindow(): BrowserWindow {
@@ -97,23 +197,16 @@ app.whenReady().then(async () => {
     }
     setStatus({ ...status, review: undefined, intro: undefined });
   });
+  ipcMain.handle("server:ack", () => {
+    if (acknowledging) {
+      acknowledging();
+      acknowledging = null;
+    }
+    setStatus({ ...status, notice: undefined });
+  });
   loadApp(createWindow());
-
-  const installLog: string[] = [];
-  try {
-    const root = serverRoot(app);
-    await ensureInstalled(installUi(installLog), root, app.getVersion());
-    if (process.env.MILES_INSTALL_DRY_RUN && !installed(root)) throw new Error("Dry run finished, nothing was installed.");
-    await startServer(
-      root,
-      join(app.getPath("userData"), "server.log"),
-      (update) => setStatus({ state: "starting", ...update }),
-    );
-    setStatus({ state: "ready", text: "" });
-  } catch (error) {
-    const log = lastLogLines() || installLog.slice(-15).join("\n");
-    setStatus({ state: "error", text: `${(error as Error).message}\n\n${log}` });
-  }
+  setupMenu();
+  await boot();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) loadApp(createWindow());
