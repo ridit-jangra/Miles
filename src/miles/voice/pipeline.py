@@ -128,7 +128,6 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     state.current["repeater"] = repeater
 
     tools += make_agent_tools(manager)
-    tools += TOOLS
 
     base_tools = [to_pipecat(t) for t in tools]
     context = LLMContext(tools=list(base_tools))
