@@ -85,7 +85,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     notifier = Notifier(inbox, lambda: tracker.busy, inform, run_llm, interrupt)
     tracker.on_idle = notifier.on_idle
 
-    bundle = load_plugins(config, confirmer, scheduler)
+    bundle = load_plugins(config, confirmer, scheduler, notifier=notifier)
     tools = bundle.tools
     tools += make_inbox_tools(inbox)
     if store:

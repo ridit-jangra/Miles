@@ -5,6 +5,7 @@ from typing import Any
 from miles.agents.definition import AgentDef
 from miles.confirm.confirmer import DECLINED, Confirmer
 from miles.mcp.config import McpServer
+from miles.watchers.notifier import Notifier
 from miles.watchers.parser import parse_time
 from miles.watchers.scheduler import Scheduler, Watcher
 
@@ -17,16 +18,28 @@ class PluginBundle:
     mcp_servers: dict[str, dict[str, McpServer]] = field(default_factory=dict)
 
 class PluginContext:
-    def __init__(self, name: str, config: dict, confirmer: Confirmer, scheduler: Scheduler) -> None:
+    def __init__(
+        self, name: str, config: dict, confirmer: Confirmer, scheduler: Scheduler, notifier: Notifier | None = None
+    ) -> None:
         self.name = name
         self.config = config
         self.tools = []
         self._confirmer = confirmer
         self._scheduler = scheduler
+        self._notifier = notifier
 
     def tool(self, fn: Any) -> Any:
         self.tools.append(fn)
         return fn
+
+    def quiet(self, seconds: float) -> None:
+        """Hold back every alert except urgent ones for this many seconds, then deliver them together."""
+        if self._notifier:
+            self._notifier.quiet_for(seconds)
+
+    def quiet_off(self) -> int:
+        """End the quiet period now and deliver what was held. Returns how many alerts were held."""
+        return self._notifier.end_quiet() if self._notifier else 0
 
     def confirm(self, question: str, action: Callable[[], Any], declined: str = DECLINED) -> dict:
         """Ask the user a yes/no question, and only run `action` if they say yes.

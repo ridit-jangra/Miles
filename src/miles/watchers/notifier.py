@@ -1,4 +1,5 @@
 import asyncio
+import time
 from collections.abc import Awaitable, Callable
 
 from miles.watchers.inbox import Alert, Inbox
@@ -19,10 +20,44 @@ class Notifier:
         self.run_llm = run_llm
         self.interrupt = interrupt
         self._waiting: list[Alert] = []
+        self._held: list[Alert] = []
+        self._quiet_until = 0.0
+        self._release: asyncio.Task | None = None
+        self._loop = asyncio.get_running_loop()
         inbox.on_new(self.on_alert)
 
+    def quiet_for(self, seconds: float) -> None:
+        self._loop.call_soon_threadsafe(self._start_quiet, seconds)
+
+    def end_quiet(self) -> int:
+        held = len(self._held)
+        self._loop.call_soon_threadsafe(self._end_quiet)
+        return held
+
+    def _start_quiet(self, seconds: float) -> None:
+        self._quiet_until = time.time() + seconds
+        if self._release:
+            self._release.cancel()
+        self._release = asyncio.create_task(self._release_later(seconds))
+
+    async def _release_later(self, seconds: float) -> None:
+        await asyncio.sleep(seconds)
+        self._end_quiet()
+
+    def _end_quiet(self) -> None:
+        self._quiet_until = 0.0
+        if self._release and self._release is not asyncio.current_task():
+            self._release.cancel()
+        self._release = None
+        self._waiting.extend(self._held)
+        self._held = []
+        if not self.is_busy():
+            self.on_idle()
+
     def on_alert(self, alert: Alert) -> None:
-        if alert.priority == "low":
+        if alert.priority != "urgent" and time.time() < self._quiet_until:
+            self._held.append(alert)
+        elif alert.priority == "low":
             ...
         elif alert.priority == "urgent":
             asyncio.create_task(self._deliver_urgent(alert))

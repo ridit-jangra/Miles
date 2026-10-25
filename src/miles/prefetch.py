@@ -6,12 +6,14 @@ from loguru import logger
 from tqdm.auto import tqdm
 
 from miles.config import ProviderSettings, load_config
+from miles.plugins import deps
+from miles.plugins.loader import plugin_folders
 from miles.providers import STT, TTS, build_stt, build_tts
 
 _last_percent: dict[str, int] = {}
 
 
-STEPS = {"stt": "Speech model", "tts": "Voice model", "server": "Starting server"}
+STEPS = {"stt": "Speech model", "tts": "Voice model", "plugins": "Plugin dependencies", "server": "Starting server"}
 
 
 def step(id: str, state: str, fraction: float = 0.0) -> None:
@@ -92,12 +94,21 @@ PREFETCH = {
 }
 
 
+def pending_plugin_deps(config) -> list:
+    if not config.plugins.enabled:
+        return []
+    return [f for f in plugin_folders() if f.name not in config.plugins.disabled and deps.needs_install(f)]
+
+
 def download_models() -> None:
     config = load_config()
+    pending = pending_plugin_deps(config)
     jobs = [("stt", config.stt, STT, build_stt), ("tts", config.tts, TTS, build_tts)]
     for id, cfg, table, _ in jobs:
         if table[cfg.provider].local:
             step(id, "pending")
+    if pending:
+        step("plugins", "pending")
     step("server", "pending")
     for id, cfg, table, build in jobs:
         local = table[cfg.provider].local
@@ -111,4 +122,9 @@ def download_models() -> None:
         build(cfg)
         if local:
             step(id, "done", 1)
+    if pending:
+        step("plugins", "active", -1)
+        for folder in pending:
+            deps.install(folder)
+        step("plugins", "done", 1)
     step("server", "active", -1)
