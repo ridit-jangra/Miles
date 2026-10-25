@@ -1,10 +1,18 @@
 import { app } from "electron"
+import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 
 const OWN_ICON = /^miles(-[0-9a-f]{8})?\.png$/
+
+function refreshDesktop(applications: string): void {
+  if (process.env.XDG_DATA_HOME && process.env.XDG_DATA_HOME !== join(homedir(), ".local", "share")) return
+  for (const [command, args] of [["update-desktop-database", [applications]], ["kbuildsycoca6", []]] as const) {
+    execFile(command, [...args], () => {})
+  }
+}
 
 export function installLauncher(): void {
   const appImage = process.env.APPIMAGE
@@ -39,7 +47,10 @@ export function installLauncher(): void {
   for (const file of readdirSync(folder)) {
     if (OWN_ICON.test(file) && file !== `${name}.png`) rmSync(join(folder, file), { force: true })
   }
-  writeFileSync(entry, text)
+  writeFileSync(`${entry}.tmp`, text)
+  renameSync(`${entry}.tmp`, entry)
   const now = new Date()
   utimesSync(folder, now, now)
+  utimesSync(dirname(entry), now, now)
+  refreshDesktop(dirname(entry))
 }
