@@ -60,6 +60,8 @@ To remove data that Miles stores outside the repo, delete `~/.miles` (plugins, t
 
 All the configuration lives in `config.toml` at the repo root. Secrets go in `.env` never in the config or a plugin.
 
+> The repo's `config.toml` only holds defaults. Put your changes in `~/.miles/config.toml`, and only the keys you want to change. For example this file switches the voice model and sets a city, and everything else keeps its default:
+
 `.env`
 ```bash
 LLM_API_KEY=... 

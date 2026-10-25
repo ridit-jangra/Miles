@@ -6,10 +6,12 @@ from pipecat.runner.utils import create_transport
 from pipecat.transports.base_transport import TransportParams
 
 from miles import commands
+from miles.env import ENV_PATH, ROOT
 from miles.prefetch import download_models
 from miles.voice.pipeline import run
 
-load_dotenv(override=True)
+load_dotenv(ENV_PATH, override=True)
+load_dotenv(ROOT / ".env")
 
 async def bot(runner_args: RunnerArguments):
     transport_params = {

@@ -3,9 +3,9 @@ import json
 import tomllib
 from pathlib import Path
 
-from miles.env import PLUGINS_DIR, USER_PLUGINS_DIR
+from miles.env import HOME_DIR, PLUGINS_DIR
 
-TRUST_FILE = USER_PLUGINS_DIR.parent / "trust.json"
+TRUST_FILE = HOME_DIR / "trust.json"
 
 def fingerprint(folder: Path) -> str:
     h = hashlib.sha256()

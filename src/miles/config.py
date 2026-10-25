@@ -1,9 +1,10 @@
 import tomllib
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from miles.env import CONFIG_PATH
+from miles.env import CONFIG_PATH, DEFAULT_CONFIG_PATH
 
 
 class ProviderSettings(BaseModel):
@@ -63,7 +64,14 @@ class Config(BaseModel):
     plugin_settings: dict[str, dict] = {}
 
 
+def _read(path: Path) -> dict:
+    return tomllib.loads(path.read_text()) if path.exists() else {}
+
+def _merge(base: dict, over: dict) -> dict:
+    out = dict(base)
+    for key, value in over.items():
+        out[key] = _merge(out[key], value) if isinstance(value, dict) and isinstance(out.get(key), dict) else value
+    return out
+
 def load_config() -> Config:
-    if not CONFIG_PATH.exists():
-        return Config()
-    return Config(**tomllib.loads(CONFIG_PATH.read_text()))
+    return Config(**_merge(_read(DEFAULT_CONFIG_PATH), _read(CONFIG_PATH)))

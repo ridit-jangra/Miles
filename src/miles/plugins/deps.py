@@ -8,10 +8,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from miles.env import DEPS_DIR
+from miles.env import DEPS_DIR, HOME_DIR
 
 MARKER = ".miles-deps"
-WARM_DIR = DEPS_DIR.parent / "warm"
+WARM_DIR = HOME_DIR / "warm"
 LAUNCHERS = {"bunx", "npx", "uvx"}
 
 
