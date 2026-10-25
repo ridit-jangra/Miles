@@ -25,6 +25,7 @@ from miles.context import load_context
 from miles.env import MEMORY_DIR, PROMPTS_DIR
 from miles.mcp.connect import McpConnection
 from miles.mcp.pool import McpPool
+from miles.memory.extract import make_extractor
 from miles.memory.recap import last_session_recap
 from miles.memory.store import MemoryStore
 from miles.memory.tools import make_memory_tools
@@ -132,16 +133,23 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         ),
     )
 
+    background: set[asyncio.Task] = set()
+
     if store:
+        extract = make_extractor(store, config) if config.memory.auto_remember else None
+
         @user_aggregator.event_handler("on_user_turn_stopped")
         async def log_user_turn(aggregator, strategy, message):
-            store.log(session, "user", message.content or "")
+            text = message.content or ""
+            store.log(session, "user", text)
+            if extract:
+                job = asyncio.create_task(extract(text))
+                background.add(job)
+                job.add_done_callback(background.discard)
 
         @assistant_aggregator.event_handler("on_assistant_turn_stopped")
         async def log_assistant_turn(aggregator, message):
             store.log(session, "assistant", message.content or "")
-
-    background: set[asyncio.Task] = set()
 
     async def send_recap() -> None:
         recap = await last_session_recap(store, session, config)
