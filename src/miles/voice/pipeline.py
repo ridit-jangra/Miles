@@ -16,8 +16,10 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.transports.base_transport import BaseTransport
 
+import miles.tools.repeat  # noqa: F401  registers the repeat tools
 from miles import state
 from miles.agents.manager import Task, TaskManager
+from miles.agents.repeat import Repeater
 from miles.agents.tools import make_agent_tools
 from miles.config import load_config
 from miles.confirm.confirmer import Confirmer
@@ -31,6 +33,7 @@ from miles.memory.store import MemoryStore
 from miles.memory.tools import make_memory_tools
 from miles.plugins.loader import load_plugins
 from miles.providers import build_llm, build_stt, build_tts, close_providers
+from miles.settings import load_settings
 from miles.tools.registry import TOOLS
 from miles.voice.confirm_processor import ConfirmProcessor
 from miles.voice.tools import to_pipecat
@@ -79,8 +82,9 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
 
     inbox = Inbox()
     state.current["inbox"] = inbox
-    confirmer = Confirmer(speak, inform)
+    confirmer = Confirmer(speak, inform, auto=load_settings()["auto_confirm"])
     scheduler = Scheduler(inbox)
+    state.current["confirmer"] = confirmer
 
     tracker = ActivityTracker()
     notifier = Notifier(inbox, lambda: tracker.busy, inform, run_llm, interrupt)
@@ -102,6 +106,12 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         context.add_message({"role": "developer", "content": t.report()})
         await task.queue_frames([LLMRunFrame()])
 
+    def on_task_cancelled(t: Task):
+        inform(
+            f"Background task {t.id} ({t.agent} agent, asked: {t.task!r}) was cancelled by the user. "
+            "It is no longer running and there is no result. Don't bring it up unless they ask."
+        )
+
     manager = TaskManager(
         bundle.agents,
         bundle.plugin_tools,
@@ -110,10 +120,15 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         config.agents,
         memory=store,
         on_done=on_task_done,
+        on_cancel=on_task_cancelled,
     )
     state.current["tasks"] = manager
 
+    repeater = Repeater(manager)
+    state.current["repeater"] = repeater
+
     tools += make_agent_tools(manager)
+    tools += TOOLS
 
     base_tools = [to_pipecat(t) for t in tools]
     context = LLMContext(tools=list(base_tools))
@@ -186,6 +201,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected")
+        repeater.stop_all()
         manager.cancel_all()
         await scheduler.stop()
         confirmer.cancel()
@@ -199,5 +215,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         await close_providers()
         state.current["tasks"] = None
         state.current["inbox"] = None
+        state.current["confirmer"] = None
+        state.current["repeater"] = None
         if store:
             store.close()

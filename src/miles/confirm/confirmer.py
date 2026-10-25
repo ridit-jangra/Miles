@@ -33,14 +33,21 @@ class Confirmer:
         speak: Callable[[str], Awaitable[None]],
         inform: Callable[[str], None],
         timeout: float = 30,
+        auto: bool = False,
     ) -> None:
         self.speak = speak      # Miles says this out loud
         self.inform = inform    # adds a message for the LLM to the conversation
         self.timeout = timeout  # seconds the user has to answer
+        self.auto = auto        # run every action straight away without asking
         self._pending: Pending | None = None
 
     def request(self, question: str, action: Callable[[], Any], declined: str = DECLINED) -> dict:
-        """Remember the question and the action to run on yes. Returns right away."""
+        """Remember the question and the action to run on yes. Returns right away.
+
+        In auto mode nothing is asked: the action runs now and its result is returned.
+        """
+        if self.auto:
+            return self._run_now(action)
         self._pending = Pending(question, action, declined, time.monotonic() + self.timeout)
         return {
             "status": "awaiting_confirmation",
@@ -49,6 +56,25 @@ class Confirmer:
                 "Do not say the action is done. Their answer is handled automatically."
             ),
         }
+
+    def _run_now(self, action: Callable[[], Any]) -> Any:
+        try:
+            result = action()
+        except Exception as e:  # noqa: BLE001
+            logger.exception("Auto-confirmed action failed")
+            return {"error": str(e)}
+        return self._finish(result) if inspect.isawaitable(result) else self._as_dict(result)
+
+    async def _finish(self, pending: Awaitable[Any]) -> dict:
+        try:
+            return self._as_dict(await pending)
+        except Exception as e:  # noqa: BLE001
+            logger.exception("Auto-confirmed action failed")
+            return {"error": str(e)}
+
+    @staticmethod
+    def _as_dict(result: Any) -> dict:
+        return result if isinstance(result, dict) else {"result": result}
 
     def cancel(self) -> None:
         self._pending = None

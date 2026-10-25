@@ -1,7 +1,7 @@
 import { cn } from "../lib/cn"
 import { Dot } from "./ui"
 
-export const PAGES = ["home", "inbox", "tasks", "plugins", "memory"] as const
+export const PAGES = ["home", "inbox", "tasks", "plugins", "memory", "settings"] as const
 export type Page = (typeof PAGES)[number]
 
 const LINK = "inline-grid place-items-center rounded-control border border-transparent px-2.5 py-[7px] text-[15px] leading-none font-medium whitespace-nowrap cursor-pointer"

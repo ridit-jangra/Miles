@@ -9,6 +9,8 @@ model = "anthropic/claude-sonnet-5-5"
 [context]
 provider = "openrouter"
 model = "anthropic/claude-haiku-5.5"
+max_words = 250
+max_chars = 8000
 
 [stt]
 provider = "whisper"

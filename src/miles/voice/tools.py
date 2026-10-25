@@ -15,7 +15,7 @@ def to_pipecat(fn: Callable) -> Callable:
 
     async def wrapper(params: FunctionCallParams, **kwargs):
         result = fn(**kwargs)
-        if inspect.isawaitable(result):
+        while inspect.isawaitable(result):
             result = await result
         if not isinstance(result, dict):
             result = {"result": result}

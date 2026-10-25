@@ -40,6 +40,8 @@ class ContextSettings(BaseModel):
     provider: str = "openrouter"
     model: str = "anthropic/claude-haiku-5.5"
     api_key_env: str | None = None
+    max_words: int = 250
+    max_chars: int = 8000
 
 class MemorySettings(BaseModel):
     model_config = ConfigDict(extra="forbid")

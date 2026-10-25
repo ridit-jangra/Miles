@@ -9,6 +9,7 @@ from miles.config import load_config
 from miles.env import MEMORY_DIR
 from miles.memory.store import FactFile
 from miles.plugins.loader import plugin_folders
+from miles.settings import load_settings, save_setting
 
 router = APIRouter(prefix="/api")
 
@@ -87,3 +88,16 @@ def list_plugins():
         ]
         out.append({"name": name, "hint": " · ".join(p for p in parts if p) or "tools only", "state": plugin_state})
     return out
+
+
+@router.get("/settings")
+def get_settings():
+    return {"auto_confirm": load_settings()["auto_confirm"]}
+
+@router.post("/settings/auto-confirm")
+def set_auto_confirm(on: bool):
+    save_setting("auto_confirm", on)
+    confirmer = state.current["confirmer"]
+    if confirmer:
+        confirmer.auto = on
+    return {"auto_confirm": on}

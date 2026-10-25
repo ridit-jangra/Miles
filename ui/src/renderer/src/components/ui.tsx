@@ -155,6 +155,29 @@ export function Row(props: {
   )
 }
 
+export function Switch(props: { on: boolean; onChange: (on: boolean) => void; label: string }): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={props.on}
+      aria-label={props.label}
+      onClick={() => props.onChange(!props.on)}
+      className={cn(
+        "relative h-6 w-11 cursor-pointer rounded-full border outline-none transition-colors duration-120 focus-visible:border-ink",
+        props.on ? "border-ink bg-ink" : "border-edge bg-lift",
+      )}
+    >
+      <span
+        className={cn(
+          "absolute top-0.5 left-0.5 size-4.5 rounded-full transition-transform duration-120",
+          props.on ? "translate-x-5 bg-on-light" : "bg-ink-dim",
+        )}
+      />
+    </button>
+  )
+}
+
 export function DoneMark(): React.JSX.Element {
   return (
     <Badge tone="done">

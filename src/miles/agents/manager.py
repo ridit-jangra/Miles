@@ -54,11 +54,13 @@ class TaskManager:
         settings: AgentsSettings,
         memory: MemoryStore | None = None,
         on_done: Callable[[Task], Awaitable[None]] | None = None,
+        on_cancel: Callable[[Task], None] | None = None,
     ) -> None:
         self.agents = agents
         self.settings = settings
         self.memory = memory
         self.on_done = on_done
+        self.on_cancel = on_cancel
         self.tasks: dict[str, Task] = {}
         self._ids = itertools.count(1)
         self.plugin_tools = plugin_tools
@@ -99,17 +101,20 @@ class TaskManager:
         if self.on_done:
             await self.on_done(t)
 
-    def cancel(self, task_id: str) -> bool:
+    def cancel(self, task_id: str, notify: bool = True) -> bool:
         t = self.tasks.get(task_id)
         if not t or t.status != "running":
             return False
         t.status = "cancelled"  # set now, the task may never get to run its except block
+        t.ended = time.time()
         t.handle.cancel()
+        if notify and self.on_cancel:
+            self.on_cancel(t)
         return True
 
     def cancel_all(self) -> None:
         for task_id in list(self.tasks):
-            self.cancel(task_id)
+            self.cancel(task_id, notify=False)
 
     def _tools_for(self, agent: AgentDef) -> dict[str, Callable]:
         return {**self.builtin_tools, **self.plugin_tools.get(agent.plugin, {})}

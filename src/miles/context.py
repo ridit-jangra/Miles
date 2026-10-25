@@ -10,15 +10,13 @@ from miles.config import Config
 from miles.env import CONTEXT_CACHE_PATH, CONTEXT_PATH
 from miles.models import build_model
 
-MAX_CHARS = 8000
-
 SECRET_PATTERN = re.compile(r"(xox[abprs]-|sk-[A-Za-z0-9]|ghp_|AKIA[0-9A-Z]{12}|api[_-]?key\s*[:=])", re.IGNORECASE)
 
-SUMMARY_PROMPT = """Turn the user's notes into a short system prompt addendum for a voice assistant called Miles. Write in second person, for example "The user is..." or "Prefer...". Keep only facts that change how Miles should behave or answer. Under 250 words. Plain sentences, no markdown or lists. Never invent facts. Never include tokens, passwords or keys."""
+SUMMARY_PROMPT = """Turn the user's notes into a short system prompt addendum for a voice assistant called Miles. Write in second person, for example "The user is..." or "Prefer...". Keep only facts that change how Miles should behave or answer. Under {words} words. Keep ids, urls and names exactly as written. Plain sentences, no markdown or lists. Never invent facts. Never include tokens, passwords or keys."""
 
 
-def _digest(text: str, model: str) -> str:
-    return hashlib.sha256(f"{model}\n{SUMMARY_PROMPT}\n{text}".encode()).hexdigest()
+def _digest(text: str, model: str, prompt: str) -> str:
+    return hashlib.sha256(f"{model}\n{prompt}\n{text}".encode()).hexdigest()
 
 
 def _read_cache() -> dict | None:
@@ -48,12 +46,13 @@ async def load_context(config: Config) -> str | None:
         logger.error("context.md looks like it contains a secret, so it was skipped. Keep secrets in .env")
         return None
 
-    if len(text) > MAX_CHARS:
-        logger.warning(f"context.md is over {MAX_CHARS} characters, only the start is used")
-        text = text[:MAX_CHARS]
-
     settings = config.context
-    digest = _digest(text, f"{settings.provider}:{settings.model}")
+    if len(text) > settings.max_chars:
+        logger.warning(f"context.md is over {settings.max_chars} characters, only the start is used")
+        text = text[:settings.max_chars]
+
+    prompt_text = SUMMARY_PROMPT.format(words=settings.max_words)
+    digest = _digest(text, f"{settings.provider}:{settings.model}", prompt_text)
     cache = _read_cache()
     if cache and cache.get("digest") == digest:
         return cache.get("prompt")
@@ -61,7 +60,7 @@ async def load_context(config: Config) -> str | None:
     logger.info("context.md changed, regenerating the summary")
     try:
         model = build_model(settings.provider, settings.model, settings.api_key_env)
-        agent = Agent(model, instructions=SUMMARY_PROMPT)
+        agent = Agent(model, instructions=prompt_text)
         result = await asyncio.wait_for(agent.run(text), 20)
     except Exception:  # noqa: BLE001
         logger.exception("context.md summary failed")

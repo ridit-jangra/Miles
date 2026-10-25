@@ -1,4 +1,4 @@
-import { Brain, House, Inbox, ListChecks, Puzzle, type LucideIcon } from "lucide-react"
+import { Brain, House, Inbox, ListChecks, Puzzle, Settings, type LucideIcon } from "lucide-react"
 
 import { cn } from "../lib/cn"
 import { PAGES, type Page } from "./Nav"
@@ -10,6 +10,7 @@ const ICONS: Record<Page, LucideIcon> = {
   tasks: ListChecks,
   plugins: Puzzle,
   memory: Brain,
+  settings: Settings,
 }
 
 function Tip({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {

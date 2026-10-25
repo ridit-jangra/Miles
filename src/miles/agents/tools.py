@@ -52,6 +52,6 @@ def make_agent_tools(manager: TaskManager) -> list[Callable]:
         Args:
             task_id: The id returned by delegate.
         """
-        return {"cancelled": manager.cancel(task_id)}
+        return {"cancelled": manager.cancel(task_id, notify=False)}
 
     return [delegate, check_task, list_tasks, cancel_task]

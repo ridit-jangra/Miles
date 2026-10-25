@@ -7,6 +7,7 @@ import { type Page } from "./components/Nav"
 import { Inbox } from "./pages/Inbox"
 import { Memory } from "./pages/Memory"
 import { Plugins } from "./pages/Plugins"
+import { Settings } from "./pages/Settings"
 import { Tasks } from "./pages/Tasks"
 import { Loading } from "./components/Loading"
 import { useServer } from "./lib/server"
@@ -33,6 +34,7 @@ function Shell(): React.JSX.Element {
           {page === "tasks" && <Tasks />}
           {page === "plugins" && <Plugins />}
           {page === "memory" && <Memory />}
+          {page === "settings" && <Settings />}
         </main>
         </div>
     </>
