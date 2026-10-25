@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the app version
+        run: |
+          version=$(jq -r .version ui/package.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "The tag is $GITHUB_REF_NAME but ui/package.json says $version. Bump the version, commit, and tag again."
+            exit 1
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        working-directory: ui
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: ui
+        run: bun run typecheck
+
+      - name: Build the AppImage
+        working-directory: ui
+        run: bun run package
+
+      - name: Smoke test the AppImage
+        working-directory: ui
+        env:
+          MILES_HOME: ${{ runner.temp }}/miles-home
+          MILES_INSTALL_DRY_RUN: "1"
+        run: |
+          ./dist/Miles-*.AppImage --appimage-extract-and-run --no-sandbox --ozone-platform=headless --remote-debugging-port=9222 &
+          for i in $(seq 1 40); do
+            curl -sf localhost:9222/json/version > /dev/null && break
+            sleep 1
+          done
+          curl -sf localhost:9222/json/list | grep -q '"title": "Miles"'
+
+      - name: Publish a draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: ui/dist/*.AppImage
+          body: |
+            Download the AppImage, make it executable and run it:
+
+            ```sh
+            chmod +x Miles-*.AppImage
+            ./Miles-*.AppImage
+            ```
+
+            The first launch sets Miles up by itself and asks before it installs anything.

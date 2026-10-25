@@ -9,7 +9,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "package": "electron-vite build && electron-builder --linux AppImage"
+    "package": "electron-vite build && electron-builder --linux AppImage --publish never"
   },
   "devDependencies": {
     "@fontsource-variable/geist": "^5.3.0",
