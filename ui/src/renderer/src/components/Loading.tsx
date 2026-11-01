@@ -172,7 +172,6 @@ export function Loading({ status }: { status: ServerStatus }): React.JSX.Element
 
   return (
     <>
-      <AsciiField />
       <div className="fixed inset-0 z-1000 flex flex-col items-center justify-center gap-10 px-6 text-center">
         <PageTitle>{status.title ?? (status.form ? "One more thing" : status.review?.length ? "New plugins found" : status.state === "starting" ? "Starting background server" : status.state === "ready" ? "Starting client" : "Failed to start server")}</PageTitle>
         {status.notice ? (

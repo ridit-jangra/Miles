@@ -20,7 +20,6 @@ function Shell(): React.JSX.Element {
 
   return (
     <>
-      <AsciiField />
       <div className="relative z-200 flex h-dvh flex-col overflow-hidden font-sans">
         {page === "home" && (
           <>
