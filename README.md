@@ -1,5 +1,7 @@
 # Miles
 
+![](./public/screenshot.png)
+
 A voice harness that runs on your machine with multiple `tts`, `stt` & `llm` providers to choose from. You talk to it and it talks back. it can handle subagents, multiple tool calling, calling subagents in parallel while you keep chatting with it.
 
 Built on [Pipecat](https://github.com/pipecat-ai/pipecat). `TTS (Text to Speech)`, `LLM (Large Language Model)` & `STT (Speech to Text)` are all swappable through `config.toml`.
