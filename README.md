@@ -72,41 +72,34 @@ TTS_API_KEY=...   # only set if you're using an online service, skip if it runs 
 ```
 
 ```toml
-[llm]            # the voice model
+[llm]
 provider = "openrouter"
 model = "anthropic/claude-haiku-5.5"
 
-[agents]         # the model background agents use
+[agents]
 provider = "openrouter"
 model = "anthropic/claude-sonnet-5-5"
 
-[stt]            # speech to text
+[stt]
 provider = "whisper"
 model = "small"
 
-[tts]            # text to speech
+[tts]
 provider = "piper"
 voice = "en_US-danny-low"
 
 [plugins]
-enabled = true   # false turns off every plugin and every agent
-disabled = []    # plugin names to skip
+enabled = true
+disabled = []
 
 [memory]
-history_days = "never"   # a number of days, or "never"
-
-# Use these only if you install the plugins
-
-[plugin_settings.weather]
-city = "Delhi"
-units = "metric"         # or "imperial"
-
-[plugin_settings.calendar]
-country = "IN"           # two letter code, for holidays
+history_days = "never"
 ```
 
 ## Plugins
 I have made some plugins that you can use by cloning the repository
+
+> There is also an option to install plugins when you first install the app
 
 ```bash
 git clone https://github.com/ridit-jangra/miles-plugins ~/.miles/plugins
