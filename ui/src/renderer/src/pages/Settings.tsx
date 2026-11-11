@@ -19,12 +19,12 @@ export function Settings(): React.JSX.Element {
     <>
       <PageTitle>settings</PageTitle>
       <Panel title="actions">
+        {auto && <Note>"Auto mode is on. Everything that used to ask now runs straight away, including forgetting a saved memory."</Note>}
         <Row
           label="auto mode"
           hint="Miles does what you ask without checking first, like sending a Slack message or moving a file to the trash."
           value={auto !== null && <Switch on={auto} onChange={change} label="auto mode" />}
         />
-        {auto && <Note>Auto mode is on. Everything that used to ask now runs straight away, including forgetting a saved memory.</Note>}
       </Panel>
     </>
   )

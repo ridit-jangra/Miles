@@ -150,7 +150,7 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
     background: set[asyncio.Task] = set()
 
     if store:
-        extract = make_extractor(store, config) if config.memory.auto_remember else None
+        extract = make_extractor(store, config, session) if config.memory.auto_remember else None
 
         @user_aggregator.event_handler("on_user_turn_stopped")
         async def log_user_turn(aggregator, strategy, message):
@@ -183,7 +183,64 @@ async def run(transport: BaseTransport, runner_args: RunnerArguments, system_pro
         tracker,
     ])
 
-    task = PipelineWorker(pipeline, params=PipelineParams(enable_usage_metrics=True, enable_metrics=True))
+    # Pipecat ends a session after 5 quiet minutes. We decide that ourselves, so a long background
+    # task (a big download, an artifact being built) isn't killed just because nobody spoke.
+    task = PipelineWorker(
+        pipeline,
+        params=PipelineParams(enable_usage_metrics=True, enable_metrics=True),
+        cancel_on_idle_timeout=False,
+    )
+
+    @task.event_handler("on_idle_timeout")
+    async def on_idle_timeout(worker):
+        if any(t.status == "running" for t in manager.tasks.values()):
+            logger.info("Quiet for a while, but a background task is still running, so staying connected")
+            return
+        logger.info("Quiet for a while and nothing running, ending the session")
+        await task.cancel(reason="idle timeout")
+
+    chat_queue: list[str] = []
+
+    async def send_chat(texts: list[str]) -> None:
+        for text in texts:
+            if store:
+                store.log(session, "user", text)
+                if extract:
+                    job = asyncio.create_task(extract(text))
+                    background.add(job)
+                    job.add_done_callback(background.discard)
+            context.add_message({"role": "user", "content": text})
+        tracker.expect_response()
+        await task.queue_frames([LLMRunFrame()])
+
+    def on_idle() -> None:
+        # typed messages that waited for Miles to finish go first, alerts after
+        if chat_queue:
+            texts = chat_queue[:]
+            chat_queue.clear()
+            tracker.expect_response()  # busy again right away, so alerts don't sneak in
+            job = asyncio.create_task(send_chat(texts))
+            background.add(job)
+            job.add_done_callback(background.discard)
+            return
+        notifier.on_idle()
+
+    tracker.on_idle = on_idle
+
+    @task.rtvi.event_handler("on_client_message")
+    async def on_client_message(rtvi, msg):
+        # typed chat: same as a spoken turn, minus STT
+        if msg.type != "chat":
+            return
+        text = ((msg.data or {}).get("text") or "").strip()
+        if not text:
+            return
+        if await confirmer.handle_text(text):
+            return  # answered (or re-asked) a pending confirmation
+        if tracker.busy:
+            chat_queue.append(text)  # sent when Miles goes idle, no barging in
+            return
+        await send_chat([text])
 
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):

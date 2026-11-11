@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Mic, MicOff, Power } from "lucide-react"
+import { ArrowRight, AudioLines, Check, MessageSquare, Mic, MicOff, Power } from "lucide-react"
 
 import { ScrollArea } from "./ScrollArea"
 import { cn } from "../lib/cn"
@@ -14,7 +14,7 @@ export function Dot({ on }: { on: boolean }): React.JSX.Element {
 }
 
 export function Note({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <p className="m-0 text-ui leading-[1.55] text-ink-dim">{children}</p>
+  return <p className="m-0 text-ui leading-[1.55] text-ink-dim italic border-l-4 pl-2">{children}</p>
 }
 
 export function Panel(props: {
@@ -186,7 +186,7 @@ export function DoneMark(): React.JSX.Element {
   )
 }
 
-export function VoiceControls(props: { live: boolean; muted: boolean; busy: boolean; onToggle: () => void; onMute: () => void }): React.JSX.Element {
+export function VoiceControls(props: { live: boolean; muted: boolean; busy: boolean; chat: boolean; onToggle: () => void; onMute: () => void; onChat: () => void }): React.JSX.Element {
   const seg = "inline-flex cursor-pointer items-center gap-2 bg-ink text-on-light font-display px-[15px] py-[9px] text-ui leading-[1.4286] font-medium outline-none transition-colors duration-120 disabled:cursor-default disabled:opacity-55"
   return (
     <div className="inline-flex overflow-hidden rounded-control border border-ink transition-colors duration-120 hover:border-edge focus-within:border-edge">
@@ -204,6 +204,15 @@ export function VoiceControls(props: { live: boolean; muted: boolean; busy: bool
         ) : (
           "talk to miles"
         )}
+      </button>
+      <button
+        type="button"
+        disabled={props.busy}
+        onClick={props.onChat}
+        className={cn(seg, "border-l border-ink bg-surface text-ink hover:bg-ink hover:text-on-light focus-visible:bg-ink focus-visible:text-on-light")}
+      >
+        {props.chat ? <AudioLines size={16} /> : <MessageSquare size={16} />}
+        {props.chat ? "voice mode" : "chat mode"}
       </button>
     </div>
   )

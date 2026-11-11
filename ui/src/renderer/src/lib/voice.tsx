@@ -20,6 +20,7 @@ type Voice = {
   connect: () => Promise<void>
   disconnect: () => Promise<void>
   toggleMute: () => void
+  sendText: (text: string) => void
 }
 
 const VoiceContext = createContext<Voice | null>(null)
@@ -45,7 +46,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }): Reac
   const nextId = useRef(1)
 
   const push = useCallback((who: "you" | "tool", text: string) => {
-    setLines((current) => [...current.slice(-40), { id: nextId.current++, who, text }])
+    setLines((current) => [...current.slice(-500), { id: nextId.current++, who, text }])
   }, [])
 
   const pushBot = useCallback((data: BotOutputData) => {
@@ -63,7 +64,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }): Reac
           .join(" ")
         return [...current.slice(0, -1), { ...last, segments, text }]
       }
-      return [...current.slice(-40), { id: nextId.current++, who: "miles", text: data.text, segments: { [key]: data.text } }]
+      return [...current.slice(-500), { id: nextId.current++, who: "miles", text: data.text, segments: { [key]: data.text } }]
     })
   }, [])
 
@@ -156,9 +157,20 @@ export function VoiceProvider({ children }: { children: React.ReactNode }): Reac
     })
   }, [client])
 
+  const sendText = useCallback(
+    (text: string) => {
+      const clean = text.trim()
+      if (!clean || status !== "live") return
+      push("you", clean)
+      if (!speaking) setThinking(true)
+      client.sendClientMessage("chat", { text: clean })
+    },
+    [client, push, status, speaking],
+  )
+
   const value = useMemo<Voice>(
-    () => ({ status, speaking, thinking, muted, error, lines, userText, level, connect, disconnect, toggleMute }),
-    [status, speaking, thinking, muted, error, lines, userText, level, connect, disconnect, toggleMute],
+    () => ({ status, speaking, thinking, muted, error, lines, userText, level, connect, disconnect, toggleMute, sendText }),
+    [status, speaking, thinking, muted, error, lines, userText, level, connect, disconnect, toggleMute, sendText],
   )
 
   return (

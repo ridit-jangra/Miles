@@ -93,11 +93,13 @@ class TaskManager:
             t.status = "done"
         except asyncio.CancelledError:
             t.status = "cancelled"
+            t.ended = t.ended or time.time()
             raise
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Agent task {t.id} failed")
             t.status = "failed"
             t.error = str(e)
+        t.ended = time.time()  # without this the UI keeps counting a finished task's time
         if self.on_done:
             await self.on_done(t)
 

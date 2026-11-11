@@ -1,42 +1,17 @@
-import { useState } from "react"
-
-import { Dock } from "./components/Dock"
-import { Stage } from "./components/Stage"
-import { TasksSide } from "./components/TasksSide"
-import { type Page } from "./components/Nav"
-import { Inbox } from "./pages/Inbox"
-import { Memory } from "./pages/Memory"
-import { Plugins } from "./pages/Plugins"
-import { Settings } from "./pages/Settings"
-import { Tasks } from "./pages/Tasks"
 import { Loading } from "./components/Loading"
+import { Workspace } from "./components/Workspace"
 import { useServer } from "./lib/server"
-import { useVoice, VoiceProvider } from "./lib/voice"
+import { VoiceProvider } from "./lib/voice"
+import { WorkspaceProvider } from "./lib/workspace"
 import { AsciiField } from "./components/AsciiField"
 
 function Shell(): React.JSX.Element {
-  const [page, setPage] = useState<Page>("home")
-  const voice = useVoice()
-
   return (
-    <>
-      <div className="relative z-200 flex h-dvh flex-col overflow-hidden font-sans">
-        {page === "home" && (
-          <>
-            <Stage />
-            <TasksSide />
-          </>
-        )}
-        <Dock page={page} onPage={setPage} live={voice.status === "live"} />
-        <main className="mx-auto flex min-h-0 w-full max-w-[880px] flex-1 flex-col gap-6 px-6 py-8 max-[720px]:px-4">
-          {page === "inbox" && <Inbox />}
-          {page === "tasks" && <Tasks />}
-          {page === "plugins" && <Plugins />}
-          {page === "memory" && <Memory />}
-          {page === "settings" && <Settings />}
-        </main>
-        </div>
-    </>
+    <div className="relative z-200 flex h-dvh flex-col overflow-hidden font-sans">
+      <main className="relative min-h-0 flex-1 p-2">
+        <Workspace />
+      </main>
+    </div>
   )
 }
 
@@ -47,10 +22,15 @@ export default function App(): React.JSX.Element {
     <>
       {server.state === "ready" ? (
         <VoiceProvider>
-          <Shell />
+          <WorkspaceProvider>
+            <Shell />
+          </WorkspaceProvider>
         </VoiceProvider>
       ) : (
-        <Loading status={server} />
+        <>
+          <AsciiField />
+          <Loading status={server} />
+        </>
       )}
     </>
   )

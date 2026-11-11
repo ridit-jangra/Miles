@@ -27,7 +27,7 @@ export function Tasks(): React.JSX.Element {
             >
               <Row
                 num={task.id}
-                label={task.text}
+                label={<span className="line-clamp-2 break-words">{task.text}</span>}
                 hint={`${task.agent} agent`}
                 value={
                   <span className="inline-flex items-center gap-3">

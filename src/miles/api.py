@@ -3,6 +3,7 @@ import tomllib
 from time import time
 
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from miles import state
 from miles.config import load_config
@@ -23,6 +24,14 @@ def list_facts():
         day, source, text = item.split(" · ", 2)
         out.append({"id": item, "date": day, "source": source, "text": text})
     return out
+
+class NewFact(BaseModel):
+    text: str
+
+@router.post("/memory/facts")
+def add_fact(body: NewFact):
+    # same checks as Miles' own remember tool: empty, secrets, duplicates, size cap
+    return {"result": _facts().add(body.text, "added")}
 
 @router.delete("/memory/facts")
 def forget_fact(id: str):

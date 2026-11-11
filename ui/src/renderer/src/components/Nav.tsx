@@ -1,8 +1,19 @@
+import { Brain, House, Inbox, ListChecks, Puzzle, Settings, type LucideIcon } from "lucide-react"
+
 import { cn } from "../lib/cn"
 import { Dot } from "./ui"
 
 export const PAGES = ["home", "inbox", "tasks", "plugins", "memory", "settings"] as const
 export type Page = (typeof PAGES)[number]
+
+export const ICONS: Record<Page, LucideIcon> = {
+  home: House,
+  inbox: Inbox,
+  tasks: ListChecks,
+  plugins: Puzzle,
+  memory: Brain,
+  settings: Settings,
+}
 
 const LINK = "inline-grid place-items-center rounded-control border border-transparent px-2.5 py-[7px] text-[15px] leading-none font-medium whitespace-nowrap cursor-pointer"
 
